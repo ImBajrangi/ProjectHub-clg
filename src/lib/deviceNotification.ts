@@ -73,29 +73,12 @@ export async function requestDeviceNotificationPermission(): Promise<Notificatio
   }
 }
 
-// Global in-memory cache to prevent duplicate dispatches within 15 seconds
-const recentDispatches = new Map<string, number>();
-
-function isDuplicateDispatch(key: string, cooldownMs = 15000): boolean {
-  const now = Date.now();
-  const lastTime = recentDispatches.get(key);
-  if (lastTime && now - lastTime < cooldownMs) {
-    return true;
-  }
-  recentDispatches.set(key, now);
-  // Clean up old entries
-  if (recentDispatches.size > 200) {
-    for (const [k, time] of recentDispatches.entries()) {
-      if (now - time > cooldownMs) {
-        recentDispatches.delete(k);
-      }
-    }
-  }
-  return false;
-}
+// Lightweight debounce to prevent multiple triggers in the exact same millisecond burst
+let lastDispatchTime = 0;
+let lastDispatchSlug = '';
 
 export async function triggerSystemNotification(item: {
-  id: string;
+  id?: string;
   subject?: string;
   body?: string;
   salutation?: string;
@@ -106,22 +89,26 @@ export async function triggerSystemNotification(item: {
 
   const rawTitle = item.subject || 'CodeShastra Notice';
   const cleanBody = item.body
-    ? item.body.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160)
+    ? item.body.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180)
     : 'You have a new update on CodeShastra Hub.';
 
-  // Deduplicate by ID and by content signature (prevents optimistic ID vs DB UUID duplicate popups)
-  const contentSignature = `${rawTitle.trim()}::${cleanBody.slice(0, 60)}`;
-  if (isDuplicateDispatch(String(item.id)) || isDuplicateDispatch(contentSignature)) {
-    console.log('[CodeShastra Notification] 🛡️ Suppressed duplicate notification:', rawTitle);
+  const now = Date.now();
+  const slug = `${rawTitle}::${cleanBody.slice(0, 40)}`;
+
+  // Debounce rapid bursts within 2 seconds
+  if (slug === lastDispatchSlug && now - lastDispatchTime < 2000) {
+    console.log('[CodeShastra Notification] ⏳ Debounced rapid burst:', rawTitle);
     return;
   }
+  lastDispatchTime = now;
+  lastDispatchSlug = slug;
 
-  // 1. Play acoustic notification chime (once per genuine notification)
+  // 1. Play notification sound chime
   playNotificationChime();
 
-  // 2. Verify browser Notification support
+  // 2. Check Notification API
   if (!('Notification' in window)) {
-    console.warn('[CodeShastra Notification] Notification API not supported on this platform');
+    console.warn('[CodeShastra Notification] Notification API not supported');
     return;
   }
 
@@ -135,23 +122,19 @@ export async function triggerSystemNotification(item: {
   }
 
   if (permission !== 'granted') {
+    console.warn('[CodeShastra Notification] Permission not granted:', permission);
     return;
   }
 
-  const title = `CodeShastra: ${rawTitle.replace(/^CodeShastra:\s*/i, '')}`;
+  const title = rawTitle.startsWith('CodeShastra') ? rawTitle : `CodeShastra: ${rawTitle}`;
   const origin = window.location.origin;
   const iconUrl = `${origin}/favicon.ico`;
-
-  // Deterministic OS tag: collapses any duplicate at the OS / macOS Notification Center level
-  const cleanTagSlug = (item.id.startsWith('temp-') ? rawTitle : item.id)
-    .replace(/[^a-zA-Z0-9_-]/g, '_')
-    .slice(0, 40);
 
   const notifOptions: NotificationOptions = {
     body: cleanBody,
     icon: iconUrl,
     badge: iconUrl,
-    tag: `cs-${cleanTagSlug}`,
+    tag: `cs-${(item.id || Date.now()).toString()}`,
     data: {
       url: item.url || '/dashboard/leader',
     },
@@ -159,23 +142,9 @@ export async function triggerSystemNotification(item: {
     silent: false,
   };
 
-  console.log('[CodeShastra Notification] 🚀 Dispatching single OS notification:', { title, tag: notifOptions.tag });
+  console.log('[CodeShastra Notification] 🚀 Displaying OS Notification:', { title, body: cleanBody });
 
-  // METHOD 1: Primary Service Worker showNotification
-  if ('serviceWorker' in navigator) {
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      if (reg && typeof reg.showNotification === 'function') {
-        await reg.showNotification(title, notifOptions);
-        console.log('[CodeShastra Notification] ✅ Notification shown via ServiceWorker');
-        return; // IMPORTANT: Return immediately so Method 2 is NOT called!
-      }
-    } catch (err) {
-      console.warn('[CodeShastra Notification] ⚠️ ServiceWorker fallback to direct Notification:', err);
-    }
-  }
-
-  // METHOD 2: Fallback direct Notification constructor (ONLY if Service Worker failed/unsupported)
+  // Try direct Notification (fastest & most reliable on macOS / Windows desktop)
   try {
     const notif = new Notification(title, notifOptions);
     notif.onclick = () => {
@@ -185,10 +154,20 @@ export async function triggerSystemNotification(item: {
       }
       notif.close();
     };
-    console.log('[CodeShastra Notification] ✅ Notification shown via direct constructor');
   } catch (err) {
-    console.warn('[CodeShastra Notification] ⚠️ Direct Notification error:', err);
+    // Fallback to Service Worker if window Notification constructor fails
+    if ('serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg && typeof reg.showNotification === 'function') {
+          await reg.showNotification(title, notifOptions);
+        }
+      } catch (swErr) {
+        console.warn('[CodeShastra Notification] Service worker fallback failed:', swErr);
+      }
+    }
   }
 }
+
 
 
