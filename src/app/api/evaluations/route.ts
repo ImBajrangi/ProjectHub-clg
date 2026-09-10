@@ -54,13 +54,18 @@ export async function POST(req: NextRequest) {
 
       const savedEvaluations = [];
       for (const item of scores) {
+        const isAbsent = Boolean(item.isAbsent);
+        const parsedScore = !isAbsent && item.score !== undefined && item.score !== null && item.score !== '' && !isNaN(Number(item.score))
+          ? Number(item.score)
+          : null;
+
         const ev = await db.saveEvaluation(
           phaseNumber,
           teamId,
           item.studentId,
           sessionUser.id,
-          item.score !== undefined && item.score !== null ? parseFloat(item.score) : null,
-          Boolean(item.isAbsent),
+          parsedScore,
+          isAbsent,
           item.remarks
         );
         savedEvaluations.push(ev);

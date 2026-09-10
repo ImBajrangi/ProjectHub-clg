@@ -313,22 +313,22 @@ export default function Navbar({
 
           {/* Center: Faculty Mode Segmented Control */}
           {user?.role === 'supervisor' && onFacultyModeChange && (
-            <div className="segmented-control" style={{ padding: '3px' }}>
+            <div className="nav-faculty-toggle" role="group" aria-label="Faculty Portal Mode Switcher">
               <button
                 type="button"
-                className={`segmented-pill ${activeFacultyMode === 'supervisor' ? 'active' : ''}`}
+                className={`nav-faculty-tab ${activeFacultyMode === 'supervisor' ? 'active' : ''}`}
                 onClick={() => onFacultyModeChange('supervisor')}
-                style={{ padding: '6px 14px', fontSize: '12px' }}
               >
-                <Users size={13} /> Mentor
+                <Users size={13.5} strokeWidth={2.2} />
+                <span>Mentor</span>
               </button>
               <button
                 type="button"
-                className={`segmented-pill ${activeFacultyMode === 'panel' ? 'active' : ''}`}
+                className={`nav-faculty-tab ${activeFacultyMode === 'panel' ? 'active' : ''}`}
                 onClick={() => onFacultyModeChange('panel')}
-                style={{ padding: '6px 14px', fontSize: '12px' }}
               >
-                <Award size={13} /> Judge
+                <Award size={13.5} strokeWidth={2.2} />
+                <span>Judge</span>
               </button>
             </div>
           )}
@@ -498,25 +498,69 @@ export default function Navbar({
       </div>
 
       <style jsx global>{`
+        .nav-faculty-toggle {
+          background: #F1F5F9;
+          border: 1px solid #E2E8F0;
+          border-radius: 9px;
+          padding: 3px;
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+          flex-shrink: 0;
+          box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.03);
+          user-select: none;
+        }
+        .nav-faculty-tab {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 13px;
+          border-radius: 7px;
+          font-family: var(--font-sans);
+          font-size: 12px;
+          font-weight: 600;
+          border: none;
+          background: transparent;
+          color: #64748B;
+          cursor: pointer;
+          white-space: nowrap;
+          flex-shrink: 0;
+          transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+        }
+        .nav-faculty-tab:hover:not(.active) {
+          color: #0F172A;
+          background: rgba(255, 255, 255, 0.6);
+        }
+        .nav-faculty-tab.active {
+          background: #FFFFFF;
+          color: #1E40AF;
+          font-weight: 700;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+        }
+        .nav-faculty-tab:active {
+          transform: scale(0.97);
+        }
         .nav-right-controls {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 7px;
+          flex-shrink: 0;
         }
         .nav-role-badge {
           display: inline-flex;
           align-items: center;
           gap: 6px;
           height: 34px;
-          padding: 0 10px;
+          padding: 0 11px;
           font-size: 12px;
           font-weight: 600;
-          border-radius: 8px;
+          border-radius: 9px;
           border: 1px solid #E2E8F0;
           background: #F8FAFC;
           color: #0F172A;
           box-sizing: border-box;
           white-space: nowrap;
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
         }
         .nav-role-team-tag {
           font-size: 10.5px;
@@ -534,10 +578,10 @@ export default function Navbar({
           justify-content: center;
           gap: 6px;
           height: 34px;
-          padding: 0 10px;
+          padding: 0 11px;
           font-size: 12px;
           font-weight: 600;
-          border-radius: 8px;
+          border-radius: 9px;
           border: 1px solid #E2E8F0;
           background: #FFFFFF;
           color: #475569;
@@ -546,11 +590,13 @@ export default function Navbar({
           position: relative;
           box-sizing: border-box;
           text-decoration: none;
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
         }
         .nav-btn:hover {
           background: #F8FAFC;
           color: #0F172A;
           border-color: #CBD5E1;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
         }
         .nav-btn:active {
           transform: scale(0.96);
@@ -558,35 +604,37 @@ export default function Navbar({
         .nav-btn-icon {
           width: 34px;
           height: 34px;
+          min-width: 34px;
           padding: 0;
-          border-radius: 8px;
+          border-radius: 9px;
         }
         .nav-badge-count {
           position: absolute;
-          top: -3px;
-          right: -3px;
+          top: -3.5px;
+          right: -3.5px;
           background-color: #EF4444;
           color: #FFFFFF;
-          font-size: 9px;
+          font-size: 9.5px;
           font-weight: 700;
-          min-width: 15px;
-          height: 15px;
-          border-radius: 8px;
+          min-width: 17px;
+          height: 17px;
+          border-radius: 9999px;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 0 3px;
+          padding: 0 3.5px;
           border: 2px solid #FFFFFF;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+          box-shadow: 0 1px 3px rgba(239, 68, 68, 0.35);
+          line-height: 1;
         }
         .nav-profile-btn {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 5px;
+          gap: 6px;
           height: 34px;
           padding: 0 8px 0 4px;
-          border-radius: 8px;
+          border-radius: 9px;
           border: 1px solid #E2E8F0;
           background: #FFFFFF;
           color: #475569;
@@ -594,21 +642,23 @@ export default function Navbar({
           transition: all 0.15s ease;
           user-select: none;
           box-sizing: border-box;
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
         }
         .nav-profile-btn:hover {
           background: #F8FAFC;
           border-color: #CBD5E1;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
         }
         .nav-profile-btn:active {
           transform: scale(0.96);
         }
         .nav-avatar-circle {
-          width: 24px;
-          height: 24px;
-          border-radius: 6px;
+          width: 25px;
+          height: 25px;
+          border-radius: 7px;
           background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%);
           color: #FFFFFF;
-          font-size: 10.5px;
+          font-size: 11px;
           font-weight: 700;
           display: flex;
           align-items: center;
@@ -704,8 +754,13 @@ export default function Navbar({
             padding: 6px 10px !important;
             box-sizing: border-box !important;
           }
+          .nav-faculty-tab {
+            padding: 4px 9px !important;
+            font-size: 11px !important;
+            gap: 4px !important;
+          }
           .nav-right-controls {
-            gap: 6px !important;
+            gap: 5px !important;
           }
           .nav-btn {
             width: 32px !important;
@@ -719,8 +774,8 @@ export default function Navbar({
             padding: 2px 6px 2px 3px !important;
           }
           .nav-avatar-circle {
-            width: 24px !important;
-            height: 24px !important;
+            width: 23px !important;
+            height: 23px !important;
             font-size: 10px !important;
           }
           .logo-icon-box {
@@ -729,11 +784,11 @@ export default function Navbar({
             border-radius: 7px !important;
           }
           .logo-brand-text {
-            font-size: 14.5px !important;
+            font-size: 14px !important;
           }
           .logo-hub-badge {
-            font-size: 10px !important;
-            padding: 1.5px 5px !important;
+            font-size: 9.5px !important;
+            padding: 1px 4.5px !important;
           }
         }
         @media (min-width: 640px) {

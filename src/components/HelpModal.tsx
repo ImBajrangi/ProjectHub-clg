@@ -350,8 +350,9 @@ export default function HelpModal({ isOpen, onClose, userRole }: HelpModalProps)
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.45)',
-        backdropFilter: 'blur(6px)',
+        backgroundColor: 'rgba(15, 23, 42, 0.45)',
+        backdropFilter: 'blur(1.5px)',
+        WebkitBackdropFilter: 'blur(1.5px)',
         padding: '20px',
       }}
       onClick={onClose}

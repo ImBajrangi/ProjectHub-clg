@@ -1,23 +1,23 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   X,
   CheckCheck,
   Bell,
-  CheckCircle,
-  Info,
-  BellOff,
   CheckCircle2,
   Clock,
   ChevronDown,
   ChevronUp,
-  AlertCircle,
+  AlertTriangle,
   Calendar,
   Send,
-  FileText,
   XCircle,
-  AlertTriangle,
+  Award,
+  CalendarPlus,
+  Users,
+  FileCheck2,
+  Info,
 } from 'lucide-react';
 import { NotificationItem } from '@/lib/types';
 
@@ -28,133 +28,271 @@ interface NotificationDrawerProps {
   onMarkRead: (id: string) => void;
   onMarkAllRead: () => void;
   userName?: string;
+  onRefresh?: () => void;
 }
 
-interface NotificationTheme {
-  borderLeft: string;
-  badgeBg: string;
-  badgeColor: string;
-  badgeBorder: string;
-  unreadDot: string;
-  cardBorder: string;
-  cardBg: string;
-  btnBorder: string;
-  btnColor: string;
-  typeLabel: string;
-  icon: React.ReactNode;
-}
+type NotificationCategoryType =
+  | 'request'
+  | 'scheduled'
+  | 'logged'
+  | 'clearance'
+  | 'revision'
+  | 'withdrawn'
+  | 'evaluation'
+  | 'general';
 
-function getNotificationTheme(item: NotificationItem): NotificationTheme {
-  const text = `${item.subject} ${item.body} ${item.category || ''}`.toLowerCase();
-
-  // 1. Withdrawn / Cancelled / Rejected (Rose / Crimson)
-  if (text.includes('withdrawn') || text.includes('cancelled') || text.includes('canceled') || text.includes('rejected')) {
-    return {
-      borderLeft: item.is_read ? '3px solid #CBD5E1' : '3px solid #E11D48',
-      badgeBg: item.is_read ? 'var(--color-canvas-soft)' : '#FFF1F2',
-      badgeColor: item.is_read ? 'var(--color-text-muted)' : '#BE123C',
-      badgeBorder: item.is_read ? 'var(--color-hairline)' : '#FECDD3',
-      unreadDot: '#E11D48',
-      cardBorder: item.is_read ? 'var(--color-hairline)' : '#FFE4E6',
-      cardBg: '#FFFFFF',
-      btnBorder: '#FECDD3',
-      btnColor: '#BE123C',
-      typeLabel: 'Request Withdrawn',
-      icon: <XCircle size={11} style={{ color: item.is_read ? 'var(--color-text-muted)' : '#E11D48', flexShrink: 0 }} />,
-    };
-  }
-
-  // 2. Approved / Completed / Phase Cleared / Logged (Emerald Green)
-  if (
-    text.includes('approved') ||
-    text.includes('completed') ||
-    text.includes('cleared') ||
-    text.includes('logged') ||
-    text.includes('scores successfully recorded')
-  ) {
-    return {
-      borderLeft: item.is_read ? '3px solid #CBD5E1' : '3px solid #059669',
-      badgeBg: item.is_read ? 'var(--color-canvas-soft)' : '#ECFDF5',
-      badgeColor: item.is_read ? 'var(--color-text-muted)' : '#047857',
-      badgeBorder: item.is_read ? 'var(--color-hairline)' : '#A7F3D0',
-      unreadDot: '#059669',
-      cardBorder: item.is_read ? 'var(--color-hairline)' : '#D1FAE5',
-      cardBg: '#FFFFFF',
-      btnBorder: '#A7F3D0',
-      btnColor: '#047857',
-      typeLabel: 'Approved / Completed',
-      icon: <CheckCircle2 size={11} style={{ color: item.is_read ? 'var(--color-text-muted)' : '#059669', flexShrink: 0 }} />,
-    };
-  }
-
-  // 3. Revision Requested / Action Required / Directive (Amber)
-  if (text.includes('revision') || text.includes('attention') || text.includes('directive') || text.includes('action required')) {
-    return {
-      borderLeft: item.is_read ? '3px solid #CBD5E1' : '3px solid #D97706',
-      badgeBg: item.is_read ? 'var(--color-canvas-soft)' : '#FFFBEB',
-      badgeColor: item.is_read ? 'var(--color-text-muted)' : '#B45309',
-      badgeBorder: item.is_read ? 'var(--color-hairline)' : '#FDE68A',
-      unreadDot: '#D97706',
-      cardBorder: item.is_read ? 'var(--color-hairline)' : '#FEF3C7',
-      cardBg: '#FFFFFF',
-      btnBorder: '#FDE68A',
-      btnColor: '#B45309',
-      typeLabel: 'Revision Required',
-      icon: <AlertTriangle size={11} style={{ color: item.is_read ? 'var(--color-text-muted)' : '#D97706', flexShrink: 0 }} />,
-    };
-  }
-
-  // 4. Scheduled / Confirmed / Calendar (Purple / Indigo)
-  if (text.includes('scheduled') || text.includes('rescheduled') || text.includes('slot confirmed')) {
-    return {
-      borderLeft: item.is_read ? '3px solid #CBD5E1' : '3px solid #7C3AED',
-      badgeBg: item.is_read ? 'var(--color-canvas-soft)' : '#F5F3FF',
-      badgeColor: item.is_read ? 'var(--color-text-muted)' : '#6D28D9',
-      badgeBorder: item.is_read ? 'var(--color-hairline)' : '#DDD6FE',
-      unreadDot: '#7C3AED',
-      cardBorder: item.is_read ? 'var(--color-hairline)' : '#E9D5FF',
-      cardBg: '#FFFFFF',
-      btnBorder: '#DDD6FE',
-      btnColor: '#6D28D9',
-      typeLabel: 'Meeting Scheduled',
-      icon: <Calendar size={11} style={{ color: item.is_read ? 'var(--color-text-muted)' : '#7C3AED', flexShrink: 0 }} />,
-    };
-  }
-
-  // 5. Submitted / New Request / General (Royal Blue)
-  return {
-    borderLeft: item.is_read ? '3px solid #CBD5E1' : '3px solid #2563EB',
-    badgeBg: item.is_read ? 'var(--color-canvas-soft)' : '#EFF6FF',
-    badgeColor: item.is_read ? 'var(--color-text-muted)' : '#1D4ED8',
-    badgeBorder: item.is_read ? 'var(--color-hairline)' : '#BFDBFE',
-    unreadDot: '#2563EB',
-    cardBorder: item.is_read ? 'var(--color-hairline)' : '#DBEAFE',
-    cardBg: '#FFFFFF',
-    btnBorder: '#BFDBFE',
-    btnColor: '#1D4ED8',
-    typeLabel: 'Request Dispatched',
-    icon: <Send size={11} style={{ color: item.is_read ? 'var(--color-text-muted)' : '#2563EB', flexShrink: 0 }} />,
+interface ParsedNotification {
+  cleanSubject: string;
+  categoryLabel: string;
+  categoryType: NotificationCategoryType;
+  directSummary: string;
+  teamTag: string | null;
+  relativeTime: string;
+  theme: {
+    bg: string;
+    cardBorder: string;
+    borderLeft: string;
+    iconBg: string;
+    iconColor: string;
+    badgeBg: string;
+    badgeColor: string;
+    badgeBorder: string;
+    unreadDot: string;
+    btnColor: string;
+    btnBorder: string;
+    icon: React.ReactNode;
   };
 }
 
-function getDirectSnippet(body: string): string {
-  if (!body) return '';
-  const lines = body
-    .split('\n')
-    .map((l) => l.trim())
-    .filter(
-      (l) =>
-        l.length > 0 &&
-        !l.startsWith('-') &&
-        !l.startsWith('Session Summary:') &&
-        !l.startsWith('Meeting Logistics:') &&
-        !l.startsWith('Dear ')
-    );
-  const firstSentence = lines[0] || body;
-  if (firstSentence.length > 135) {
-    return firstSentence.slice(0, 132) + '...';
+function formatRelativeTime(dateString: string): string {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  } catch {
+    return dateString;
   }
-  return firstSentence;
+}
+
+function parseNotification(item: NotificationItem): ParsedNotification {
+  const rawSubject = item.subject || '';
+  const rawBody = item.body || '';
+  const rawCat = item.category || '';
+  const combined = `${rawSubject} ${rawBody} ${rawCat}`.toLowerCase();
+
+  // 1. Clean Subject: remove redundant suffixes
+  let cleanSubject = rawSubject
+    .replace(/\s*–\s*CodeShastra\s*ProjectHub/gi, '')
+    .replace(/\s*-\s*CodeShastra\s*ProjectHub/gi, '')
+    .replace(/\s*–\s*ProjectHub/gi, '')
+    .replace(/\s*-\s*ProjectHub/gi, '')
+    .trim();
+
+  // 2. Extract Team Tag if present
+  let teamTag: string | null = null;
+  const teamMatch = combined.match(/team\s+([a-z0-9\-_]+)/i);
+  if (teamMatch && teamMatch[0]) {
+    teamTag = teamMatch[0].toUpperCase();
+  }
+
+  // 3. Classify Category & Visual Theme
+  let categoryType: NotificationCategoryType = 'general';
+  let categoryLabel = 'Notice';
+  let directSummary = '';
+
+  const isRead = Boolean(item.is_read);
+
+  if (combined.includes('withdrawn') || combined.includes('cancelled') || combined.includes('canceled') || combined.includes('rejected')) {
+    categoryType = 'withdrawn';
+    categoryLabel = 'Request Withdrawn';
+    directSummary = teamTag
+      ? `${teamTag} cancelled and withdrew their pending meeting request.`
+      : 'The pending review request was cancelled and withdrawn.';
+  } else if (combined.includes('revision') || combined.includes('modification') || combined.includes('action required')) {
+    categoryType = 'revision';
+    categoryLabel = 'Revision Required';
+    directSummary = 'Supervisor requested modifications before approval. Please revise and resubmit.';
+  } else if (combined.includes('clearance') || combined.includes('cleared for') || combined.includes('eligibility confirmed')) {
+    categoryType = 'clearance';
+    categoryLabel = 'Phase Clearance';
+    directSummary = teamTag
+      ? `${teamTag} granted official presentation clearance for the upcoming evaluation milestone.`
+      : 'Formal clearance granted for upcoming presentation evaluation.';
+  } else if (combined.includes('scheduled') || combined.includes('rescheduled') || combined.includes('slot confirmed')) {
+    categoryType = 'scheduled';
+    categoryLabel = 'Meeting Scheduled';
+
+    // Try extracting date / venue from body
+    const dateMatch = rawBody.match(/Date:\s*([^\n]+)/i);
+    const slotMatch = rawBody.match(/Time Slot:\s*([^\n]+)/i);
+    const venueMatch = rawBody.match(/Venue[^:]*:\s*([^\n]+)/i);
+
+    if (dateMatch && slotMatch) {
+      directSummary = `Confirmed: ${dateMatch[1].trim()} at ${slotMatch[1].trim()}${venueMatch ? ` • Venue: ${venueMatch[1].trim()}` : ''}`;
+    } else {
+      directSummary = teamTag
+        ? `Review meeting scheduled with supervisor for ${teamTag}. Check notice for venue details.`
+        : 'Review meeting confirmed. Check notice for slot and venue details.';
+    }
+  } else if (combined.includes('logged') || combined.includes('attendance') || combined.includes('session summary')) {
+    categoryType = 'logged';
+    categoryLabel = 'Meeting Logged';
+    directSummary = teamTag
+      ? `Review session attendance and faculty directives logged for ${teamTag}.`
+      : 'Milestone review attendance and directives officially archived in tracking log.';
+  } else if (combined.includes('new meeting request') || combined.includes('initiated a meeting request') || combined.includes('meeting request submitted')) {
+    categoryType = 'request';
+    categoryLabel = 'Meeting Request';
+    directSummary = teamTag
+      ? `${teamTag} submitted a progress review meeting request. Awaiting faculty schedule confirmation.`
+      : 'New milestone review meeting request submitted. Awaiting slot confirmation.';
+  } else if (combined.includes('evaluation') || combined.includes('score') || combined.includes('panel')) {
+    categoryType = 'evaluation';
+    categoryLabel = 'Evaluation Panel';
+    directSummary = 'Panel evaluation schedule & scoring records updated for this phase.';
+  } else if (combined.includes('problem statement')) {
+    categoryType = 'clearance';
+    categoryLabel = 'Problem Statement';
+    directSummary = 'Problem statement status updated in academic registry.';
+  } else {
+    // General fallback summary
+    const cleanLines = rawBody
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0 && !l.startsWith('Dear ') && !l.startsWith('Sincerely') && !l.startsWith('-'));
+    directSummary = cleanLines[0] || rawBody.slice(0, 120);
+    if (directSummary.length > 125) directSummary = directSummary.slice(0, 122) + '...';
+  }
+
+  // Theme definition
+  let theme: ParsedNotification['theme'];
+
+  switch (categoryType) {
+    case 'withdrawn':
+      theme = {
+        bg: '#FFFFFF',
+        cardBorder: isRead ? '#E2E8F0' : '#FECDD3',
+        borderLeft: isRead ? '3px solid #CBD5E1' : '3px solid #E11D48',
+        iconBg: isRead ? '#F1F5F9' : '#FFF1F2',
+        iconColor: isRead ? '#94A3B8' : '#E11D48',
+        badgeBg: isRead ? '#F8FAFC' : '#FFF1F2',
+        badgeColor: isRead ? '#64748B' : '#BE123C',
+        badgeBorder: isRead ? '#E2E8F0' : '#FECDD3',
+        unreadDot: '#E11D48',
+        btnColor: '#BE123C',
+        btnBorder: '#FECDD3',
+        icon: <XCircle size={15} />,
+      };
+      break;
+
+    case 'revision':
+      theme = {
+        bg: '#FFFFFF',
+        cardBorder: isRead ? '#E2E8F0' : '#FDE68A',
+        borderLeft: isRead ? '3px solid #CBD5E1' : '3px solid #D97706',
+        iconBg: isRead ? '#F1F5F9' : '#FFFBEB',
+        iconColor: isRead ? '#94A3B8' : '#D97706',
+        badgeBg: isRead ? '#F8FAFC' : '#FFFBEB',
+        badgeColor: isRead ? '#64748B' : '#B45309',
+        badgeBorder: isRead ? '#E2E8F0' : '#FDE68A',
+        unreadDot: '#D97706',
+        btnColor: '#B45309',
+        btnBorder: '#FDE68A',
+        icon: <AlertTriangle size={15} />,
+      };
+      break;
+
+    case 'scheduled':
+      theme = {
+        bg: '#FFFFFF',
+        cardBorder: isRead ? '#E2E8F0' : '#DDD6FE',
+        borderLeft: isRead ? '3px solid #CBD5E1' : '3px solid #7C3AED',
+        iconBg: isRead ? '#F1F5F9' : '#F5F3FF',
+        iconColor: isRead ? '#94A3B8' : '#7C3AED',
+        badgeBg: isRead ? '#F8FAFC' : '#F5F3FF',
+        badgeColor: isRead ? '#64748B' : '#6D28D9',
+        badgeBorder: isRead ? '#E2E8F0' : '#DDD6FE',
+        unreadDot: '#7C3AED',
+        btnColor: '#6D28D9',
+        btnBorder: '#DDD6FE',
+        icon: <Calendar size={15} />,
+      };
+      break;
+
+    case 'logged':
+    case 'clearance':
+      theme = {
+        bg: '#FFFFFF',
+        cardBorder: isRead ? '#E2E8F0' : '#A7F3D0',
+        borderLeft: isRead ? '3px solid #CBD5E1' : '3px solid #059669',
+        iconBg: isRead ? '#F1F5F9' : '#ECFDF5',
+        iconColor: isRead ? '#94A3B8' : '#059669',
+        badgeBg: isRead ? '#F8FAFC' : '#ECFDF5',
+        badgeColor: isRead ? '#64748B' : '#047857',
+        badgeBorder: isRead ? '#E2E8F0' : '#A7F3D0',
+        unreadDot: '#059669',
+        btnColor: '#047857',
+        btnBorder: '#A7F3D0',
+        icon: categoryType === 'clearance' ? <Award size={15} /> : <CheckCircle2 size={15} />,
+      };
+      break;
+
+    case 'evaluation':
+      theme = {
+        bg: '#FFFFFF',
+        cardBorder: isRead ? '#E2E8F0' : '#E9D5FF',
+        borderLeft: isRead ? '3px solid #CBD5E1' : '3px solid #9333EA',
+        iconBg: isRead ? '#F1F5F9' : '#FAF5FF',
+        iconColor: isRead ? '#94A3B8' : '#9333EA',
+        badgeBg: isRead ? '#F8FAFC' : '#FAF5FF',
+        badgeColor: isRead ? '#64748B' : '#7E22CE',
+        badgeBorder: isRead ? '#E2E8F0' : '#E9D5FF',
+        unreadDot: '#9333EA',
+        btnColor: '#7E22CE',
+        btnBorder: '#E9D5FF',
+        icon: <Award size={15} />,
+      };
+      break;
+
+    case 'request':
+    default:
+      theme = {
+        bg: '#FFFFFF',
+        cardBorder: isRead ? '#E2E8F0' : '#BFDBFE',
+        borderLeft: isRead ? '3px solid #CBD5E1' : '3px solid #2563EB',
+        iconBg: isRead ? '#F1F5F9' : '#EFF6FF',
+        iconColor: isRead ? '#94A3B8' : '#2563EB',
+        badgeBg: isRead ? '#F8FAFC' : '#EFF6FF',
+        badgeColor: isRead ? '#64748B' : '#1D4ED8',
+        badgeBorder: isRead ? '#E2E8F0' : '#BFDBFE',
+        unreadDot: '#2563EB',
+        btnColor: '#1D4ED8',
+        btnBorder: '#BFDBFE',
+        icon: <CalendarPlus size={15} />,
+      };
+      break;
+  }
+
+  return {
+    cleanSubject,
+    categoryLabel,
+    categoryType,
+    directSummary,
+    teamTag,
+    relativeTime: formatRelativeTime(item.created_at),
+    theme,
+  };
 }
 
 export default function NotificationDrawer({
@@ -165,8 +303,9 @@ export default function NotificationDrawer({
   onMarkAllRead,
   onRefresh,
   userName,
-}: NotificationDrawerProps & { onRefresh?: () => void }) {
+}: NotificationDrawerProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'meetings' | 'clearances'>('all');
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => {
@@ -180,7 +319,6 @@ export default function NotificationDrawer({
     });
   };
 
-  // Background page scroll lock & instant refresh on open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -192,6 +330,26 @@ export default function NotificationDrawer({
       document.body.style.overflow = 'unset';
     };
   }, [isOpen, onRefresh]);
+
+  const parsedItems = useMemo(() => {
+    return notifications.map((n) => ({
+      raw: n,
+      parsed: parseNotification(n),
+    }));
+  }, [notifications]);
+
+  const filteredItems = useMemo(() => {
+    return parsedItems.filter(({ raw, parsed }) => {
+      if (activeFilter === 'unread') return !raw.is_read;
+      if (activeFilter === 'meetings') {
+        return ['request', 'scheduled', 'logged', 'withdrawn'].includes(parsed.categoryType);
+      }
+      if (activeFilter === 'clearances') {
+        return ['clearance', 'revision', 'evaluation'].includes(parsed.categoryType);
+      }
+      return true;
+    });
+  }, [parsedItems, activeFilter]);
 
   if (!isOpen) return null;
 
@@ -206,19 +364,21 @@ export default function NotificationDrawer({
         display: 'flex',
         justifyContent: 'flex-end',
         backgroundColor: 'rgba(15, 23, 42, 0.4)',
+        backdropFilter: 'blur(1.5px)',
+        WebkitBackdropFilter: 'blur(1.5px)',
       }}
       onClick={onClose}
     >
       <div
         style={{
           width: '100%',
-          maxWidth: '560px',
+          maxWidth: '580px',
           height: '100%',
           backgroundColor: '#FFFFFF',
           borderLeft: '1px solid var(--color-hairline)',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '-6px 0 28px rgba(15, 23, 42, 0.08)',
+          boxShadow: '-6px 0 28px rgba(15, 23, 42, 0.12)',
           animation: 'slideInRight 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
         onClick={(e) => e.stopPropagation()}
@@ -226,98 +386,209 @@ export default function NotificationDrawer({
         {/* Drawer Header */}
         <div
           style={{
-            padding: '18px 22px',
+            padding: '16px 20px 12px',
             borderBottom: '1px solid var(--color-hairline)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
             backgroundColor: '#FFFFFF',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div
-              style={{
-                width: '34px',
-                height: '34px',
-                borderRadius: '8px',
-                backgroundColor: '#EFF6FF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#2563EB',
-              }}
-            >
-              <Bell size={17} />
-            </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h3 style={{ fontSize: '15px', fontWeight: 800, color: 'var(--color-ink)' }}>
-                  Notification Center
-                </h3>
-                {unreadCount > 0 && (
-                  <span
-                    style={{
-                      fontSize: '10px',
-                      padding: '2px 7px',
-                      borderRadius: 'var(--rounded-full)',
-                      backgroundColor: '#EFF6FF',
-                      color: '#1D4ED8',
-                      fontWeight: 700,
-                      border: '1px solid #BFDBFE',
-                    }}
-                  >
-                    {unreadCount} New
-                  </span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  backgroundColor: '#EFF6FF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#2563EB',
+                  flexShrink: 0,
+                  boxShadow: '0 1px 3px rgba(37, 99, 235, 0.12)',
+                }}
+              >
+                <Bell size={19} />
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1.2 }}>
+                    Notification Center
+                  </h3>
+                  {unreadCount > 0 && (
+                    <span
+                      style={{
+                        fontSize: '10.5px',
+                        padding: '1.5px 7.5px',
+                        borderRadius: 'var(--rounded-full)',
+                        backgroundColor: '#EFF6FF',
+                        color: '#1D4ED8',
+                        fontWeight: 700,
+                        border: '1px solid #BFDBFE',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {unreadCount} New
+                    </span>
+                  )}
+                </div>
+                {userName && (
+                  <p style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {userName} • Academic Governance Notices
+                  </p>
                 )}
               </div>
-              {userName && (
-                <p style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                  {userName} • Official Academic & Milestone Notices
-                </p>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={onMarkAllRead}
+                  className="drawer-desktop-mark-all"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    padding: '5px 11px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    backgroundColor: 'var(--color-canvas-soft)',
+                    color: 'var(--color-ink)',
+                    border: '1px solid var(--color-hairline)',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <CheckCheck size={13} /> Mark All Read
+                </button>
               )}
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  background: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  color: '#475569',
+                  cursor: 'pointer',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '8px',
+                  transition: 'all 0.15s ease',
+                }}
+                title="Close"
+              >
+                <X size={16} />
+              </button>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {unreadCount > 0 && (
+          {/* Quick Filter Segmented Pills */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '14px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+            <button
+              type="button"
+              onClick={() => setActiveFilter('all')}
+              style={{
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                border: activeFilter === 'all' ? '1px solid #2563EB' : '1px solid #E2E8F0',
+                backgroundColor: activeFilter === 'all' ? '#EFF6FF' : '#FFFFFF',
+                color: activeFilter === 'all' ? '#1D4ED8' : '#64748B',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.15s',
+              }}
+            >
+              All ({notifications.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveFilter('unread')}
+              style={{
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                border: activeFilter === 'unread' ? '1px solid #2563EB' : '1px solid #E2E8F0',
+                backgroundColor: activeFilter === 'unread' ? '#EFF6FF' : '#FFFFFF',
+                color: activeFilter === 'unread' ? '#1D4ED8' : '#64748B',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.15s',
+              }}
+            >
+              Unread ({unreadCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveFilter('meetings')}
+              style={{
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                border: activeFilter === 'meetings' ? '1px solid #2563EB' : '1px solid #E2E8F0',
+                backgroundColor: activeFilter === 'meetings' ? '#EFF6FF' : '#FFFFFF',
+                color: activeFilter === 'meetings' ? '#1D4ED8' : '#64748B',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.15s',
+              }}
+            >
+              Meetings
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveFilter('clearances')}
+              style={{
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontSize: '11.5px',
+                fontWeight: 600,
+                border: activeFilter === 'clearances' ? '1px solid #2563EB' : '1px solid #E2E8F0',
+                backgroundColor: activeFilter === 'clearances' ? '#EFF6FF' : '#FFFFFF',
+                color: activeFilter === 'clearances' ? '#1D4ED8' : '#64748B',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.15s',
+              }}
+            >
+              Clearances & Reviews
+            </button>
+          </div>
+
+          {/* Mobile Mark All Read Full Bar */}
+          {unreadCount > 0 && (
+            <div className="drawer-mobile-mark-all" style={{ marginTop: '10px' }}>
               <button
                 type="button"
                 onClick={onMarkAllRead}
                 style={{
-                  display: 'inline-flex',
+                  width: '100%',
+                  display: 'flex',
                   alignItems: 'center',
-                  gap: '5px',
-                  padding: '5px 11px',
-                  fontSize: '11px',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  padding: '7px 12px',
+                  fontSize: '12px',
                   fontWeight: 600,
-                  backgroundColor: 'var(--color-canvas-soft)',
-                  color: 'var(--color-ink)',
-                  border: '1px solid var(--color-hairline)',
-                  borderRadius: '6px',
+                  backgroundColor: '#EFF6FF',
+                  color: '#1D4ED8',
+                  border: '1px solid #BFDBFE',
+                  borderRadius: '7px',
                   cursor: 'pointer',
                 }}
               >
-                <CheckCheck size={13} /> Mark All Read
+                <CheckCheck size={14} /> Mark All {unreadCount} Notifications as Read
               </button>
-            )}
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--color-text-muted)',
-                cursor: 'pointer',
-                padding: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '6px',
-              }}
-            >
-              <X size={18} />
-            </button>
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Real-Time Device Notification Status Banner */}
@@ -328,14 +599,16 @@ export default function NotificationDrawer({
           style={{
             flex: 1,
             overflowY: 'auto',
-            padding: '18px 20px',
+            WebkitOverflowScrolling: 'touch',
+            padding: '16px 20px',
+            paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
             display: 'flex',
             flexDirection: 'column',
             gap: '12px',
             backgroundColor: '#F8FAFC',
           }}
         >
-          {notifications.length === 0 ? (
+          {filteredItems.length === 0 ? (
             <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
               <div
                 style={{
@@ -352,100 +625,146 @@ export default function NotificationDrawer({
               >
                 <Bell size={22} />
               </div>
-              <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-ink)' }}>No Notifications</p>
+              <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-ink)' }}>No Notifications in this View</p>
               <p style={{ fontSize: '12px', marginTop: '4px', maxWidth: '320px', margin: '4px auto 0' }}>
-                All milestone reviews, schedule updates, and meeting logs will appear here in real-time.
+                {activeFilter === 'unread'
+                  ? 'All caught up! You have zero unread notifications.'
+                  : 'Milestone reviews, schedule updates, and meeting logs will appear here in real-time.'}
               </p>
             </div>
           ) : (
-            notifications.map((item) => {
+            filteredItems.map(({ raw: item, parsed }) => {
               const isExpanded = expandedIds.has(item.id);
-              const previewText = getDirectSnippet(item.body);
-              const theme = getNotificationTheme(item);
+              const { theme } = parsed;
 
               return (
                 <div
                   key={item.id}
                   style={{
-                    backgroundColor: theme.cardBg,
-                    borderRadius: '10px',
+                    backgroundColor: theme.bg,
+                    borderRadius: '11px',
                     borderTop: `1px solid ${theme.cardBorder}`,
                     borderRight: `1px solid ${theme.cardBorder}`,
                     borderBottom: `1px solid ${theme.cardBorder}`,
                     borderLeft: theme.borderLeft,
                     padding: '14px 16px',
-                    boxShadow: item.is_read ? '0 1px 2px rgba(15, 23, 42, 0.02)' : '0 2px 8px rgba(15, 23, 42, 0.04)',
+                    boxShadow: item.is_read ? '0 1px 2px rgba(15, 23, 42, 0.02)' : '0 2px 8px rgba(15, 23, 42, 0.05)',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '8px',
+                    gap: '10px',
                     transition: 'all 0.15s ease',
                   }}
                 >
-                  {/* Meta Header */}
+                  {/* Meta Bar */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      {/* Differentiated Category Badge */}
                       <span
                         style={{
-                          fontSize: '10px',
+                          fontSize: '11px',
                           fontWeight: 700,
-                          padding: '2.5px 8px',
-                          borderRadius: '5px',
+                          padding: '2.5px 8.5px',
+                          borderRadius: '6px',
                           backgroundColor: theme.badgeBg,
                           color: theme.badgeColor,
                           border: `1px solid ${theme.badgeBorder}`,
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '4.5px',
+                          gap: '5px',
                         }}
                       >
                         {theme.icon}
-                        <span>{item.category || theme.typeLabel}</span>
+                        <span>{parsed.categoryLabel}</span>
                       </span>
+
+                      {/* Team Tag Badge if applicable */}
+                      {parsed.teamTag && (
+                        <span
+                          style={{
+                            fontSize: '10.5px',
+                            fontWeight: 700,
+                            padding: '2px 7px',
+                            borderRadius: '5px',
+                            backgroundColor: '#F1F5F9',
+                            color: '#334155',
+                            border: '1px solid #E2E8F0',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <Users size={10} />
+                          {parsed.teamTag}
+                        </span>
+                      )}
+
                       {!item.is_read && (
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: theme.badgeColor, display: 'flex', alignItems: 'center', gap: '3.5px' }}>
+                        <span style={{ fontSize: '10.5px', fontWeight: 700, color: theme.badgeColor, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: theme.unreadDot, display: 'inline-block' }}></span>
                           Unread
                         </span>
                       )}
                     </div>
+
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--color-text-muted)' }}>
                       <Clock size={11} />
-                      <span>{new Date(item.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                      <span>{parsed.relativeTime}</span>
                     </div>
                   </div>
 
-                  {/* Subject */}
-                  <div
-                    onClick={() => toggleExpand(item.id)}
-                    style={{
-                      fontSize: '13px',
-                      fontWeight: 800,
-                      color: 'var(--color-ink)',
-                      letterSpacing: '-0.01em',
-                      lineHeight: 1.4,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {item.subject}
-                  </div>
-
-                  {/* Minimized Direct Info Preview (when collapsed) */}
-                  {!isExpanded && previewText && (
-                    <p
-                      onClick={() => toggleExpand(item.id)}
+                  {/* Main Subject & Direct Summary */}
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                    <div
                       style={{
-                        fontSize: '12px',
-                        color: 'var(--color-text-muted)',
-                        margin: 0,
-                        lineHeight: 1.5,
-                        cursor: 'pointer',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '8px',
+                        backgroundColor: theme.iconBg,
+                        color: theme.iconColor,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginTop: '2px',
                       }}
                     >
-                      {previewText}
-                    </p>
-                  )}
+                      {theme.icon}
+                    </div>
 
-                  {/* Full Formatted Notice (when expanded) */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        onClick={() => toggleExpand(item.id)}
+                        style={{
+                          fontSize: '13.5px',
+                          fontWeight: 700,
+                          color: 'var(--color-ink)',
+                          lineHeight: 1.35,
+                          cursor: 'pointer',
+                          letterSpacing: '-0.01em',
+                        }}
+                      >
+                        {parsed.cleanSubject}
+                      </div>
+
+                      {/* Direct High-Impact Summary Preview */}
+                      {!isExpanded && (
+                        <p
+                          onClick={() => toggleExpand(item.id)}
+                          style={{
+                            fontSize: '12px',
+                            color: 'var(--color-ink-muted)',
+                            margin: '4px 0 0 0',
+                            lineHeight: 1.5,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {parsed.directSummary}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Full Formatted Notice Content (when expanded) */}
                   {isExpanded && (
                     <div
                       style={{
@@ -476,7 +795,7 @@ export default function NotificationDrawer({
                   )}
 
                   {/* Action Bar (Expand / Collapse + Mark Read) */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '4px', borderTop: '1px solid var(--color-hairline)', marginTop: '2px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '6px', borderTop: '1px solid var(--color-hairline)', marginTop: '2px' }}>
                     <button
                       type="button"
                       onClick={() => toggleExpand(item.id)}
@@ -508,18 +827,19 @@ export default function NotificationDrawer({
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '4px',
-                          padding: '3px 9px',
+                          padding: '3.5px 10px',
                           fontSize: '11px',
                           fontWeight: 600,
                           backgroundColor: '#FFFFFF',
                           color: theme.btnColor,
                           border: `1px solid ${theme.btnBorder}`,
-                          borderRadius: '5px',
+                          borderRadius: '6px',
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
+                          boxShadow: '0 1px 2px rgba(15, 23, 42, 0.02)',
                         }}
                       >
-                        <CheckCircle2 size={11} /> Mark Read
+                        <CheckCircle2 size={12} /> Mark Read
                       </button>
                     )}
                   </div>
@@ -568,7 +888,6 @@ function DeviceNotificationBanner() {
     }
   };
 
-  // Professional, subtle, non-intrusive banner
   return (
     <div
       style={{

@@ -166,141 +166,146 @@ export default function HomePage() {
             {/* Right Column: Clean Student Project Milestone Showcase */}
             <div
               style={{
-                position: 'relative',
-                minHeight: '400px',
                 borderRadius: '16px',
-                padding: '20px 18px',
+                padding: '16px',
+                background: 'linear-gradient(135deg, #F0FDF4 0%, #EFF6FF 50%, #FAF5FF 100%)',
+                border: '1px solid #E2E8F0',
+                boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.04)',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'space-between',
-                overflow: 'hidden',
-                background: 'linear-gradient(145deg, #EFF6FF 0%, #F8FAFC 50%, #ECFDF5 100%)',
-                boxShadow: '0 2px 16px rgba(15, 23, 42, 0.04)',
-                border: '1px solid #E2E8F0',
+                gap: '12px',
               }}
             >
-              {/* Floating Pill Top */}
-              <div
-                style={{
-                  alignSelf: 'flex-end',
-                  backgroundColor: '#FFFFFF',
-                  padding: '7px 12px',
-                  borderRadius: 'var(--rounded-full)',
-                  boxShadow: '0 2px 10px rgba(15, 23, 42, 0.05)',
-                  border: '1px solid var(--color-hairline)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: '11px',
-                  color: 'var(--color-ink)',
-                }}
-              >
-                <span style={{ fontWeight: 800, color: '#1E40AF', fontSize: '10px' }}>MILESTONE</span>
-                <span>Team #042 • Phase 1 Approved</span>
-                <div
-                  style={{
-                    width: '16px',
-                    height: '16px',
-                    borderRadius: '50%',
-                    backgroundColor: '#059669',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#FFFFFF',
-                  }}
-                >
-                  <Check size={10} />
+              {/* Top Meta Bar */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 700, color: '#1E40AF', backgroundColor: '#DBEAFE', padding: '3px 9px', borderRadius: 'var(--rounded-full)' }}>
+                  <Sparkles size={12} color="#2563EB" />
+                  <span>Team CS-2026-042</span>
+                </div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 600, color: '#047857', backgroundColor: '#D1FAE5', padding: '3px 9px', borderRadius: 'var(--rounded-full)' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#059669' }} />
+                  Phase 2 Active
                 </div>
               </div>
 
-              {/* Center Student Project Card */}
+              {/* Main Project Card */}
               <div
                 style={{
-                  margin: '8px auto',
-                  width: '100%',
-                  maxWidth: '350px',
                   backgroundColor: '#FFFFFF',
-                  borderRadius: '14px',
-                  padding: '18px 16px',
-                  boxShadow: '0 8px 24px -4px rgba(15, 23, 42, 0.06)',
-                  border: '1px solid #E2E8F0',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  border: '1px solid rgba(226, 232, 240, 0.9)',
+                  boxShadow: '0 2px 8px rgba(15, 23, 42, 0.03)',
                 }}
               >
-                {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#EFF6FF', color: '#1D4ED8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <GraduationCap size={13} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--color-ink)' }}>BCA Major Project</div>
-                      <div style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>Team CS-2026-042</div>
-                    </div>
-                  </div>
-                  <span
+                {/* Project Header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <div
                     style={{
-                      fontSize: '10px',
-                      padding: '2px 8px',
-                      borderRadius: 'var(--rounded-full)',
-                      fontWeight: 700,
-                      backgroundColor: '#ECFDF5',
-                      color: '#047857',
-                      border: '1px solid #A7F3D0',
+                      width: '34px',
+                      height: '34px',
+                      borderRadius: '8px',
+                      backgroundColor: '#EFF6FF',
+                      color: '#2563EB',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
                     }}
                   >
-                    Phase 2 Active
-                  </span>
-                </div>
-
-                {/* Project Title */}
-                <div style={{ marginBottom: '12px', backgroundColor: '#F8FAFC', padding: '9px 11px', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
-                  <div style={{ fontSize: '9px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '2px' }}>
-                    Problem Statement
+                    <GraduationCap size={18} />
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-ink)' }}>
-                    AI Crop Pathology & Irrigation Diagnostics
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+                      BCA Major Project
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                      Dept. of Computer Applications • GLA Univ
+                    </div>
                   </div>
                 </div>
 
-                {/* Details */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', borderTop: '1px solid #F1F5F9', paddingTop: '8px' }}>
+                {/* Problem Statement Box */}
+                <div
+                  style={{
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '8px',
+                    padding: '10px 12px',
+                    marginBottom: '12px',
+                  }}
+                >
+                  <div style={{ fontSize: '9.5px', fontWeight: 800, color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '3px' }}>
+                    Approved Problem Statement
+                  </div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--color-ink)', lineHeight: 1.35 }}>
+                    AI Crop Pathology & Smart Irrigation Diagnostics
+                  </div>
+                </div>
+
+                {/* Milestone Progress Tracker */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '12px' }}>
+                  <div style={{ backgroundColor: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '6px', padding: '6px 8px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '10px', fontWeight: 700, color: '#065F46' }}>
+                      <Check size={11} strokeWidth={3} /> Phase 1
+                    </div>
+                    <div style={{ fontSize: '9px', color: '#047857', marginTop: '1px' }}>Approved</div>
+                  </div>
+
+                  <div style={{ backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '6px', padding: '6px 8px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#1E40AF' }}>
+                      Phase 2
+                    </div>
+                    <div style={{ fontSize: '9px', color: '#2563EB', fontWeight: 600, marginTop: '1px' }}>Evaluating</div>
+                  </div>
+
+                  <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '6px', padding: '6px 8px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--color-text-muted)' }}>
+                      Phase 3
+                    </div>
+                    <div style={{ fontSize: '9px', color: 'var(--color-text-faint)', marginTop: '1px' }}>Report</div>
+                  </div>
+                </div>
+
+                {/* 3-Col Meta Summary */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', borderTop: '1px solid #F1F5F9', paddingTop: '10px', textAlign: 'center' }}>
                   <div>
-                    <div style={{ fontSize: '9px', color: 'var(--color-text-muted)' }}>Leader</div>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-ink)' }}>Arpit Pandey</div>
+                    <div style={{ fontSize: '9.5px', color: 'var(--color-text-muted)' }}>Leader</div>
+                    <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--color-ink)', marginTop: '1px' }}>Arpit Pandey</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '9px', color: 'var(--color-text-muted)' }}>Team Size</div>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-ink)' }}>6 Members</div>
+                    <div style={{ fontSize: '9.5px', color: 'var(--color-text-muted)' }}>Team Size</div>
+                    <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--color-ink)', marginTop: '1px' }}>6 Students</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '9px', color: 'var(--color-text-muted)' }}>Panel Score</div>
-                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#059669' }}>9.4 / 10</div>
+                    <div style={{ fontSize: '9.5px', color: 'var(--color-text-muted)' }}>Panel Score</div>
+                    <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#059669', marginTop: '1px' }}>9.4 / 10</div>
                   </div>
                 </div>
               </div>
 
-              {/* Floating Pill Bottom */}
+              {/* Bottom Evaluation Banner */}
               <div
                 style={{
-                  position: 'absolute',
-                  bottom: '-12px',
-                  right: '-8px',
                   backgroundColor: '#FFFFFF',
-                  borderRadius: 'var(--rounded-md)',
-                  padding: '8px 12px',
-                  boxShadow: 'var(--shadow-md)',
-                  border: '1px solid var(--color-hairline)',
+                  borderRadius: '10px',
+                  padding: '9px 12px',
+                  border: '1px solid #E2E8F0',
                   display: 'flex',
                   alignItems: 'center',
+                  justifyContent: 'space-between',
                   gap: '8px',
-                  fontSize: '11px',
+                  fontSize: '11.5px',
                   color: 'var(--color-ink)',
                 }}
               >
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  <Award size={13} color="#2563EB" /> Panel 3: 6 Evaluations Scheduled in AB10
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                  <Award size={14} color="#2563EB" />
+                  <span>Panel 3 Defense • Hall AB10 Scheduled</span>
+                </div>
+                <span className="badge badge-success" style={{ fontSize: '10px', padding: '1px 6px' }}>
+                  Live
                 </span>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#059669' }} />
               </div>
             </div>
           </div>
@@ -308,44 +313,44 @@ export default function HomePage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4 AUDITED STATS                                                           */}
+      {/* 4 AUDITED STATS (Responsive 2x2 Grid on Mobile, 4 Cols on Desktop)       */}
       {/* ========================================================================= */}
       <section style={{ padding: '24px 20px', borderTop: '1px solid var(--color-hairline)', borderBottom: '1px solid var(--color-hairline)', backgroundColor: '#FAFAFA' }}>
         <div className="container" style={{ maxWidth: '1180px' }}>
-          <div className="grid-cols-4" style={{ textAlign: 'center' }}>
-            <div>
-              <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.03em' }}>
+          <div className="landing-stats-grid">
+            <div className="landing-stat-card">
+              <div style={{ fontSize: 'clamp(26px, 3.5vw, 36px)', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
                 102
               </div>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '2px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '4px' }}>
                 Project Teams
               </div>
             </div>
 
-            <div>
-              <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.03em' }}>
+            <div className="landing-stat-card">
+              <div style={{ fontSize: 'clamp(26px, 3.5vw, 36px)', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
                 601
               </div>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '2px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '4px' }}>
                 Allocated Students
               </div>
             </div>
 
-            <div>
-              <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.03em' }}>
+            <div className="landing-stat-card">
+              <div style={{ fontSize: 'clamp(26px, 3.5vw, 36px)', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
                 23
               </div>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '2px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '4px' }}>
                 Faculty Mentors
               </div>
             </div>
 
-            <div>
-              <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.03em' }}>
+            <div className="landing-stat-card">
+              <div style={{ fontSize: 'clamp(26px, 3.5vw, 36px)', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
                 3
               </div>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                Milestones (Phases 1-3)
+              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                Milestones (Phases 1–3)
               </div>
             </div>
           </div>

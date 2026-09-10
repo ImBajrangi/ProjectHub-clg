@@ -23,10 +23,10 @@ export const NotificationTemplates = {
     timestamp: string;
   }): NotificationPayload => ({
     userId: params.userId,
-    category: 'Category A: Problem Statement Lifecycle',
-    subject: `Problem Statement Approved: ${params.teamName} - CodeShastra ProjectHub`,
+    category: 'Problem Statement Approved',
+    subject: `Problem Statement Approved: ${params.teamName}`,
     salutation: `Dear ${params.leaderName} (${params.teamName}),`,
-    body: `This is to inform you that your proposed Project Problem Statement has been officially reviewed and approved by your project supervisor.
+    body: `Your proposed Project Problem Statement has been officially reviewed and approved by your project supervisor.
 
 Approval Details:
 - Project Title: ${params.title}
@@ -35,7 +35,7 @@ Approval Details:
 - Approval Timestamp: ${params.timestamp}
 - Status: Finalized & Locked
 
-Please note that your problem statement has now been permanently locked in the portal and cannot be edited. You may now proceed with phase-wise development under your supervisor's guidance.`,
+Your problem statement is now locked in the portal. You may proceed with phase-wise development under your supervisor's guidance.`,
     signoff: DEFAULT_SIGNOFF,
   }),
 
@@ -49,10 +49,10 @@ Please note that your problem statement has now been permanently locked in the p
     remarks: string;
   }): NotificationPayload => ({
     userId: params.userId,
-    category: 'Category A: Problem Statement Lifecycle',
-    subject: `Action Required: Revision Requested for Problem Statement - ${params.teamName}`,
+    category: 'Revision Required',
+    subject: `Action Required: Revision for Problem Statement • ${params.teamName}`,
     salutation: `Dear ${params.leaderName} (${params.teamName}),`,
-    body: `Your project supervisor has reviewed your submitted Problem Statement and requested modifications before it can be finalized.
+    body: `Your project supervisor has reviewed your submitted Problem Statement and requested modifications before approval.
 
 Review Details:
 - Current Title: ${params.title}
@@ -60,7 +60,7 @@ Review Details:
 - Supervisor Phone: ${params.supervisorPhone}
 - Feedback / Remarks: ${params.remarks}
 
-Please log in to your Team Leader dashboard, revise the problem statement according to the feedback, and resubmit it for final approval.`,
+Please log in to your Team Leader dashboard, revise the problem statement according to feedback, and resubmit.`,
     signoff: DEFAULT_SIGNOFF,
   }),
 
@@ -77,10 +77,10 @@ Please log in to your Team Leader dashboard, revise the problem statement accord
     venue: string;
   }): NotificationPayload => ({
     userId: params.userId,
-    category: 'Category B: Meeting Logistics & Records',
-    subject: `Meeting Scheduled: Project Discussion with Supervisor - ${params.teamName}`,
+    category: 'Meeting Scheduled',
+    subject: `Meeting Scheduled: Review Session • ${params.teamName}`,
     salutation: `Dear ${params.leaderName} (${params.teamName}),`,
-    body: `This is to inform you that your meeting with your project supervisor has been scheduled. Please find the details below:
+    body: `Your review meeting with your project supervisor has been scheduled.
 
 Meeting Logistics:
 - Supervisor: ${params.supervisorName}
@@ -91,7 +91,7 @@ Meeting Logistics:
 - Venue / Room Number / Link: ${params.venue}
 - Agenda: Project Discussion & Review
 
-Kindly ensure that all team members are present on time for the meeting. Arrive prepared with your current progress, documentation, and technical queries.`,
+Please ensure all team members attend on time with documentation and current technical progress.`,
     signoff: DEFAULT_SIGNOFF,
   }),
 
@@ -108,10 +108,10 @@ Kindly ensure that all team members are present on time for the meeting. Arrive 
     summary: string;
   }): NotificationPayload => ({
     userId: params.userId,
-    category: 'Category B: Meeting Logistics & Records',
-    subject: `Meeting Record Logged: ${params.meetingLabel} - ${params.teamName}`,
+    category: 'Meeting Logged',
+    subject: `Meeting Record Logged: ${params.meetingLabel} • ${params.teamName}`,
     salutation: `Dear ${params.leaderName} (${params.teamName}),`,
-    body: `Your supervisor has officially recorded the attendance and summary notes for your recent review session in the system.
+    body: `Your supervisor has officially recorded the attendance and directives for your recent review session.
 
 Session Summary:
 - Meeting Label: ${params.meetingLabel}
@@ -122,7 +122,7 @@ Session Summary:
 - Members Absent: ${params.membersAbsent}
 - Summary & Directives: ${params.summary}
 
-This record has been permanently archived in your project tracking log on your dashboard.`,
+This record has been permanently archived in your project tracking log.`,
     signoff: DEFAULT_SIGNOFF,
   }),
 
@@ -135,10 +135,10 @@ This record has been permanently archived in your project tracking log on your d
     timestamp: string;
   }): NotificationPayload => ({
     userId: params.userId,
-    category: 'Category B: Meeting Logistics & Records',
-    subject: `Meeting Request Submitted: ${params.meetingLabel} - ${params.teamName}`,
+    category: 'Meeting Request',
+    subject: `Meeting Request Submitted: ${params.meetingLabel} • ${params.teamName}`,
     salutation: `Dear ${params.leaderName} (${params.teamName}),`,
-    body: `Your milestone / progress review meeting request for ${params.meetingLabel} has been officially recorded and submitted to your supervisor.
+    body: `Your milestone / progress review meeting request for ${params.meetingLabel} has been submitted to your supervisor.
 
 Request Summary:
 - Milestone: ${params.meetingLabel}
@@ -146,7 +146,7 @@ Request Summary:
 - Status: Awaiting Faculty Schedule
 - Submitted Timestamp: ${params.timestamp}
 
-Your supervisor has received an immediate alert. You will be notified in this console as soon as your mentor confirms the date, time slot, and venue.`,
+You will receive an alert as soon as your supervisor confirms the date, time slot, and venue.`,
     signoff: DEFAULT_SIGNOFF,
   }),
 
@@ -158,17 +158,15 @@ Your supervisor has received an immediate alert. You will be notified in this co
     supervisorName: string;
   }): NotificationPayload => ({
     userId: params.userId,
-    category: 'Category B: Meeting Logistics & Records',
-    subject: `Meeting Request Withdrawn: ${params.meetingLabel} - ${params.teamName}`,
+    category: 'Request Withdrawn',
+    subject: `Meeting Request Withdrawn: ${params.meetingLabel} • ${params.teamName}`,
     salutation: `Dear ${params.leaderName} (${params.teamName}),`,
-    body: `Your pending meeting request for ${params.meetingLabel} with Prof. ${params.supervisorName} has been successfully cancelled and withdrawn.
+    body: `Your pending meeting request for ${params.meetingLabel} with Prof. ${params.supervisorName} has been cancelled and withdrawn.
 
 Details:
 - Milestone: ${params.meetingLabel}
 - Status: Request Cancelled & Withdrawn
-- Team: ${params.teamName}
-
-You may submit a fresh review meeting request at any time from your Leader Dashboard when your team is ready.`,
+- Team: ${params.teamName}`,
     signoff: DEFAULT_SIGNOFF,
   }),
 
@@ -182,10 +180,10 @@ You may submit a fresh review meeting request at any time from your Leader Dashb
     timestamp: string;
   }): NotificationPayload => ({
     userId: params.supervisorUserId,
-    category: 'Category B: Meeting Logistics & Records',
-    subject: `New Meeting Request from ${params.teamName} - CodeShastra ProjectHub`,
+    category: 'Meeting Request',
+    subject: `New Meeting Request from ${params.teamName}`,
     salutation: `Dear Prof. ${params.supervisorName},`,
-    body: `This is to inform you that ${params.teamName} has initiated a meeting request via their student portal to discuss their project progress.
+    body: `${params.teamName} has submitted a meeting request via their student portal to discuss project progress.
 
 Request Summary:
 - Team: ${params.teamName}
@@ -193,7 +191,7 @@ Request Summary:
 - Leader Contact: ${params.leaderPhone} | ${params.leaderEmail}
 - Request Timestamp: ${params.timestamp}
 
-Please access your Supervisor Portal to confirm your availability, assign a date, time slot, and venue (or Google Meet URL) to schedule the session.`,
+Please open your Supervisor Portal to confirm your availability and assign a date, time slot, and venue.`,
     signoff: DEFAULT_SIGNOFF,
   }),
 

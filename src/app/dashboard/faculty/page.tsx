@@ -28,6 +28,7 @@ import {
   AlertCircle,
   Target,
   GraduationCap,
+  ArrowLeft,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -38,11 +39,12 @@ export default function FacultyDashboardPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<'supervisor' | 'panel'>('supervisor');
+  const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
 
   // Supervisor Mode State
   const [guidedTeams, setGuidedTeams] = useState<any[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
-  const [supTab, setSupTab] = useState<'problem' | 'meetings' | 'clearance'>('problem');
+  const [supTab, setSupTab] = useState<'roster' | 'problem' | 'meetings' | 'clearance'>('problem');
   const [problemReviewText, setProblemReviewText] = useState('');
   const [reviewActionLoading, setReviewActionLoading] = useState(false);
   const [expandedMeetingIds, setExpandedMeetingIds] = useState<Set<string>>(new Set());
@@ -78,6 +80,7 @@ export default function FacultyDashboardPage() {
   // Panel Mode State
   const [panelData, setPanelData] = useState<any[]>([]);
   const [selectedPanelTeam, setSelectedPanelTeam] = useState<any>(null);
+  const [selectedPanelPhase, setSelectedPanelPhase] = useState<number>(1);
   const [panelTeamMembers, setPanelTeamMembers] = useState<any[]>([]);
   const [studentScores, setStudentScores] = useState<Record<string, { score: string; isAbsent: boolean; remarks: string }>>({});
   const [scoringLoading, setScoringLoading] = useState(false);
@@ -153,11 +156,11 @@ export default function FacultyDashboardPage() {
 
     const updatedPs = selectedTeam.problemStatement
       ? {
-          ...selectedTeam.problemStatement,
-          status: action === 'approve' ? 'approved' : 'revision_requested',
-          locked: action === 'approve',
-          supervisor_remarks: problemReviewText || (action === 'approve' ? 'Approved without modifications.' : 'Revisions required.'),
-        }
+        ...selectedTeam.problemStatement,
+        status: action === 'approve' ? 'approved' : 'revision_requested',
+        locked: action === 'approve',
+        supervisor_remarks: problemReviewText || (action === 'approve' ? 'Approved without modifications.' : 'Revisions required.'),
+      }
       : null;
 
     // Optimistic update (0ms)
@@ -185,7 +188,7 @@ export default function FacultyDashboardPage() {
             const bc = new BroadcastChannel('codeshastra_notifications_channel');
             bc.postMessage({ type: 'UPDATE' });
             bc.close();
-          } catch {}
+          } catch { }
         }
       } else {
         const data = await res.json();
@@ -279,7 +282,7 @@ export default function FacultyDashboardPage() {
             const bc = new BroadcastChannel('codeshastra_notifications_channel');
             bc.postMessage({ type: 'UPDATE' });
             bc.close();
-          } catch {}
+          } catch { }
         }
       } else {
         const data = await res.json();
@@ -314,6 +317,42 @@ export default function FacultyDashboardPage() {
     e.preventDefault();
     setLogModalOpen(false);
 
+    // 1. INSTANT OPTIMISTIC UPDATE (0ms) — reflect changes before API call
+    const optimisticAttendance = attendanceList.map((a) => ({
+      id: a.studentId,
+      meeting_id: logMeetingId,
+      student_id: a.studentId,
+      is_present: a.isPresent,
+      created_at: new Date().toISOString(),
+    }));
+
+    const applyOptimistic = (meeting: any) => {
+      if (meeting.id !== logMeetingId) return meeting;
+      return {
+        ...meeting,
+        status: 'completed',
+        summary_notes: meetingSummary,
+        action_directives: actionDirectives,
+        attendance: optimisticAttendance,
+        updated_at: new Date().toISOString(),
+      };
+    };
+
+    if (selectedTeam) {
+      setSelectedTeam((prev: any) => {
+        if (!prev) return prev;
+        return { ...prev, meetings: (prev.meetings || []).map(applyOptimistic) };
+      });
+      setGuidedTeams((prev: any[]) =>
+        prev.map((t) =>
+          t.id === selectedTeam.id
+            ? { ...t, meetings: (t.meetings || []).map(applyOptimistic) }
+            : t
+        )
+      );
+    }
+
+    // 2. Persist in background — reconcile or rollback
     try {
       const res = await fetch('/api/meetings', {
         method: 'POST',
@@ -333,31 +372,19 @@ export default function FacultyDashboardPage() {
       if (res.ok) {
         const data = await res.json();
         const updatedMeeting = data.meeting;
+        // Reconcile with server truth
         if (updatedMeeting && selectedTeam) {
-          const attendance = attendanceList.map((a) => ({
-            id: a.studentId,
-            meeting_id: logMeetingId,
-            student_id: a.studentId,
-            is_present: a.isPresent,
-            created_at: new Date().toISOString(),
-          }));
-          const fullMeeting = { ...updatedMeeting, attendance };
-
+          const fullMeeting = { ...updatedMeeting, attendance: optimisticAttendance };
           setSelectedTeam((prev: any) => {
             if (!prev) return prev;
-            const nextMeetings = (prev.meetings || []).map((m: any) =>
-              m.id === logMeetingId ? fullMeeting : m
-            );
-            return { ...prev, meetings: nextMeetings };
+            return { ...prev, meetings: (prev.meetings || []).map((m: any) => m.id === logMeetingId ? fullMeeting : m) };
           });
           setGuidedTeams((prev: any[]) =>
-            prev.map((t) => {
-              if (t.id !== selectedTeam.id) return t;
-              const nextMeetings = (t.meetings || []).map((m: any) =>
-                m.id === logMeetingId ? fullMeeting : m
-              );
-              return { ...t, meetings: nextMeetings };
-            })
+            prev.map((t) =>
+              t.id === selectedTeam!.id
+                ? { ...t, meetings: (t.meetings || []).map((m: any) => m.id === logMeetingId ? fullMeeting : m) }
+                : t
+            )
           );
         }
         if (typeof window !== 'undefined') {
@@ -366,16 +393,16 @@ export default function FacultyDashboardPage() {
             const bc = new BroadcastChannel('codeshastra_notifications_channel');
             bc.postMessage({ type: 'UPDATE' });
             bc.close();
-          } catch {}
+          } catch { }
         }
       } else {
         const data = await res.json();
         alert(data.error);
-        loadFacultyData();
+        loadFacultyData(); // Rollback on server error
       }
     } catch (e: any) {
       alert(e.message);
-      loadFacultyData();
+      loadFacultyData(); // Rollback on network error
     }
   };
 
@@ -423,6 +450,7 @@ export default function FacultyDashboardPage() {
 
   const handleOpenPanelTeamScoring = async (team: any, phaseNumber: number) => {
     setSelectedPanelTeam(team);
+    setSelectedPanelPhase(phaseNumber);
     setScoreMessage('');
 
     try {
@@ -577,9 +605,9 @@ export default function FacultyDashboardPage() {
         {mode === 'supervisor' && (
           <div className="faculty-split-layout">
             {/* Left Column: Team Selector List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className={`faculty-list-col ${mobileView === 'detail' && selectedTeam ? 'mobile-hidden' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Your Assigned Teams
+                Your Assigned Teams ({guidedTeams.length})
               </div>
 
               {guidedTeams.map((t) => {
@@ -589,7 +617,10 @@ export default function FacultyDashboardPage() {
                 return (
                   <div
                     key={t.id}
-                    onClick={() => setSelectedTeam(t)}
+                    onClick={() => {
+                      setSelectedTeam(t);
+                      setMobileView('detail');
+                    }}
                     style={{
                       padding: '14px 16px',
                       borderRadius: 'var(--rounded-sm)',
@@ -616,13 +647,16 @@ export default function FacultyDashboardPage() {
                       )}
                     </div>
 
-                    <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                      {t.members?.length || 0} Members • {t.totalMeetings || 0} Meets
-                      {t.pendingMeetings > 0 && (
-                        <span style={{ color: 'var(--color-warning)', fontWeight: 600, marginLeft: '6px' }}>
-                          ({t.pendingMeetings} req)
-                        </span>
-                      )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                        {t.members?.length || 0} Members • {t.totalMeetings || 0} Meets
+                        {t.pendingMeetings > 0 && (
+                          <span style={{ color: 'var(--color-warning)', fontWeight: 600, marginLeft: '6px' }}>
+                            ({t.pendingMeetings} req)
+                          </span>
+                        )}
+                      </div>
+                      <ChevronRight size={14} className="mobile-chevron-indicator" style={{ color: 'var(--color-text-muted)' }} />
                     </div>
                   </div>
                 );
@@ -631,16 +665,28 @@ export default function FacultyDashboardPage() {
 
             {/* Right Column: Active Team Operations */}
             {selectedTeam ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className={`faculty-detail-col ${mobileView === 'list' ? 'mobile-hidden' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Mobile Back Button */}
+                <div className="mobile-detail-nav-bar" style={{ display: 'none' }}>
+                  <button
+                    type="button"
+                    onClick={() => setMobileView('list')}
+                    className="btn btn-outline"
+                    style={{ fontSize: '12.5px', padding: '6px 14px', gap: '6px', fontWeight: 600 }}
+                  >
+                    <ArrowLeft size={14} /> Back to Assigned Teams ({guidedTeams.length})
+                  </button>
+                </div>
+
                 {/* Header Card */}
-                <div className="card-soft" style={{ padding: '20px 24px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-                    <div>
+                <div className="card-soft" style={{ padding: '18px 20px', width: '100%', boxSizing: 'border-box' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <h2 style={{ fontSize: '20px', fontWeight: 700 }}>{selectedTeam.team_name}</h2>
+                        <h2 style={{ fontSize: '19px', fontWeight: 700 }}>{selectedTeam.team_name}</h2>
                         <span className="badge badge-neutral">{selectedTeam.program}</span>
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
                         Leader:{' '}
                         {selectedTeam.leader ? (
                           <strong style={{ color: 'var(--color-ink)' }}>
@@ -653,28 +699,283 @@ export default function FacultyDashboardPage() {
                     </div>
 
                     {/* Segmented Control for Sub-actions */}
-                    <div className="segmented-control">
+                    <div className="segmented-control" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', display: 'flex' }}>
+                      <button
+                        className={`segmented-pill ${supTab === 'roster' ? 'active' : ''}`}
+                        onClick={() => setSupTab('roster')}
+                        style={{ flexShrink: 0 }}
+                      >
+                        <Users size={13} /> Team Roster ({selectedTeam.members?.length || 0})
+                      </button>
                       <button
                         className={`segmented-pill ${supTab === 'problem' ? 'active' : ''}`}
                         onClick={() => setSupTab('problem')}
+                        style={{ flexShrink: 0 }}
                       >
                         Problem Statement
                       </button>
                       <button
                         className={`segmented-pill ${supTab === 'meetings' ? 'active' : ''}`}
                         onClick={() => setSupTab('meetings')}
+                        style={{ flexShrink: 0 }}
                       >
                         Meetings ({selectedTeam.meetings?.length || 0})
                       </button>
                       <button
                         className={`segmented-pill ${supTab === 'clearance' ? 'active' : ''}`}
                         onClick={() => setSupTab('clearance')}
+                        style={{ flexShrink: 0 }}
                       >
                         Gatekeeper Permissions
                       </button>
                     </div>
+
+                    {/* Selected Team Members Badges - visible only on non-roster tabs to avoid redundancy */}
+                    {supTab !== 'roster' && selectedTeam.members && selectedTeam.members.length > 0 && (
+                      <div style={{ paddingTop: '10px', borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            Team Members ({selectedTeam.members.length}):
+                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            {[...selectedTeam.members]
+                              .sort((a: any, b: any) => {
+                                const aIsLeader = Boolean(selectedTeam.leader_id && (a.id === selectedTeam.leader_id || a.user_id === selectedTeam.leader_id || (selectedTeam.leader && a.full_name === selectedTeam.leader.fullName)));
+                                const bIsLeader = Boolean(selectedTeam.leader_id && (b.id === selectedTeam.leader_id || b.user_id === selectedTeam.leader_id || (selectedTeam.leader && b.full_name === selectedTeam.leader.fullName)));
+                                if (aIsLeader && !bIsLeader) return -1;
+                                if (!aIsLeader && bIsLeader) return 1;
+                                return (a.roll_no || '').localeCompare(b.roll_no || '');
+                              })
+                              .map((m: any) => {
+                                const isLeader = Boolean(selectedTeam.leader_id && (m.id === selectedTeam.leader_id || m.user_id === selectedTeam.leader_id || (selectedTeam.leader && m.full_name === selectedTeam.leader.fullName)));
+                                const roll = m.roll_no || m.university_roll_no;
+                                return (
+                                  <div
+                                    key={m.id}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '5px',
+                                      padding: '3px 9px',
+                                      fontSize: '11.5px',
+                                      borderRadius: '7px',
+                                      backgroundColor: isLeader ? '#EFF6FF' : '#FFFFFF',
+                                      border: isLeader ? '1px solid #BFDBFE' : '1px solid #E2E8F0',
+                                      color: isLeader ? '#1D4ED8' : '#334155',
+                                      boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)',
+                                    }}
+                                  >
+                                    {isLeader ? (
+                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontWeight: 700, color: '#2563EB', fontSize: '10.5px' }}>
+                                        <UserCheck size={12} strokeWidth={2.5} />
+                                        Leader:
+                                      </span>
+                                    ) : (
+                                      <span
+                                        style={{
+                                          width: '16px',
+                                          height: '16px',
+                                          borderRadius: '4px',
+                                          backgroundColor: '#F1F5F9',
+                                          color: '#64748B',
+                                          fontSize: '9px',
+                                          fontWeight: 700,
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                        }}
+                                      >
+                                        {m.full_name ? m.full_name.trim().charAt(0).toUpperCase() : 'S'}
+                                      </span>
+                                    )}
+                                    <strong style={{ fontWeight: 600 }}>{m.full_name}</strong>
+                                    {roll && (
+                                      <span style={{ fontSize: '10px', color: '#64748B', fontFamily: 'var(--font-mono)' }}>
+                                        ({roll})
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {/* SUB-TAB 0: TEAM ROSTER VIEW */}
+                {supTab === 'roster' && (
+                  <div className="card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                      <div>
+                        <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '2px' }}>
+                          Registered Team Members ({selectedTeam.members?.length || 0})
+                        </h3>
+                        <p style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                          Official academic student profiles allocated to {selectedTeam.team_name}.
+                        </p>
+                      </div>
+                      <span className="badge badge-neutral" style={{ fontSize: '11px' }}>
+                        {selectedTeam.program || 'BCA'} • {selectedTeam.academic_year || '2026-27'}
+                      </span>
+                    </div>
+
+                    <div className="data-table-container">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>Student Name</th>
+                            <th>University Roll No</th>
+                            <th>Official Email</th>
+                            <th>Mobile Phone</th>
+                            <th>Section</th>
+                            <th>CPI</th>
+                            <th>Designation</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedTeam.members && selectedTeam.members.length > 0 ? (
+                            [...selectedTeam.members]
+                              .sort((a: any, b: any) => {
+                                const aIsLeader = Boolean(selectedTeam.leader_id && (a.id === selectedTeam.leader_id || a.user_id === selectedTeam.leader_id || (selectedTeam.leader && a.full_name === selectedTeam.leader.fullName)));
+                                const bIsLeader = Boolean(selectedTeam.leader_id && (b.id === selectedTeam.leader_id || b.user_id === selectedTeam.leader_id || (selectedTeam.leader && b.full_name === selectedTeam.leader.fullName)));
+                                if (aIsLeader && !bIsLeader) return -1;
+                                if (!aIsLeader && bIsLeader) return 1;
+                                return (a.roll_no || '').localeCompare(b.roll_no || '');
+                              })
+                              .map((m: any) => {
+                                const isLeader = Boolean(selectedTeam.leader_id && (m.id === selectedTeam.leader_id || m.user_id === selectedTeam.leader_id || (selectedTeam.leader && m.full_name === selectedTeam.leader.fullName)));
+                                const roll = m.roll_no || m.university_roll_no;
+                                const email = m.email || m.gla_email;
+                                const phone = m.mobile || m.phone;
+                                return (
+                                  <tr key={m.id}>
+                                    <td style={{ whiteSpace: 'nowrap' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div
+                                          style={{
+                                            width: '30px',
+                                            height: '30px',
+                                            borderRadius: '8px',
+                                            backgroundColor: isLeader ? '#EFF6FF' : '#F1F5F9',
+                                            color: isLeader ? '#1D4ED8' : '#475569',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '11px',
+                                            fontWeight: 700,
+                                            border: isLeader ? '1px solid #BFDBFE' : '1px solid #E2E8F0',
+                                            flexShrink: 0,
+                                          }}
+                                        >
+                                          {m.full_name ? m.full_name.trim().slice(0, 2).toUpperCase() : 'ST'}
+                                        </div>
+                                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-ink)' }}>
+                                          {m.full_name}
+                                        </span>
+                                      </div>
+                                    </td>
+                                    <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: '12.5px', whiteSpace: 'nowrap', color: '#1E293B' }}>
+                                      {roll || '—'}
+                                    </td>
+                                    <td style={{ whiteSpace: 'nowrap' }}>
+                                      {email ? (
+                                        <a
+                                          href={`mailto:${email}`}
+                                          style={{
+                                            color: '#2563EB',
+                                            textDecoration: 'none',
+                                            fontSize: '12.5px',
+                                            fontWeight: 500,
+                                          }}
+                                          onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                                          onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                                        >
+                                          {email}
+                                        </a>
+                                      ) : (
+                                        <span style={{ color: 'var(--color-text-muted)' }}>—</span>
+                                      )}
+                                    </td>
+                                    <td style={{ fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', fontSize: '12.5px' }}>
+                                      {phone ? (
+                                        <a
+                                          href={`tel:${phone}`}
+                                          style={{
+                                            color: '#475569',
+                                            textDecoration: 'none',
+                                          }}
+                                          onMouseEnter={(e) => (e.currentTarget.style.color = '#0F172A')}
+                                          onMouseLeave={(e) => (e.currentTarget.style.color = '#475569')}
+                                        >
+                                          {phone}
+                                        </a>
+                                      ) : (
+                                        <span style={{ color: 'var(--color-text-muted)' }}>—</span>
+                                      )}
+                                    </td>
+                                    <td style={{ whiteSpace: 'nowrap' }}>
+                                      <span className="badge badge-neutral" style={{ fontSize: '11px', fontWeight: 600 }}>
+                                        {m.section || selectedTeam.section || 'Sec A'}
+                                      </span>
+                                    </td>
+                                    <td style={{ whiteSpace: 'nowrap' }}>
+                                      <span style={{ fontWeight: 700, color: 'var(--color-ink)', fontFamily: 'var(--font-mono)', fontSize: '13px' }}>
+                                        {m.cpi ? Number(m.cpi).toFixed(2) : '—'}
+                                      </span>
+                                    </td>
+                                    <td style={{ whiteSpace: 'nowrap' }}>
+                                      {isLeader ? (
+                                        <span
+                                          style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                            fontSize: '11px',
+                                            fontWeight: 600,
+                                            padding: '3px 8px',
+                                            borderRadius: '6px',
+                                            backgroundColor: '#EFF6FF',
+                                            color: '#1D4ED8',
+                                            border: '1px solid #BFDBFE',
+                                          }}
+                                        >
+                                          <UserCheck size={11} strokeWidth={2.5} /> Team Leader
+                                        </span>
+                                      ) : (
+                                        <span
+                                          style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            fontSize: '11px',
+                                            fontWeight: 500,
+                                            padding: '3px 8px',
+                                            borderRadius: '6px',
+                                            backgroundColor: '#F8FAFC',
+                                            color: '#64748B',
+                                            border: '1px solid #E2E8F0',
+                                          }}
+                                        >
+                                          Member
+                                        </span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                          ) : (
+                            <tr>
+                              <td colSpan={7} style={{ textAlign: 'center', padding: '30px', color: 'var(--color-text-muted)' }}>
+                                No student members registered in this team.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
 
                 {/* SUB-TAB 1: PROBLEM STATEMENT */}
                 {supTab === 'problem' && (
@@ -702,12 +1003,20 @@ export default function FacultyDashboardPage() {
                     {selectedTeam.problemStatement ? (
                       <div>
                         <div style={{ backgroundColor: 'var(--color-canvas-soft)', padding: '16px', borderRadius: 'var(--rounded-sm)', marginBottom: '18px' }}>
-                          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--color-ink)', marginBottom: '6px' }}>
+                          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--color-ink)', marginBottom: '8px' }}>
                             {selectedTeam.problemStatement.title}
                           </div>
-                          <p style={{ fontSize: '13px', color: 'var(--color-ink-soft)', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
-                            {selectedTeam.problemStatement.description}
-                          </p>
+                          {selectedTeam.problemStatement.description ? (
+                            <div
+                              className="rich-text-content"
+                              style={{ fontSize: '13.5px', color: 'var(--color-ink-soft)', lineHeight: '1.6' }}
+                              dangerouslySetInnerHTML={{ __html: selectedTeam.problemStatement.description }}
+                            />
+                          ) : (
+                            <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                              No detailed description provided.
+                            </p>
+                          )}
                         </div>
 
                         {selectedTeam.problemStatement.status !== 'approved' && (
@@ -983,7 +1292,7 @@ export default function FacultyDashboardPage() {
                                       <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.02em', minWidth: '54px' }}>
                                         Meet {m.meeting_index}
                                       </span>
-                                      
+
                                       <span
                                         style={{
                                           fontSize: '11px',
@@ -1397,7 +1706,7 @@ export default function FacultyDashboardPage() {
             ) : (
               <div className={selectedPanelTeam ? 'panel-split-layout' : ''}>
                 {/* Panel Listings */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className={`panel-list-col ${selectedPanelTeam ? 'mobile-hidden' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {panelData.map((p) => (
                     <div key={p.id} className="card">
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
@@ -1427,7 +1736,10 @@ export default function FacultyDashboardPage() {
                           {p.evaluableTeams.map((t: any) => (
                             <button
                               key={t.id}
-                              onClick={() => handleOpenPanelTeamScoring(t, p.phase_number)}
+                              onClick={() => {
+                                handleOpenPanelTeamScoring(t, p.phase_number);
+                                setMobileView('detail');
+                              }}
                               style={{
                                 padding: '10px 14px',
                                 borderRadius: 'var(--rounded-sm)',
@@ -1452,158 +1764,172 @@ export default function FacultyDashboardPage() {
 
                 {/* Scoring Console */}
                 {selectedPanelTeam && (
-                  <div className="card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <h3 style={{ fontSize: '18px', fontWeight: 700 }}>
-                        Scoring Console: {selectedPanelTeam.team_name}
-                      </h3>
-                      <button onClick={() => setSelectedPanelTeam(null)} className="btn btn-outline" style={{ padding: '4px 10px', fontSize: '12px' }}>
-                        Close
+                  <div className={`panel-detail-col ${!selectedPanelTeam ? 'mobile-hidden' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {/* Mobile Back Button */}
+                    <div className="mobile-detail-nav-bar" style={{ display: 'none' }}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPanelTeam(null)}
+                        className="btn btn-outline"
+                        style={{ fontSize: '12.5px', padding: '6px 14px', gap: '6px', fontWeight: 600 }}
+                      >
+                        <ArrowLeft size={14} /> Back to Panel Teams
                       </button>
                     </div>
 
-                    {/* Phase 3 Docs */}
-                    {(selectedPanelTeam.paper_url || selectedPanelTeam.report_url) && (
-                      <div style={{ backgroundColor: 'var(--color-canvas-soft)', padding: '14px', borderRadius: 'var(--rounded-sm)', marginBottom: '18px' }}>
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-ink)', marginBottom: '8px' }}>
-                          Phase 3 Deliverables:
-                        </div>
-                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                          {selectedPanelTeam.report_url && (
-                            <a href={selectedPanelTeam.report_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: '12px', padding: '6px 12px' }}>
-                              <ExternalLink size={12} /> Project Report PDF
-                            </a>
-                          )}
-                          {selectedPanelTeam.paper_url && (
-                            <a href={selectedPanelTeam.paper_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: '12px', padding: '6px 12px' }}>
-                              <ExternalLink size={12} /> Research Paper PDF
-                            </a>
-                          )}
-                          <button onClick={() => handleReportClearance(true)} className="btn btn-primary" style={{ fontSize: '12px', padding: '6px 12px' }}>
-                            Submit Clearance
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {scoreMessage && (
-                      <div
-                        className={`alert-banner ${scoreMessage.includes('Error') ? 'alert-danger' : 'alert-success'}`}
-                        style={{
-                          fontSize: '13px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: '12px',
-                          padding: '10px 14px',
-                          borderRadius: '8px',
-                          marginBottom: '16px',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
-                          {scoreMessage.includes('Error') ? (
-                            <AlertCircle size={16} style={{ flexShrink: 0 }} />
-                          ) : (
-                            <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
-                          )}
-                          <span>{scoreMessage}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setScoreMessage('')}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: '2px',
-                            color: 'inherit',
-                            opacity: 0.7,
-                            display: 'flex',
-                            alignItems: 'center',
-                          }}
-                          title="Dismiss notification"
-                          aria-label="Dismiss"
-                        >
-                          <X size={15} />
+                    <div className="card">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 700 }}>
+                          Scoring Console: {selectedPanelTeam.team_name}
+                        </h3>
+                        <button onClick={() => setSelectedPanelTeam(null)} className="btn btn-outline" style={{ padding: '4px 10px', fontSize: '12px' }}>
+                          Close
                         </button>
                       </div>
-                    )}
 
-                    {/* Member Scoring Inputs */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
-                      {panelTeamMembers.map((student) => {
-                        const current = studentScores[student.id] || { score: '', isAbsent: false, remarks: '' };
+                      {/* Phase 3 Docs */}
+                      {(selectedPanelTeam.paper_url || selectedPanelTeam.report_url) && (
+                        <div style={{ backgroundColor: 'var(--color-canvas-soft)', padding: '14px', borderRadius: 'var(--rounded-sm)', marginBottom: '18px' }}>
+                          <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-ink)', marginBottom: '8px' }}>
+                            Phase 3 Deliverables:
+                          </div>
+                          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            {selectedPanelTeam.report_url && (
+                              <a href={selectedPanelTeam.report_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: '12px', padding: '6px 12px' }}>
+                                <ExternalLink size={12} /> Project Report PDF
+                              </a>
+                            )}
+                            {selectedPanelTeam.paper_url && (
+                              <a href={selectedPanelTeam.paper_url} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ fontSize: '12px', padding: '6px 12px' }}>
+                                <ExternalLink size={12} /> Research Paper PDF
+                              </a>
+                            )}
+                            <button onClick={() => handleReportClearance(true)} className="btn btn-primary" style={{ fontSize: '12px', padding: '6px 12px' }}>
+                              Submit Clearance
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
-                        return (
-                          <div
-                            key={student.id}
+                      {scoreMessage && (
+                        <div
+                          className={`alert-banner ${scoreMessage.includes('Error') ? 'alert-danger' : 'alert-success'}`}
+                          style={{
+                            fontSize: '13px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '12px',
+                            padding: '10px 14px',
+                            borderRadius: '8px',
+                            marginBottom: '16px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
+                            {scoreMessage.includes('Error') ? (
+                              <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                            ) : (
+                              <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
+                            )}
+                            <span>{scoreMessage}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setScoreMessage('')}
                             style={{
-                              padding: '12px 16px',
-                              borderRadius: 'var(--rounded-sm)',
-                              border: '1px solid var(--color-hairline)',
-                              backgroundColor: current.isAbsent ? 'var(--color-danger-bg)' : 'var(--color-canvas)',
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: '2px',
+                              color: 'inherit',
+                              opacity: 0.7,
                               display: 'flex',
                               alignItems: 'center',
-                              justifyContent: 'space-between',
-                              flexWrap: 'wrap',
-                              gap: '12px',
                             }}
+                            title="Dismiss notification"
+                            aria-label="Dismiss"
                           >
-                            <div>
-                              <strong style={{ fontSize: '13px', color: 'var(--color-ink)' }}>{student.full_name}</strong>
-                              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Roll #{student.roll_no}</div>
-                            </div>
+                            <X size={15} />
+                          </button>
+                        </div>
+                      )}
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                              <div style={{ width: '110px' }}>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="10"
-                                  step="0.5"
-                                  className="input-field"
-                                  style={{ padding: '6px 10px', height: '36px' }}
-                                  disabled={current.isAbsent}
-                                  value={current.isAbsent ? '' : current.score}
-                                  onChange={(e) => {
-                                    setStudentScores({
-                                      ...studentScores,
-                                      [student.id]: { ...current, score: e.target.value },
-                                    });
-                                  }}
-                                  placeholder="Score / 10"
-                                />
+                      {/* Member Scoring Inputs */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+                        {panelTeamMembers.map((student) => {
+                          const current = studentScores[student.id] || { score: '', isAbsent: false, remarks: '' };
+
+                          return (
+                            <div
+                              key={student.id}
+                              style={{
+                                padding: '12px 16px',
+                                borderRadius: 'var(--rounded-sm)',
+                                border: '1px solid var(--color-hairline)',
+                                backgroundColor: current.isAbsent ? 'var(--color-danger-bg)' : 'var(--color-canvas)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                flexWrap: 'wrap',
+                                gap: '12px',
+                              }}
+                            >
+                              <div>
+                                <strong style={{ fontSize: '13px', color: 'var(--color-ink)' }}>{student.full_name}</strong>
+                                <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Roll #{student.roll_no}</div>
                               </div>
 
-                              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer' }}>
-                                <input
-                                  type="checkbox"
-                                  checked={current.isAbsent}
-                                  onChange={(e) => {
-                                    setStudentScores({
-                                      ...studentScores,
-                                      [student.id]: { ...current, isAbsent: e.target.checked },
-                                    });
-                                  }}
-                                />
-                                <span style={{ color: current.isAbsent ? 'var(--color-danger)' : 'var(--color-text-muted)' }}>
-                                  Absent
-                                </span>
-                              </label>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                                <div style={{ width: '110px' }}>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="10"
+                                    step="0.5"
+                                    className="input-field"
+                                    style={{ padding: '6px 10px', height: '36px' }}
+                                    disabled={current.isAbsent}
+                                    value={current.isAbsent ? '' : current.score}
+                                    onChange={(e) => {
+                                      setStudentScores({
+                                        ...studentScores,
+                                        [student.id]: { ...current, score: e.target.value },
+                                      });
+                                    }}
+                                    placeholder="Score / 10"
+                                  />
+                                </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <button
-                        onClick={() => handleSubmitScores(1)}
-                        className="btn btn-primary"
-                        disabled={scoringLoading}
-                      >
-                        {scoringLoading ? 'Recording...' : 'Submit Evaluation Scores'}
-                      </button>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={current.isAbsent}
+                                    onChange={(e) => {
+                                      setStudentScores({
+                                        ...studentScores,
+                                        [student.id]: { ...current, isAbsent: e.target.checked },
+                                      });
+                                    }}
+                                  />
+                                  <span style={{ color: current.isAbsent ? 'var(--color-danger)' : 'var(--color-text-muted)' }}>
+                                    Absent
+                                  </span>
+                                </label>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={() => handleSubmitScores(selectedPanelPhase || 1)}
+                          className="btn btn-primary"
+                          disabled={scoringLoading}
+                        >
+                          {scoringLoading ? 'Recording...' : 'Submit Evaluation Scores'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

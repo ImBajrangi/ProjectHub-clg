@@ -768,8 +768,9 @@ export default function AdminDashboardPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(0,0,0,0.55)',
-            backdropFilter: 'blur(6px)',
+            backgroundColor: 'rgba(15, 23, 42, 0.45)',
+            backdropFilter: 'blur(1.5px)',
+            WebkitBackdropFilter: 'blur(1.5px)',
             padding: '20px',
           }}
           onClick={() => setJsonModalOpen(false)}
@@ -1007,8 +1008,9 @@ export default function AdminDashboardPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.55)',
-            backdropFilter: 'blur(6px)',
+            backgroundColor: 'rgba(15, 23, 42, 0.28)',
+            backdropFilter: 'blur(1.5px)',
+            WebkitBackdropFilter: 'blur(1.5px)',
             padding: '20px',
           }}
           onClick={() => setSelectedTeamModal(null)}
@@ -1047,12 +1049,20 @@ export default function AdminDashboardPage() {
               <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '4px' }}>
                 Problem Statement ({selectedTeamModal.problemStatement?.status || 'Not Submitted'})
               </div>
-              <strong style={{ fontSize: '14px', color: 'var(--color-ink)' }}>
+              <strong style={{ fontSize: '14px', color: 'var(--color-ink)', display: 'block', marginBottom: '6px' }}>
                 {selectedTeamModal.problemStatement?.title || 'No Title Submitted'}
               </strong>
-              <p style={{ fontSize: '12px', marginTop: '6px', color: 'var(--color-text-muted)', whiteSpace: 'pre-wrap' }}>
-                {selectedTeamModal.problemStatement?.description || 'No description submitted yet.'}
-              </p>
+              {selectedTeamModal.problemStatement?.description ? (
+                <div
+                  className="rich-text-content"
+                  style={{ fontSize: '12.5px', marginTop: '6px', color: 'var(--color-ink-soft)' }}
+                  dangerouslySetInnerHTML={{ __html: selectedTeamModal.problemStatement.description }}
+                />
+              ) : (
+                <p style={{ fontSize: '12px', marginTop: '6px', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                  No description submitted yet.
+                </p>
+              )}
             </div>
 
             {/* Students Roster */}
