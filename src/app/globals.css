@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
-
 /* ==============================================================================
    CodeShastra ProjectHub - Fast, Snappy, Executive Academic & SaaS Platform
    Optimized for zero lag, instant responsiveness, and clean modern aesthetics.
@@ -53,9 +51,10 @@
   --color-danger-bg: #FEF2F2;
   --color-danger-border: #FECACA;
 
-  /* Typography */
-  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  /* Optimized Preloaded Next.js Typography */
+  --font-sans: var(--font-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-mono), 'JetBrains Mono', monospace;
+  --font-serif: var(--font-serif), 'Instrument Serif', Georgia, serif;
 
   /* Clean Radius Tokens */
   --rounded-none: 0px;
@@ -167,7 +166,22 @@ a:hover {
   color: var(--color-accent-hover);
 }
 
-/* Snappy CSS Transitions */
+/* Snappy Smooth Page Transitions */
+.page-fade-in {
+  animation: pageFadeIn 0.16s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .animate-fade-in {
   opacity: 1;
 }
@@ -181,6 +195,7 @@ a:hover {
   justify-content: center;
   padding: 0 16px;
   margin-bottom: 20px;
+  min-height: 52px;
 }
 
 .nav-pill {

@@ -323,14 +323,13 @@ export default function NotificationDrawer({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      onRefresh?.();
     } else {
       document.body.style.overflow = 'unset';
     }
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, onRefresh]);
+  }, [isOpen]);
 
   const parsedItems = useMemo(() => {
     return notifications.map((n) => ({

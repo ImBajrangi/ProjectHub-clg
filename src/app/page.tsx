@@ -122,7 +122,7 @@ export default function HomePage() {
     : '/login';
 
   return (
-    <div className="cohere-page-wrapper">
+    <div className="cohere-page-wrapper page-fade-in">
       {/* ========================================================================= */}
       {/* 1. TOP HEADER                                                             */}
       {/* ========================================================================= */}

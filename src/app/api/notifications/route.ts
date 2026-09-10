@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { NotificationItem } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+
+// In-Memory Server Cache to protect Supabase quota (TTL: 20 seconds per user)
+interface CacheEntry {
+  timestamp: number;
+  notifications: NotificationItem[];
+  unreadCount: number;
+}
+const notifCache = new Map<string, CacheEntry>();
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,8 +22,24 @@ export async function GET(req: NextRequest) {
     const sessionUser = await auth.validateSession(token);
     if (!sessionUser) return NextResponse.json({ notifications: [], unreadCount: 0 }, { status: 200 });
 
+    const now = Date.now();
+    const cached = notifCache.get(sessionUser.id);
+    if (cached && now - cached.timestamp < 20000) {
+      return NextResponse.json(
+        { notifications: cached.notifications, unreadCount: cached.unreadCount },
+        { status: 200 }
+      );
+    }
+
     const notifications = await db.getNotificationsByUser(sessionUser.id);
     const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+    // Save to memory cache
+    notifCache.set(sessionUser.id, {
+      timestamp: now,
+      notifications,
+      unreadCount,
+    });
 
     return NextResponse.json(
       { notifications, unreadCount },
@@ -43,6 +68,9 @@ export async function POST(req: NextRequest) {
     const action = body.action;
     const notificationId = body.notificationId || body.id;
 
+    // Invalidate cache immediately on update
+    notifCache.delete(sessionUser.id);
+
     if (action === 'mark_read' && notificationId) {
       await db.markNotificationAsRead(notificationId);
       return NextResponse.json({ success: true });
@@ -58,3 +86,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to update notifications' }, { status: 500 });
   }
 }
+

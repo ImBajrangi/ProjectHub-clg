@@ -158,10 +158,10 @@ export default function Navbar({
     if (user) {
       fetchNotifications();
 
-      // Lightweight 15-second heartbeat polling for live notifications
+      // Lightweight 30-second heartbeat polling for live notifications
       const intervalId = setInterval(() => {
         fetchNotifications();
-      }, 15000);
+      }, 30000);
 
       const handleImmediateUpdate = () => {
         fetchNotifications(true);
