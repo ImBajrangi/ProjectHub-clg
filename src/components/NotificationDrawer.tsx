@@ -20,6 +20,7 @@ import {
   Info,
 } from 'lucide-react';
 import { NotificationItem } from '@/lib/types';
+import { triggerSystemNotification } from '@/lib/deviceNotification';
 
 interface NotificationDrawerProps {
   isOpen: boolean;
@@ -871,8 +872,10 @@ function DeviceNotificationBanner() {
       const res = await Notification.requestPermission();
       setPermission(res);
       if (res === 'granted') {
-        new Notification('CodeShastra ProjectHub', {
-          body: 'Real-time device notifications are now enabled on this device!',
+        await triggerSystemNotification({
+          id: 'perm-granted-' + Date.now(),
+          subject: 'Device Alerts Enabled',
+          body: 'System notifications are active. You will receive live alerts for meeting schedules, clearances, and evaluations.',
         });
       }
     } catch (e) {
@@ -880,10 +883,12 @@ function DeviceNotificationBanner() {
     }
   };
 
-  const sendTest = () => {
-    if (permission === 'granted' && typeof window !== 'undefined' && 'Notification' in window) {
-      new Notification('CodeShastra ProjectHub', {
-        body: 'Real-time alert: Notifications are active on your device.',
+  const sendTest = async () => {
+    if (permission === 'granted' && typeof window !== 'undefined') {
+      await triggerSystemNotification({
+        id: 'test-ping-' + Date.now(),
+        subject: 'System Alert Verified',
+        body: 'Real-time OS notification pipeline is active and verified on this device.',
       });
     }
   };

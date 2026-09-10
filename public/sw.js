@@ -1,10 +1,10 @@
 // CodeShastra ProjectHub - Service Worker for Device Push Notifications & Image Egress Caching
-const CACHE_NAME = 'codeshastra-media-v1';
+const CACHE_NAME = 'codeshastra-media-v2';
 
-// Cache-First strategy for images to eliminate egress
+// 1. Cache-First strategy for images and SVGs
 self.addEventListener('fetch', function (event) {
   const url = new URL(event.request.url);
-  if (url.pathname.startsWith('/image') || url.pathname.startsWith('/images')) {
+  if (url.pathname.startsWith('/image') || url.pathname.startsWith('/images') || url.pathname.endsWith('.svg') || url.pathname.endsWith('.webp')) {
     event.respondWith(
       caches.open(CACHE_NAME).then(function (cache) {
         return cache.match(event.request).then(function (cachedResponse) {
@@ -23,6 +23,20 @@ self.addEventListener('fetch', function (event) {
   }
 });
 
+// 2. Client-delegated background notifications
+self.addEventListener('message', function (event) {
+  if (event.data && event.data.type === 'SHOW_SYSTEM_NOTIFICATION') {
+    const { title, options } = event.data;
+    self.registration.showNotification(title || 'CodeShastra Hub Alert', {
+      icon: '/favicon.svg',
+      badge: '/favicon.svg',
+      vibrate: [200, 100, 200],
+      ...options,
+    });
+  }
+});
+
+// 3. Web Push API listener
 self.addEventListener('push', function (event) {
   if (!event.data) return;
 
@@ -31,8 +45,8 @@ self.addEventListener('push', function (event) {
     const title = data.subject || 'CodeShastra ProjectHub Notice';
     const options = {
       body: data.body || 'You have received an official project notification.',
-      icon: '/image/arpit.png',
-      badge: '/badge.png',
+      icon: '/favicon.svg',
+      badge: '/favicon.svg',
       tag: data.category || 'projecthub-notification',
       data: {
         url: data.url || '/dashboard/leader',
@@ -45,14 +59,26 @@ self.addEventListener('push', function (event) {
   }
 });
 
+// 4. Click action on system OS Notification Banner
 self.addEventListener('notificationclick', function (event) {
   event.notification.close();
+  const targetUrl = event.notification.data?.url || '/';
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
-      if (clientList.length > 0) {
-        return clientList[0].focus();
+      for (let i = 0; i < clientList.length; i++) {
+        const client = clientList[i];
+        if ('focus' in client) {
+          client.focus();
+          if ('navigate' in client && client.url !== targetUrl) {
+            client.navigate(targetUrl);
+          }
+          return;
+        }
       }
-      return clients.openWindow(event.notification.data.url || '/');
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
     })
   );
 });

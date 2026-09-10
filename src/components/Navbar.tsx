@@ -21,6 +21,7 @@ import NotificationDrawer from './NotificationDrawer';
 import PasswordChangeModal from './PasswordChangeModal';
 import HelpModal from './HelpModal';
 import { NotificationItem } from '@/lib/types';
+import { triggerSystemNotification } from '@/lib/deviceNotification';
 
 interface NavbarProps {
   user?: {
@@ -50,6 +51,7 @@ export default function Navbar({
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const notifiedIdsRef = React.useRef<Set<string>>(new Set());
+  const isInitialFetchRef = React.useRef<boolean>(true);
   const userMenuRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -71,21 +73,8 @@ export default function Navbar({
     }
   }, [userMenuOpen]);
 
-  const triggerDeviceNotification = (item: NotificationItem) => {
-    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-      try {
-        new Notification(`CodeShastra: ${item.subject}`, {
-          body: `${item.salutation}\n${item.body.slice(0, 100)}...`,
-        });
-      } catch (err) {
-        console.error('Device notification error', err);
-      }
-    }
-  };
-
   const fetchNotifications = async () => {
     if (!user) return;
-    if (typeof document !== 'undefined' && document.hidden) return;
     try {
       const res = await fetch('/api/notifications');
       if (res.ok) {
@@ -95,23 +84,41 @@ export default function Navbar({
         setUnreadCount(newUnread);
         setNotifications(notifs);
 
-        // Real-time device notification trigger for newly received unread notifications
-        const unread = notifs.filter((n) => !n.is_read);
-        unread.forEach((n) => {
-          if (!notifiedIdsRef.current.has(n.id)) {
-            notifiedIdsRef.current.add(n.id);
-            triggerDeviceNotification(n);
-          }
-        });
+        if (isInitialFetchRef.current) {
+          // On first load, seed existing notification IDs to avoid alerting past history
+          notifs.forEach((n) => notifiedIdsRef.current.add(String(n.id)));
+          isInitialFetchRef.current = false;
+        } else {
+          // On subsequent polls, trigger system OS notifications for genuinely new unread items
+          const unread = notifs.filter((n) => !n.is_read);
+          unread.forEach((n) => {
+            const notifId = String(n.id);
+            if (!notifiedIdsRef.current.has(notifId)) {
+              notifiedIdsRef.current.add(notifId);
+              triggerSystemNotification({
+                id: notifId,
+                subject: n.subject,
+                body: n.body,
+                salutation: n.salutation,
+                category: n.category,
+              });
+            }
+          });
+        }
       }
     } catch {
-      // Gracefully ignore temporary network disconnects or reload interruptions
+      // Gracefully ignore temporary network disconnects
     }
   };
 
   useEffect(() => {
     if (user) {
       fetchNotifications();
+
+      // Background heartbeat polling every 8 seconds for live OS notifications
+      const intervalId = setInterval(() => {
+        fetchNotifications();
+      }, 8000);
 
       const handleImmediateUpdate = () => {
         fetchNotifications();
@@ -120,8 +127,19 @@ export default function Navbar({
       const handleInstantNotif = (e: any) => {
         const item = e.detail?.notification;
         if (item) {
-          setNotifications((prev) => [item, ...prev.filter((n) => String(n.id) !== String(item.id))]);
+          const notifId = String(item.id);
+          setNotifications((prev) => [item, ...prev.filter((n) => String(n.id) !== notifId)]);
           setUnreadCount((prev) => prev + 1);
+          if (!notifiedIdsRef.current.has(notifId)) {
+            notifiedIdsRef.current.add(notifId);
+            triggerSystemNotification({
+              id: notifId,
+              subject: item.subject,
+              body: item.body,
+              salutation: item.salutation,
+              category: item.category,
+            });
+          }
         }
       };
 
@@ -143,8 +161,19 @@ export default function Navbar({
           bc.onmessage = (event) => {
             if (event.data?.type === 'INSTANT_NOTIFICATION' && event.data?.notification) {
               const item = event.data.notification;
-              setNotifications((prev) => [item, ...prev.filter((n) => String(n.id) !== String(item.id))]);
+              const notifId = String(item.id);
+              setNotifications((prev) => [item, ...prev.filter((n) => String(n.id) !== notifId)]);
               setUnreadCount((prev) => prev + 1);
+              if (!notifiedIdsRef.current.has(notifId)) {
+                notifiedIdsRef.current.add(notifId);
+                triggerSystemNotification({
+                  id: notifId,
+                  subject: item.subject,
+                  body: item.body,
+                  salutation: item.salutation,
+                  category: item.category,
+                });
+              }
             } else {
               fetchNotifications();
             }
@@ -153,6 +182,7 @@ export default function Navbar({
       } catch {}
 
       return () => {
+        clearInterval(intervalId);
         window.removeEventListener('codeshastra_notification_instant', handleInstantNotif);
         window.removeEventListener('codeshastra_notification_update', handleImmediateUpdate);
         window.removeEventListener('focus', handleImmediateUpdate);
