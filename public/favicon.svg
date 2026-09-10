@@ -1,6 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" fill="none">
-  <rect width="32" height="32" rx="8" fill="#0F172A" />
-  <path d="M10 10L4 16L10 22" stroke="#60A5FA" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
-  <path d="M22 10L28 16L22 22" stroke="#60A5FA" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
-  <path d="M19 6L13 26" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#23342C" />
+      <stop offset="100%" stop-color="#344D41" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#86EFAC" />
+      <stop offset="100%" stop-color="#34D399" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+  <rect x="8" y="8" width="496" height="496" rx="120" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="4" />
+
+  <!-- Code Brackets & Slash -->
+  <!-- Left Bracket < -->
+  <path d="M168 176L92 256L168 336" stroke="#FFFFFF" stroke-width="38" stroke-linecap="round" stroke-linejoin="round" />
+  
+  <!-- Central Slash / -->
+  <path d="M292 144L220 368" stroke="url(#accentGrad)" stroke-width="38" stroke-linecap="round" />
+  
+  <!-- Right Bracket > -->
+  <path d="M344 176L420 256L344 336" stroke="#FFFFFF" stroke-width="38" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Hub Connection Dot -->
+  <circle cx="396" cy="116" r="22" fill="#4ADE80" stroke="#23342C" stroke-width="8" />
 </svg>

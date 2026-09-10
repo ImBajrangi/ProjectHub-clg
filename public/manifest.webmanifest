@@ -1,0 +1,17 @@
+{
+  "name": "CodeShastra Hub",
+  "short_name": "ProjectHub",
+  "description": "Academic Project Lifecycle & Milestone Evaluation Platform for MCA & BCA (DS)",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4F5F4",
+  "theme_color": "#344D41",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
