@@ -60,7 +60,14 @@ export default function Navbar({
     }
     if (userMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      const handleEsc = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') setUserMenuOpen(false);
+      };
+      window.addEventListener('keydown', handleEsc);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('keydown', handleEsc);
+      };
     }
   }, [userMenuOpen]);
 
@@ -97,8 +104,8 @@ export default function Navbar({
           }
         });
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // Gracefully ignore temporary network disconnects or reload interruptions
     }
   };
 
@@ -222,8 +229,8 @@ export default function Navbar({
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // Ignore network errors during logout
     } finally {
       localStorage.removeItem('codeshastra_token');
       router.push('/login');
@@ -276,37 +283,18 @@ export default function Navbar({
                 <path d="M14 4.5L10 19.5" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" />
               </svg>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5.5px' }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
               <span
                 className="logo-brand-text"
                 style={{
-                  fontWeight: 700,
-                  fontSize: '15px',
+                  fontWeight: 800,
+                  fontSize: '16px',
                   color: 'var(--color-ink)',
                   letterSpacing: '-0.025em',
                   lineHeight: 1,
                 }}
               >
                 CodeShastra
-              </span>
-              <span
-                className="logo-hub-badge"
-                style={{
-                  fontSize: '10px',
-                  fontWeight: 600,
-                  padding: '1.5px 6px',
-                  borderRadius: '4px',
-                  backgroundColor: '#F1F5F9',
-                  color: '#475569',
-                  borderTop: '1px solid #E2E8F0',
-                  borderRight: '1px solid #E2E8F0',
-                  borderBottom: '1px solid #E2E8F0',
-                  borderLeft: '1px solid #E2E8F0',
-                  letterSpacing: '0.02em',
-                  lineHeight: 1.2,
-                }}
-              >
-                Hub
               </span>
             </div>
           </Link>
@@ -672,23 +660,26 @@ export default function Navbar({
           position: absolute;
           top: calc(100% + 8px);
           right: 0;
-          min-width: 220px;
+          width: 250px;
+          max-width: calc(100vw - 32px);
+          box-sizing: border-box;
           background: #FFFFFF;
           border: 1px solid #E2E8F0;
-          border-radius: 12px;
-          box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+          border-radius: 14px;
+          box-shadow: 0 16px 36px -4px rgba(15, 23, 42, 0.16), 0 6px 16px -2px rgba(15, 23, 42, 0.08);
           padding: 6px;
-          z-index: 200;
-          animation: navDropdownFade 0.15s ease-out;
+          z-index: 2000;
+          animation: navDropdownFade 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+          overflow: hidden;
         }
         @keyframes navDropdownFade {
           from {
             opacity: 0;
-            transform: translateY(-4px);
+            transform: translateY(-4px) scale(0.98);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
           }
         }
         .nav-dropdown-header {
@@ -696,14 +687,17 @@ export default function Navbar({
           align-items: center;
           gap: 10px;
           padding: 8px 10px 10px;
+          box-sizing: border-box;
+          width: 100%;
+          min-width: 0;
         }
         .nav-dropdown-avatar {
-          width: 34px;
-          height: 34px;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
           background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%);
           color: #FFFFFF;
-          font-size: 12.5px;
+          font-size: 13px;
           font-weight: 700;
           display: flex;
           align-items: center;
@@ -718,10 +712,10 @@ export default function Navbar({
         .nav-dropdown-item {
           display: flex;
           align-items: center;
-          gap: 9px;
+          gap: 10px;
           width: 100%;
-          padding: 8px 10px;
-          font-size: 12.5px;
+          padding: 9px 12px;
+          font-size: 13px;
           font-weight: 500;
           border-radius: 8px;
           border: none;
@@ -729,6 +723,7 @@ export default function Navbar({
           cursor: pointer;
           color: #334155;
           text-align: left;
+          box-sizing: border-box;
           transition: background-color 0.12s ease, color 0.12s ease;
         }
         .nav-dropdown-item:hover {

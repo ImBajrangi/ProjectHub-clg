@@ -17,10 +17,23 @@ export default function PasswordChangeModal({ isOpen, onClose, onSuccess, userNa
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Background page scroll lock
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // Background page scroll lock and Escape key listener
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          onCloseRef.current?.();
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = 'unset';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
     } else {
       document.body.style.overflow = 'unset';
     }
@@ -70,6 +83,7 @@ export default function PasswordChangeModal({ isOpen, onClose, onSuccess, userNa
 
   return (
     <div
+      className="modal-overlay-responsive"
       style={{
         position: 'fixed',
         inset: 0,
@@ -78,20 +92,22 @@ export default function PasswordChangeModal({ isOpen, onClose, onSuccess, userNa
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: 'rgba(15, 23, 42, 0.45)',
-        backdropFilter: 'blur(1.5px)',
-        WebkitBackdropFilter: 'blur(1.5px)',
+        backdropFilter: 'blur(3px)',
+        WebkitBackdropFilter: 'blur(3px)',
         padding: '20px',
       }}
       onClick={onClose}
     >
       <div
-        className="card animate-scale-in"
+        className="card animate-scale-in modal-card-responsive"
         style={{
           width: '100%',
           maxWidth: '440px',
           padding: '28px',
           backgroundColor: '#FFFFFF',
-          boxShadow: '0 20px 48px rgba(0,0,0,0.12)',
+          borderRadius: '16px',
+          boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
+          border: '1px solid var(--color-border)',
         }}
         onClick={(e) => e.stopPropagation()}
       >

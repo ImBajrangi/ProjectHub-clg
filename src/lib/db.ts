@@ -94,7 +94,66 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
     problem_statements: psRes.data || [],
     meetings: meetingsRes.data || [],
     meeting_attendance: meetingAttRes.data || [],
-    evaluation_phases: phasesRes.data || [],
+    evaluation_phases: (phasesRes.data && phasesRes.data.length > 0
+      ? phasesRes.data.map((p: any) => ({
+          ...p,
+          target_date:
+            p.phase_number === 1
+              ? '19-Sep'
+              : p.phase_number === 2
+              ? '17-Oct'
+              : 'Final Defense',
+          marks_weightage:
+            p.phase_number === 1 ? 20 : p.phase_number === 2 ? 40 : 40,
+          deliverables:
+            p.phase_number === 1
+              ? '30% Coding / Approval & Pitch Deck'
+              : p.phase_number === 2
+              ? '70% Coding / Technical Demo'
+              : 'Report + Certificate / Synopsis',
+          phase_name:
+            p.phase_name ||
+            (p.phase_number === 1
+              ? '1st Presentation (30% Coding)'
+              : p.phase_number === 2
+              ? '2nd Presentation (70% Coding)'
+              : 'Final Presentation (Defense & Report)'),
+        }))
+      : [
+          {
+            id: 'phase-1',
+            phase_number: 1 as const,
+            phase_name: '1st Presentation (30% Coding)',
+            description: '19-Sep • 20 Marks • 30% coding implementation & supervisor topic approval',
+            target_date: '19-Sep',
+            marks_weightage: 20,
+            deliverables: '30% Coding / Approval & Pitch Deck',
+            is_live: true,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            id: 'phase-2',
+            phase_number: 2 as const,
+            phase_name: '2nd Presentation (70% Coding)',
+            description: '17-Oct • 40 Marks • 70% coding progress & technical implementation demo',
+            target_date: '17-Oct',
+            marks_weightage: 40,
+            deliverables: '70% Coding / Technical Demo',
+            is_live: false,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            id: 'phase-3',
+            phase_number: 3 as const,
+            phase_name: 'Final Presentation (Defense & Report)',
+            description: 'Final Defense • 40 Marks • Complete project defense, formal report, certificate & synopsis',
+            target_date: 'Final Defense',
+            marks_weightage: 40,
+            deliverables: 'Report + Certificate / Synopsis',
+            is_live: false,
+            updated_at: new Date().toISOString(),
+          },
+        ]),
     panels: panelsRes.data || [],
     panel_members: panelMembersRes.data || [],
     evaluations: evalsRes.data || [],
@@ -759,6 +818,86 @@ export const db = {
     return panel;
   },
 
+  async upsertPanel(
+    panelNumber: number,
+    panelName: string,
+    phaseNumber: 1 | 2 | 3,
+    teamRangeStart: number,
+    teamRangeEnd: number,
+    supervisorIds: string[],
+    schedule: { date: string; timeWindow: string; academicBlock: string; roomNumber: string }
+  ): Promise<Panel> {
+    const store = await this.getStore();
+    const existing = store.panels.find(
+      (p) => p.panel_number === panelNumber && p.phase_number === phaseNumber
+    );
+    const now = new Date().toISOString();
+
+    if (existing) {
+      existing.panel_name = panelName;
+      existing.date = schedule.date;
+      existing.time_window = schedule.timeWindow;
+      existing.academic_block = schedule.academicBlock;
+      existing.room_number = schedule.roomNumber;
+      existing.team_range_start = teamRangeStart;
+      existing.team_range_end = teamRangeEnd;
+
+      // Update panel members: remove old, insert new
+      store.panel_members = store.panel_members.filter((pm) => pm.panel_id !== existing.id);
+      for (const supId of supervisorIds) {
+        const pm: PanelMember = {
+          id: crypto.randomUUID(),
+          panel_id: existing.id,
+          supervisor_id: supId,
+          created_at: now,
+        };
+        store.panel_members.push(pm);
+      }
+
+      supabase
+        .from('panels')
+        .update({
+          panel_name: panelName,
+          date: schedule.date,
+          time_window: schedule.timeWindow,
+          academic_block: schedule.academicBlock,
+          room_number: schedule.roomNumber,
+          team_range_start: teamRangeStart,
+          team_range_end: teamRangeEnd,
+        })
+        .eq('id', existing.id)
+        .then();
+
+      supabase
+        .from('panel_members')
+        .delete()
+        .eq('panel_id', existing.id)
+        .then(() => {
+          const newMembers = supervisorIds.map((supId) => ({
+            id: crypto.randomUUID(),
+            panel_id: existing.id,
+            supervisor_id: supId,
+            created_at: now,
+          }));
+          if (newMembers.length > 0) {
+            supabase.from('panel_members').insert(newMembers).then();
+          }
+        });
+
+      return existing;
+    } else {
+      return this.createPanel(
+        panelNumber,
+        panelName,
+        phaseNumber,
+        teamRangeStart,
+        teamRangeEnd,
+        supervisorIds,
+        schedule
+      );
+    }
+  },
+
   async updatePanelSchedule(
     panelNumber: number,
     phaseNumber: 1 | 2 | 3,
@@ -789,6 +928,16 @@ export const db = {
       .then();
 
     return panel || null;
+  },
+
+  async deletePanel(panelId: string): Promise<boolean> {
+    const store = await this.getStore();
+    store.panels = store.panels.filter((p) => p.id !== panelId);
+    store.panel_members = store.panel_members.filter((pm) => pm.panel_id !== panelId);
+
+    supabase.from('panels').delete().eq('id', panelId).then();
+    supabase.from('panel_members').delete().eq('panel_id', panelId).then();
+    return true;
   },
 
   async getEvaluations(phaseNumber: 1 | 2 | 3, teamId?: string): Promise<Evaluation[]> {

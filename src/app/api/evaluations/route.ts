@@ -92,6 +92,39 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // 3. Admin Direct Score Override / Edit
+    if (action === 'admin_edit_score') {
+      if (sessionUser.role !== 'admin') {
+        return NextResponse.json({ error: 'Institutional Admin privilege required.' }, { status: 403 });
+      }
+
+      const { phaseNumber, teamId, studentId, score, isAbsent, remarks } = body;
+      if (!phaseNumber || !teamId || !studentId) {
+        return NextResponse.json({ error: 'Missing phaseNumber, teamId, or studentId.' }, { status: 400 });
+      }
+
+      const isAbsentBool = Boolean(isAbsent);
+      const parsedScore = !isAbsentBool && score !== undefined && score !== null && score !== '' && !isNaN(Number(score))
+        ? Number(score)
+        : null;
+
+      const ev = await db.saveEvaluation(
+        phaseNumber,
+        teamId,
+        studentId,
+        sessionUser.id,
+        parsedScore,
+        isAbsentBool,
+        remarks || 'Admin Updated'
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: 'Student score successfully updated by Admin.',
+        evaluation: ev,
+      });
+    }
+
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
     console.error('Evaluations error:', error);

@@ -96,6 +96,29 @@ export default function FacultyDashboardPage() {
     }
   }, [scoreMessage]);
 
+  // Lock background scroll and handle Escape key to close modals
+  useEffect(() => {
+    if (scheduleModalOpen || logModalOpen) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setScheduleModalOpen(false);
+          setLogModalOpen(false);
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = 'unset';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [scheduleModalOpen, logModalOpen]);
+
   const loadFacultyData = async () => {
     try {
       const [authRes, teamsRes, panelRes] = await Promise.all([
@@ -1942,6 +1965,7 @@ export default function FacultyDashboardPage() {
       {/* SCHEDULE MODAL */}
       {scheduleModalOpen && (
         <div
+          className="modal-overlay-responsive"
           style={{
             position: 'fixed',
             inset: 0,
@@ -1949,12 +1973,26 @@ export default function FacultyDashboardPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(0,0,0,0.5)',
+            backgroundColor: 'rgba(15, 23, 42, 0.45)',
+            backdropFilter: 'blur(3px)',
+            WebkitBackdropFilter: 'blur(3px)',
             padding: '20px',
           }}
           onClick={() => setScheduleModalOpen(false)}
         >
-          <div className="card" style={{ width: '100%', maxWidth: '440px', backgroundColor: '#FFFFFF' }} onClick={(e) => e.stopPropagation()}>
+          <div
+            className="card animate-scale-in modal-card-responsive"
+            style={{
+              width: '100%',
+              maxWidth: '460px',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              padding: '24px',
+              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
+              border: '1px solid var(--color-border)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>
               {targetMeetingId ? 'Schedule Requested Meeting' : `Schedule Meeting with ${selectedTeam?.team_name || 'Team'}`}
             </h3>
@@ -2046,6 +2084,7 @@ export default function FacultyDashboardPage() {
       {/* LOG MODAL */}
       {logModalOpen && (
         <div
+          className="modal-overlay-responsive"
           style={{
             position: 'fixed',
             inset: 0,
@@ -2053,12 +2092,28 @@ export default function FacultyDashboardPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(0,0,0,0.5)',
+            backgroundColor: 'rgba(15, 23, 42, 0.45)',
+            backdropFilter: 'blur(3px)',
+            WebkitBackdropFilter: 'blur(3px)',
             padding: '20px',
           }}
           onClick={() => setLogModalOpen(false)}
         >
-          <div className="card" style={{ width: '100%', maxWidth: '520px', maxHeight: '90vh', overflowY: 'auto', backgroundColor: '#FFFFFF' }} onClick={(e) => e.stopPropagation()}>
+          <div
+            className="card animate-scale-in modal-card-responsive"
+            style={{
+              width: '100%',
+              maxWidth: '540px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              padding: '24px',
+              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
+              border: '1px solid var(--color-border)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '6px' }}>
               Log Meet {logMeetingIndex} Attendance & Notes
             </h3>

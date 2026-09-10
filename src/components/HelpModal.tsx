@@ -439,7 +439,7 @@ export default function HelpModal({ isOpen, onClose, userRole }: HelpModalProps)
             gap: '12px',
           }}
         >
-          <div style={{ position: 'relative', flex: 1 }}>
+          <div className="search-input-wrapper" style={{ flex: 1 }}>
             <input
               type="text"
               className="input-field"
@@ -447,22 +447,25 @@ export default function HelpModal({ isOpen, onClose, userRole }: HelpModalProps)
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
-                paddingLeft: '38px',
                 height: '40px',
                 fontSize: '13px',
                 backgroundColor: '#FFFFFF',
                 border: '1px solid var(--color-hairline)',
               }}
             />
-            <Search
-              size={16}
-              style={{
-                position: 'absolute',
-                left: '12px',
-                top: '12px',
-                color: 'var(--color-text-muted)',
-              }}
-            />
+            <div className="search-icon">
+              <Search size={16} />
+            </div>
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="clear-btn"
+                aria-label="Clear search"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
           {searchQuery.trim() && (

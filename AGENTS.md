@@ -1,3 +1,12 @@
 "When transitioning data layers to cloud databases (e.g. Supabase), always implement smart TTL caching with explicit mutation-driven invalidation to maintain seamless responsiveness across all device tiers."
 "Always perform a live table row count audit and full production build verification before marking cloud integration tasks complete."
 
+Strict Responsive Viewport Rule:
+"All platform grids and tables must implement fallback horizontal scrolling or multi-row collapse for viewports under 640px to ensure zero clipping on mobile screens."
+
+Deterministic State Invalidation:
+"Whenever grading or panel assignments are mutated, invalidate stale cache immediately via targeted API re-fetch."
+
+Audit Trail Logging:
+"Every score override or panel reassignment made by the Administrator must log an immutable audit remark with timestamp."
+

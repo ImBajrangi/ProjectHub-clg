@@ -285,7 +285,7 @@ function LoginForm() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '9px', fontWeight: 800, color: '#2563EB', letterSpacing: '0.06em' }}>
-                      PHASE 1
+                      1ST PRES • 19-SEP
                     </span>
                     <div
                       style={{
@@ -305,15 +305,18 @@ function LoginForm() {
                   </div>
                   <div>
                     <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>
-                      IDEA PITCH
+                      IDEA & 30% CODING
                     </div>
                     <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '2px', lineHeight: 1.3 }}>
-                      Problem statement review & immutable lock.
+                      Supervisor approval & initial 30% implementation.
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', marginTop: 'auto', paddingTop: '4px' }}>
-                    <span style={{ fontSize: '9px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', backgroundColor: '#EFF6FF', color: '#1D4ED8', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                      <Lock size={9} /> Locked PS
+                    <span style={{ fontSize: '9px', fontWeight: 700, padding: '1px 6px', borderRadius: '3px', backgroundColor: '#EFF6FF', color: '#1D4ED8', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      20 Marks
+                    </span>
+                    <span style={{ fontSize: '9px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', backgroundColor: '#F1F5F9', color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      <Lock size={9} /> 30% Code
                     </span>
                   </div>
                 </div>
@@ -337,7 +340,7 @@ function LoginForm() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '9px', fontWeight: 800, color: '#059669', letterSpacing: '0.06em' }}>
-                      PHASE 2
+                      2ND PRES • 17-OCT
                     </span>
                     <div
                       style={{
@@ -357,15 +360,18 @@ function LoginForm() {
                   </div>
                   <div>
                     <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>
-                      PROTOTYPE
+                      70% PROTOTYPE
                     </div>
                     <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '2px', lineHeight: 1.3 }}>
-                      Working demo & 3-judge panel rubric scoring.
+                      Working prototype & technical demonstration.
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', marginTop: 'auto', paddingTop: '4px' }}>
-                    <span style={{ fontSize: '9px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', backgroundColor: '#ECFDF5', color: '#047857', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                      <Users size={9} /> 3 Judges
+                    <span style={{ fontSize: '9px', fontWeight: 700, padding: '1px 6px', borderRadius: '3px', backgroundColor: '#ECFDF5', color: '#047857', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      40 Marks
+                    </span>
+                    <span style={{ fontSize: '9px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', backgroundColor: '#F1F5F9', color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      <Users size={9} /> 70% Code
                     </span>
                   </div>
                 </div>
@@ -389,7 +395,7 @@ function LoginForm() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '9px', fontWeight: 800, color: '#D97706', letterSpacing: '0.06em' }}>
-                      PHASE 3
+                      FINAL DEFENSE
                     </span>
                     <div
                       style={{
@@ -409,15 +415,18 @@ function LoginForm() {
                   </div>
                   <div>
                     <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>
-                      FINAL DEFENSE
+                      REPORT & SYNOPSIS
                     </div>
                     <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '2px', lineHeight: 1.3 }}>
-                      Report clearance, viva voce & final grades.
+                      Final report, certificate, synopsis & defense.
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', marginTop: 'auto', paddingTop: '4px' }}>
-                    <span style={{ fontSize: '9px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', backgroundColor: '#FFFBEB', color: '#B45309', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                      <FileCheck size={9} /> Clearance
+                    <span style={{ fontSize: '9px', fontWeight: 700, padding: '1px 6px', borderRadius: '3px', backgroundColor: '#FFFBEB', color: '#B45309', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      40 Marks
+                    </span>
+                    <span style={{ fontSize: '9px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', backgroundColor: '#F1F5F9', color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      <FileCheck size={9} /> Report + Cert
                     </span>
                   </div>
                 </div>

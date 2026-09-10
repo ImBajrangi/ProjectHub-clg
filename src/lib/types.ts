@@ -22,6 +22,7 @@ export interface SupervisorProfile {
   employee_id: string;
   designation?: string;
   department?: string;
+  cabin_number?: string;
   created_at: string;
 }
 
@@ -106,6 +107,9 @@ export interface EvaluationPhase {
   phase_number: 1 | 2 | 3;
   phase_name: string;
   description?: string;
+  target_date?: string;
+  marks_weightage?: number;
+  deliverables?: string;
   is_live: boolean;
   updated_at: string;
 }
