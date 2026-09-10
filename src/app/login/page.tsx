@@ -12,7 +12,88 @@ import {
   ArrowRight,
   CheckCircle2,
   X,
+  ExternalLink,
 } from 'lucide-react';
+
+interface DevProfile {
+  name: string;
+  role: string;
+  link: string;
+  image: string;
+  fallback: string;
+  initials: string;
+}
+
+const developers: DevProfile[] = [
+  {
+    name: 'Arpit Pandey',
+    role: 'BCA (DS)',
+    link: 'https://www.linkedin.com/in/dev-arpit/',
+    image: '/image/arpit.webp',
+    fallback: '/image/arpit.png',
+    initials: 'AP',
+  },
+  {
+    name: 'Rishabh Mishra',
+    role: 'BCA (DS)',
+    link: 'https://www.linkedin.com/in/rishabh-mishra-bab420309/',
+    image: '/image/rishabh.webp',
+    fallback: '/image/rishabh.png',
+    initials: 'RM',
+  },
+  {
+    name: 'Harsh Sharma',
+    role: 'BCA (DS)',
+    link: 'https://www.linkedin.com/in/harshiitm/',
+    image: '/image/harsh.webp',
+    fallback: '/image/harsh.png',
+    initials: 'HS',
+  },
+  {
+    name: 'CodeShastra',
+    role: 'Team',
+    link: 'https://www.instagram.com/code___shastra/',
+    image: '/image/CodeShastra.webp',
+    fallback: '/image/CodeShastra.png',
+    initials: 'CS',
+  },
+];
+
+function FooterDevPill({ dev }: { dev: DevProfile }) {
+  const [imgSrc, setImgSrc] = useState(dev.image);
+  const [hasError, setHasError] = useState(false);
+
+  return (
+    <a
+      href={dev.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="cohere-dev-pill"
+      title={`${dev.name} • ${dev.role}`}
+    >
+      <div className="cohere-dev-avatar-box">
+        {!hasError ? (
+          <img
+            src={imgSrc}
+            alt={dev.name}
+            className="cohere-dev-avatar-img"
+            onError={() => {
+              if (imgSrc === dev.image && dev.fallback) {
+                setImgSrc(dev.fallback);
+              } else {
+                setHasError(true);
+              }
+            }}
+          />
+        ) : (
+          <span className="cohere-dev-avatar-fallback">{dev.initials}</span>
+        )}
+      </div>
+      <span className="cohere-dev-name mono">{dev.name}</span>
+      <ExternalLink size={9} className="cohere-dev-ext-icon" />
+    </a>
+  );
+}
 
 function LoginForm() {
   const router = useRouter();
@@ -167,6 +248,31 @@ function LoginForm() {
 
       {/* Main Hero & Auth Area */}
       <main className="cohere-main-container">
+        {/* Ambient Decorative Background Graphics */}
+        <div className="cohere-bg-graphic left" aria-hidden="true">
+          <img
+            src="/images/absurd/leader.webp"
+            alt=""
+            className="cohere-bg-doodle"
+          />
+        </div>
+
+        <div className="cohere-bg-graphic right" aria-hidden="true">
+          <img
+            src="/images/transhumans/rogue.svg"
+            alt=""
+            className="cohere-bg-sticker"
+          />
+        </div>
+
+        <div className="cohere-bg-graphic bottom-left" aria-hidden="true">
+          <img
+            src="/images/undraw/protection-themed.svg"
+            alt=""
+            className="cohere-bg-shield"
+          />
+        </div>
+
         {/* Center Cohere Login Card */}
         <div className="cohere-login-card">
           <h1 className="cohere-login-title">Log in</h1>
@@ -315,6 +421,15 @@ function LoginForm() {
       <footer className="cohere-bottom-bar">
         <div className="cohere-footer-left">
           <span className="cohere-footer-brand">CodeShastra Hub</span>
+        </div>
+
+        <div className="cohere-footer-devs">
+          <span className="cohere-dev-tag mono">DEVELOPED BY:</span>
+          <div className="cohere-dev-list">
+            {developers.map((dev) => (
+              <FooterDevPill key={dev.name} dev={dev} />
+            ))}
+          </div>
         </div>
 
         <div className="cohere-footer-right">
@@ -502,6 +617,58 @@ function LoginForm() {
           padding: 30px 20px 50px;
           position: relative;
           z-index: 1;
+          overflow: hidden;
+        }
+
+        .cohere-bg-graphic {
+          position: absolute;
+          pointer-events: none;
+          z-index: 0;
+          user-select: none;
+        }
+
+        .cohere-bg-graphic.left {
+          left: 4%;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 250px;
+          max-width: 20vw;
+        }
+
+        .cohere-bg-graphic.right {
+          right: 4%;
+          top: 48%;
+          transform: translateY(-50%) scaleX(-1);
+          width: 230px;
+          max-width: 18vw;
+        }
+
+        .cohere-bg-graphic.bottom-left {
+          left: 10%;
+          bottom: 3%;
+          width: 75px;
+          opacity: 0.3;
+        }
+
+        .cohere-bg-doodle {
+          width: 100%;
+          height: auto;
+          mix-blend-mode: multiply;
+          opacity: 0.6;
+          filter: contrast(110%);
+        }
+
+        .cohere-bg-sticker {
+          width: 100%;
+          height: auto;
+          opacity: 0.7;
+          filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.04));
+        }
+
+        .cohere-bg-shield {
+          width: 100%;
+          height: auto;
+          mix-blend-mode: multiply;
         }
 
         /* Centered Spacious White Card */
@@ -721,6 +888,14 @@ function LoginForm() {
           padding-left: 1px;
         }
 
+        .cohere-slant-icon-overlay svg {
+          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .cohere-slant-btn-root:hover .cohere-slant-icon-overlay svg {
+          transform: translateX(3px);
+        }
+
         .cohere-mini-spinner {
           width: 14px;
           height: 14px;
@@ -767,16 +942,19 @@ function LoginForm() {
           margin-left: 3px;
         }
 
-        /* Bottom Bar */
+        /* Unified Theme-Relatable Cohere Footer */
         .cohere-bottom-bar {
-          background-color: #1e2229;
-          color: #ffffff;
+          background-color: #fafbfa;
+          border-top: 1px solid #e5e7eb;
+          color: #374151;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 16px 44px;
+          padding: 20px 48px 24px;
           position: relative;
           z-index: 10;
+          flex-wrap: wrap;
+          gap: 16px;
         }
 
         .cohere-footer-left {
@@ -787,39 +965,115 @@ function LoginForm() {
 
         .cohere-footer-brand {
           font-size: 15px;
-          font-weight: 600;
+          font-weight: 700;
           letter-spacing: -0.02em;
-          color: #ffffff;
+          color: #111827;
+        }
+
+        .cohere-footer-devs {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .cohere-dev-tag {
+          font-size: 10px;
+          color: #64748b;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+        }
+
+        .cohere-dev-list {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .cohere-dev-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 11px 4px 4px;
+          background-color: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 999px;
+          text-decoration: none;
+          color: #1e293b !important;
+          transition: all 0.15s ease;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        }
+
+        .cohere-dev-pill:hover {
+          background-color: #ffffff;
+          border-color: #344d41;
+          color: #344d41 !important;
+          box-shadow: 0 3px 8px rgba(52, 77, 65, 0.08);
+        }
+
+        .cohere-dev-avatar-box {
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          overflow: hidden;
+          background-color: #f1f5f9;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          border: 1px solid #cbd5e1;
+        }
+
+        .cohere-dev-avatar-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .cohere-dev-avatar-fallback {
+          font-size: 8.5px;
+          font-weight: 700;
+          color: #344d41;
+          line-height: 1;
+        }
+
+        .cohere-dev-name {
+          font-size: 11.5px;
+          font-weight: 600;
+          color: #1e293b;
+        }
+
+        .cohere-dev-pill:hover .cohere-dev-name {
+          color: #344d41;
+        }
+
+        .cohere-dev-ext-icon {
+          color: #94a3b8;
+          transition: color 0.15s ease;
+          margin-left: -1px;
+        }
+
+        .cohere-dev-pill:hover .cohere-dev-ext-icon {
+          color: #344d41;
         }
 
         .cohere-footer-right {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
         }
 
         .cohere-curated-text {
-          color: #9ca3af;
-          font-size: 12px;
+          color: #64748b;
+          font-size: 11.5px;
         }
 
-        .mobbin-logo-icon {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-        }
-
-        .mobbin-m {
-          font-weight: 900;
-          font-size: 16px;
-          color: #ffffff;
-          letter-spacing: -0.05em;
-        }
-
-        .mobbin-name {
+        .cohere-curated-brand {
           font-weight: 700;
-          color: #ffffff;
-          font-size: 14px;
+          color: #111827;
+          font-size: 13.5px;
           letter-spacing: -0.02em;
         }
 

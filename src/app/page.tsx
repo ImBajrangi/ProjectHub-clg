@@ -1,33 +1,69 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-  Layers,
-  ArrowRight,
   ShieldCheck,
-  Users,
   Compass,
   Award,
-  Calendar,
-  CheckCircle2,
-  FileText,
+  Users,
   Shield,
-  Phone,
-  Sparkles,
-  Lock,
   GraduationCap,
-  Clock,
-  MapPin,
   Check,
+  Sparkles,
+  ArrowRight,
+  ExternalLink,
 } from 'lucide-react';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+
+interface DevProfile {
+  name: string;
+  role: string;
+  link: string;
+  image: string;
+  fallback: string;
+  initials: string;
+}
+
+function FooterDevPill({ dev }: { dev: DevProfile }) {
+  const [imgSrc, setImgSrc] = useState(dev.image);
+  const [hasError, setHasError] = useState(false);
+
+  return (
+    <a
+      href={dev.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="cohere-dev-pill"
+      title={`${dev.name} • ${dev.role}`}
+    >
+      <div className="cohere-dev-avatar-box">
+        {!hasError ? (
+          <img
+            src={imgSrc}
+            alt={dev.name}
+            className="cohere-dev-avatar-img"
+            onError={() => {
+              if (imgSrc === dev.image && dev.fallback) {
+                setImgSrc(dev.fallback);
+              } else {
+                setHasError(true);
+              }
+            }}
+          />
+        ) : (
+          <span className="cohere-dev-avatar-fallback">{dev.initials}</span>
+        )}
+      </div>
+      <span className="cohere-dev-name mono">{dev.name}</span>
+      <ExternalLink size={9} className="cohere-dev-ext-icon" />
+    </a>
+  );
+}
 
 export default function HomePage() {
-  const [user, setUser] = React.useState<any>(null);
+  const [user, setUser] = useState<any>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     async function checkUser() {
       try {
         const res = await fetch('/api/auth/me');
@@ -36,276 +72,172 @@ export default function HomePage() {
           if (data.user) setUser(data.user);
         }
       } catch (e) {
-        // Not logged in
+        // Unauthenticated visitor
       }
     }
     checkUser();
   }, []);
 
+  const developers: DevProfile[] = [
+    {
+      name: 'Arpit Pandey',
+      role: 'BCA (DS)',
+      link: 'https://www.linkedin.com/in/dev-arpit/',
+      image: '/image/arpit.webp',
+      fallback: '/image/arpit.png',
+      initials: 'AP',
+    },
+    {
+      name: 'Rishabh Mishra',
+      role: 'BCA (DS)',
+      link: 'https://www.linkedin.com/in/rishabh-mishra-bab420309/',
+      image: '/image/rishabh.webp',
+      fallback: '/image/rishabh.png',
+      initials: 'RM',
+    },
+    {
+      name: 'Harsh Sharma',
+      role: 'BCA (DS)',
+      link: 'https://www.linkedin.com/in/harshiitm/',
+      image: '/image/harsh.webp',
+      fallback: '/image/harsh.png',
+      initials: 'HS',
+    },
+    {
+      name: 'CodeShastra',
+      role: 'Team',
+      link: 'https://www.instagram.com/code___shastra/',
+      image: '/image/CodeShastra.webp',
+      fallback: '/image/CodeShastra.png',
+      initials: 'CS',
+    },
+  ];
+
+  const dashboardHref = user
+    ? user.role === 'admin'
+      ? '/admin'
+      : user.role === 'supervisor'
+        ? '/dashboard/faculty'
+        : '/dashboard/leader'
+    : '/login';
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF' }}>
-      <Navbar user={user} />
+    <div className="cohere-page-wrapper">
+      {/* ========================================================================= */}
+      {/* 1. TOP HEADER                                                             */}
+      {/* ========================================================================= */}
+      <header className="cohere-top-header">
+        <Link href="/" className="cohere-brand-link">
+          <span className="cohere-brand-name">
+            CodeShastra <span style={{ color: '#64748B', fontWeight: 500 }}>Hub</span>
+          </span>
+        </Link>
+
+        <div className="cohere-top-right">
+          {user ? (
+            <Link href={dashboardHref} className="cohere-top-dash-btn">
+              Go to Dashboard <ArrowRight size={13} />
+            </Link>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <Link href="/signup" className="cohere-top-link">
+                Sign Up
+              </Link>
+              <Link href="/login" className="cohere-top-login-pill">
+                Log in
+              </Link>
+            </div>
+          )}
+        </div>
+      </header>
 
       {/* ========================================================================= */}
-      {/* HERO SECTION: Concise, Direct, High-Impact                                */}
+      {/* 2. HERO SECTION: Seamless Surreal Artwork + Direct Punchy Copy            */}
       {/* ========================================================================= */}
-      <section style={{ padding: '36px 20px 40px' }}>
-        <div className="container" style={{ maxWidth: '1180px' }}>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1.05fr 1fr',
-              gap: '40px',
-              alignItems: 'center',
-            }}
-            className="hero-split-grid"
-          >
-            {/* Left Column: Punchy & Direct Text */}
-            <div>
-              {/* Badge */}
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '4px 12px',
-                  borderRadius: 'var(--rounded-full)',
-                  backgroundColor: '#EFF6FF',
-                  border: '1px solid #BFDBFE',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  color: '#1D4ED8',
-                  marginBottom: '16px',
-                }}
-              >
-                <Sparkles size={13} color="#2563EB" /> CodeShastra ProjectHub
+      <section className="cohere-hero-section">
+        <div className="cohere-hero-container">
+          <div className="cohere-hero-grid">
+            {/* Left Content */}
+            <div className="cohere-hero-content">
+              <div className="cohere-hero-pill">
+                <span className="cohere-pill-dot" />
+                <span className="mono">ACADEMIC PROJECT PLATFORM • GLA UNIVERSITY</span>
               </div>
 
-              {/* Main Headline */}
-              <h1
-                style={{
-                  fontSize: 'clamp(32px, 4.2vw, 48px)',
-                  fontWeight: 800,
-                  lineHeight: 1.12,
-                  letterSpacing: '-0.03em',
-                  color: 'var(--color-ink)',
-                  marginBottom: '14px',
-                }}
-              >
+              <h1 className="cohere-hero-title">
                 Academic Project Governance.{' '}
-                <span style={{ color: '#2563EB' }}>
-                  Simplified.
-                </span>
+                <span className="cohere-title-accent">Pure Clarity.</span>
               </h1>
 
-              {/* Short & Direct Context */}
-              <p
-                style={{
-                  fontSize: '15px',
-                  color: 'var(--color-text-muted)',
-                  lineHeight: '1.5',
-                  maxWidth: '480px',
-                  marginBottom: '24px',
-                }}
-              >
-                Coordinating <strong>102 student teams</strong>, <strong>601 students</strong>, and <strong>23 faculty mentors</strong> across 3 milestones with conflict-free evaluation.
+              <p className="cohere-hero-desc">
+                Synchronized milestone tracking, faculty mentorship, and conflict-free panel defenses.
               </p>
 
               {/* Action Buttons */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '24px' }}>
-                <Link
-                  href="/leader"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '11px 22px',
-                    borderRadius: 'var(--rounded-full)',
-                    backgroundColor: '#2563EB',
-                    color: '#FFFFFF',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    border: '1px solid #1D4ED8',
-                  }}
-                >
-                  Elect Team Leader <ArrowRight size={14} />
+              <div className="cohere-hero-actions">
+                <Link href={user ? dashboardHref : '/signup'} className="cohere-slant-btn-root">
+                  <svg viewBox="0 0 176 44" className="cohere-slant-unified-svg" aria-hidden="true">
+                    <path
+                      d="M 8,0 L 118.25,0 Q 122.75,0 121.5,3.5 L 109,40.5 Q 107.75,44 103.25,44 L 8,44 Q 0,44 0,36 L 0,8 Q 0,0 8,0 Z"
+                      className="cohere-slant-svg-path"
+                    />
+                    <path
+                      d="M 134.75,0 L 168,0 Q 176,0 176,8 L 176,36 Q 176,44 168,44 L 120.75,44 Q 116.25,44 117.5,40.5 L 130,3.5 Q 131.25,0 134.75,0 Z"
+                      className="cohere-slant-svg-path"
+                    />
+                  </svg>
+
+                  <span className="cohere-slant-text-overlay" style={{ width: '114px' }}>
+                    {user ? 'Open Portal' : 'Elect Leader'}
+                  </span>
+
+                  <span className="cohere-slant-icon-overlay" style={{ left: '120px', width: '56px' }}>
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#FFFFFF"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <line x1="4" y1="12" x2="20" y2="12" />
+                      <polyline points="14 6 20 12 14 18" />
+                    </svg>
+                  </span>
                 </Link>
 
-                <Link
-                  href="/login"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    padding: '11px 22px',
-                    borderRadius: 'var(--rounded-full)',
-                    backgroundColor: '#FFFFFF',
-                    color: 'var(--color-ink)',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    border: '1px solid var(--color-hairline-strong)',
-                  }}
-                >
-                  Portal Login
-                </Link>
+                {!user && (
+                  <Link href="/login" className="cohere-secondary-btn">
+                    Portal Login
+                  </Link>
+                )}
               </div>
 
-              {/* Scannable Highlights */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: 'var(--color-text-muted)', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <ShieldCheck size={14} color="#059669" /> Single-Device Security
+              {/* Scannable Monospace Highlights */}
+              <div className="cohere-hero-highlights mono">
+                <div className="cohere-highlight-item">
+                  <ShieldCheck size={14} color="#344D41" /> Single-Device Auth
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Compass size={14} color="#2563EB" /> 3 Mentor Clearances
+                <div className="cohere-highlight-item">
+                  <Compass size={14} color="#344D41" /> 3 Mentor Clearances
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <Award size={14} color="#D97706" /> 3-Judge Panels
+                <div className="cohere-highlight-item">
+                  <Award size={14} color="#344D41" /> 3-Judge Panels
                 </div>
               </div>
             </div>
 
-            {/* Right Column: Clean Student Project Milestone Showcase */}
-            <div
-              style={{
-                borderRadius: '16px',
-                padding: '16px',
-                background: 'linear-gradient(135deg, #F0FDF4 0%, #EFF6FF 50%, #FAF5FF 100%)',
-                border: '1px solid #E2E8F0',
-                boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.04)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-              }}
-            >
-              {/* Top Meta Bar */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 700, color: '#1E40AF', backgroundColor: '#DBEAFE', padding: '3px 9px', borderRadius: 'var(--rounded-full)' }}>
-                  <Sparkles size={12} color="#2563EB" />
-                  <span>Team CS-2026-042</span>
-                </div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 600, color: '#047857', backgroundColor: '#D1FAE5', padding: '3px 9px', borderRadius: 'var(--rounded-full)' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#059669' }} />
-                  Phase 2 Active
-                </div>
-              </div>
-
-              {/* Main Project Card */}
-              <div
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  border: '1px solid rgba(226, 232, 240, 0.9)',
-                  boxShadow: '0 2px 8px rgba(15, 23, 42, 0.03)',
-                }}
-              >
-                {/* Project Header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                  <div
-                    style={{
-                      width: '34px',
-                      height: '34px',
-                      borderRadius: '8px',
-                      backgroundColor: '#EFF6FF',
-                      color: '#2563EB',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    <GraduationCap size={18} />
-                  </div>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
-                      BCA Major Project
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                      Dept. of Computer Applications • GLA Univ
-                    </div>
-                  </div>
-                </div>
-
-                {/* Problem Statement Box */}
-                <div
-                  style={{
-                    backgroundColor: '#F8FAFC',
-                    border: '1px solid #E2E8F0',
-                    borderRadius: '8px',
-                    padding: '10px 12px',
-                    marginBottom: '12px',
-                  }}
-                >
-                  <div style={{ fontSize: '9.5px', fontWeight: 800, color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '3px' }}>
-                    Approved Problem Statement
-                  </div>
-                  <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--color-ink)', lineHeight: 1.35 }}>
-                    AI Crop Pathology & Smart Irrigation Diagnostics
-                  </div>
-                </div>
-
-                {/* Milestone Progress Tracker */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '12px' }}>
-                  <div style={{ backgroundColor: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '6px', padding: '6px 8px', textAlign: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontSize: '10px', fontWeight: 700, color: '#065F46' }}>
-                      <Check size={11} strokeWidth={3} /> Phase 1
-                    </div>
-                    <div style={{ fontSize: '9px', color: '#047857', marginTop: '1px' }}>Approved</div>
-                  </div>
-
-                  <div style={{ backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '6px', padding: '6px 8px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '10px', fontWeight: 800, color: '#1E40AF' }}>
-                      Phase 2
-                    </div>
-                    <div style={{ fontSize: '9px', color: '#2563EB', fontWeight: 600, marginTop: '1px' }}>Evaluating</div>
-                  </div>
-
-                  <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '6px', padding: '6px 8px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--color-text-muted)' }}>
-                      Phase 3
-                    </div>
-                    <div style={{ fontSize: '9px', color: 'var(--color-text-faint)', marginTop: '1px' }}>Report</div>
-                  </div>
-                </div>
-
-                {/* 3-Col Meta Summary */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', borderTop: '1px solid #F1F5F9', paddingTop: '10px', textAlign: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: '9.5px', color: 'var(--color-text-muted)' }}>Leader</div>
-                    <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--color-ink)', marginTop: '1px' }}>Arpit Pandey</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '9.5px', color: 'var(--color-text-muted)' }}>Team Size</div>
-                    <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--color-ink)', marginTop: '1px' }}>6 Students</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '9.5px', color: 'var(--color-text-muted)' }}>Panel Score</div>
-                    <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#059669', marginTop: '1px' }}>9.4 / 10</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Evaluation Banner */}
-              <div
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '10px',
-                  padding: '9px 12px',
-                  border: '1px solid #E2E8F0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '8px',
-                  fontSize: '11.5px',
-                  color: 'var(--color-ink)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
-                  <Award size={14} color="#2563EB" />
-                  <span>Panel 3 Defense • Hall AB10 Scheduled</span>
-                </div>
-                <span className="badge badge-success" style={{ fontSize: '10px', padding: '1px 6px' }}>
-                  Live
-                </span>
+            {/* Right Hero Art - Transhumans by Pablo Stanley */}
+            <div className="cohere-hero-art-wrapper">
+              <div className="cohere-art-composition">
+                <div className="cohere-art-glow" />
+                <img
+                  src="/images/transhumans/rogue.svg"
+                  alt="Transhumans Rogue Illustration by Pablo Stanley on Blush"
+                  className="cohere-transhuman-img"
+                />
               </div>
             </div>
           </div>
@@ -313,44 +245,73 @@ export default function HomePage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4 AUDITED STATS (Responsive 2x2 Grid on Mobile, 4 Cols on Desktop)       */}
+      {/* 3. AUDITED STATS METRICS                                                  */}
       {/* ========================================================================= */}
-      <section style={{ padding: '24px 20px', borderTop: '1px solid var(--color-hairline)', borderBottom: '1px solid var(--color-hairline)', backgroundColor: '#FAFAFA' }}>
-        <div className="container" style={{ maxWidth: '1180px' }}>
-          <div className="landing-stats-grid">
-            <div className="landing-stat-card">
-              <div style={{ fontSize: 'clamp(26px, 3.5vw, 36px)', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-                102
-              </div>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                Project Teams
-              </div>
+      <section className="cohere-stats-section">
+        <div className="cohere-section-container">
+          <div className="cohere-stats-grid">
+            <div className="cohere-stat-box">
+              <div className="cohere-stat-num">102</div>
+              <div className="cohere-stat-label mono">PROJECT TEAMS</div>
             </div>
 
-            <div className="landing-stat-card">
-              <div style={{ fontSize: 'clamp(26px, 3.5vw, 36px)', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-                601
-              </div>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                Allocated Students
-              </div>
+            <div className="cohere-stat-box">
+              <div className="cohere-stat-num">601</div>
+              <div className="cohere-stat-label mono">ALLOCATED STUDENTS</div>
             </div>
 
-            <div className="landing-stat-card">
-              <div style={{ fontSize: 'clamp(26px, 3.5vw, 36px)', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-                23
-              </div>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                Faculty Mentors
-              </div>
+            <div className="cohere-stat-box">
+              <div className="cohere-stat-num">23</div>
+              <div className="cohere-stat-label mono">FACULTY MENTORS</div>
             </div>
 
-            <div className="landing-stat-card">
-              <div style={{ fontSize: 'clamp(26px, 3.5vw, 36px)', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
-                3
-              </div>
-              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                Milestones (Phases 1–3)
+            <div className="cohere-stat-box">
+              <div className="cohere-stat-num">3</div>
+              <div className="cohere-stat-label mono">MILESTONE PHASES</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 4. EDITORIAL STORY 1: GUIDING THE BUILD (Meaningful Visual Integration)  */}
+      {/* ========================================================================= */}
+      <section className="cohere-story-section">
+        <div className="cohere-section-container">
+          <div className="cohere-story-grid">
+            {/* Visual on Left */}
+            <div className="cohere-story-visual">
+              <img
+                src="/images/absurd/mentor.webp"
+                alt="Human connection and mentorship art by absurd.design"
+                className="cohere-blended-illustration story-img"
+              />
+            </div>
+
+            {/* Content on Right */}
+            <div className="cohere-story-content">
+              <div className="cohere-section-tag mono">FACULTY SUPERVISION</div>
+              <h2 className="cohere-story-title">
+                Direct Mentorship. <br />
+                Accountability at every sprint.
+              </h2>
+              <p className="cohere-story-desc">
+                Teams schedule one-on-one consultations via the &quot;Want to Meet&quot; request queue. Mentors log verified student attendance rosters and unlock milestone gates upon satisfactory code reviews.
+              </p>
+
+              <div className="cohere-story-features mono">
+                <div className="cohere-story-item">
+                  <Check size={14} strokeWidth={2.5} color="#344D41" />
+                  <span>Problem Statement Lock & Revision Approvals</span>
+                </div>
+                <div className="cohere-story-item">
+                  <Check size={14} strokeWidth={2.5} color="#344D41" />
+                  <span>Verified Attendance Logs per Consultation</span>
+                </div>
+                <div className="cohere-story-item">
+                  <Check size={14} strokeWidth={2.5} color="#344D41" />
+                  <span>Phase 1, Phase 2, and Phase 3 Clearance Permissions</span>
+                </div>
               </div>
             </div>
           </div>
@@ -358,85 +319,1021 @@ export default function HomePage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4 STAKEHOLDER ROLES (Direct, Scannable Bullets)                            */}
+      {/* 5. EDITORIAL STORY 2: OBJECTIVE DEFENSE (Meaningful Visual Integration)   */}
       {/* ========================================================================= */}
-      <section style={{ padding: '40px 20px 60px' }}>
-        <div className="container" style={{ maxWidth: '1180px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em' }}>
-              Four Platform Roles
-            </h2>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '13px', marginTop: '4px' }}>
-              Clear workflows for students, mentors, judges, and administration.
+      <section className="cohere-story-section alt">
+        <div className="cohere-section-container">
+          <div className="cohere-story-grid reverse">
+            {/* Content on Left */}
+            <div className="cohere-story-content">
+              <div className="cohere-section-tag mono">OBJECTIVE DEFENSE</div>
+              <h2 className="cohere-story-title">
+                Three-Judge Panels. <br />
+                Strict conflict-free evaluation.
+              </h2>
+              <p className="cohere-story-desc">
+                Judges evaluate project defenses across 10-point standardized criteria in Hall AB10. Automated business logic guarantees that supervisors never judge their own assigned teams.
+              </p>
+
+              <div className="cohere-story-features mono">
+                <div className="cohere-story-item">
+                  <Check size={14} strokeWidth={2.5} color="#344D41" />
+                  <span>Conflict-free panel assignments</span>
+                </div>
+                <div className="cohere-story-item">
+                  <Check size={14} strokeWidth={2.5} color="#344D41" />
+                  <span>Live 10-point rubric scoring & viva feedback</span>
+                </div>
+                <div className="cohere-story-item">
+                  <Check size={14} strokeWidth={2.5} color="#344D41" />
+                  <span>Tamper-proof final grade export for academic records</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Visual on Right */}
+            <div className="cohere-story-visual">
+              <img
+                src="/images/absurd/judge.webp"
+                alt="Objective balance and judgment art by absurd.design"
+                className="cohere-blended-illustration story-img"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 5.5 EDITORIAL STORY 3: REAL-TIME DATA SYNC & SERIALIZED LEDGERS           */}
+      {/* ========================================================================= */}
+      <section className="cohere-story-section">
+        <div className="cohere-section-container">
+          <div className="cohere-story-grid">
+            {/* Visual on Left */}
+            <div className="cohere-story-visual">
+              <img
+                src="/images/undraw/transactions-themed.svg"
+                alt="Synchronized data exchange and academic roster transactions"
+                className="cohere-story-vector-img"
+              />
+            </div>
+
+            {/* Content on Right */}
+            <div className="cohere-story-content">
+              <div className="cohere-section-tag mono">TRANSACTIONAL INTEGRITY</div>
+              <h2 className="cohere-story-title">
+                Continuous Roster Sync. <br />
+                Zero Lost Submissions.
+              </h2>
+              <p className="cohere-story-desc">
+                Every student milestone upload, supervisor consultation note, and panel defense score is serialized into centralized, tamper-proof academic ledgers in real time.
+              </p>
+
+              <div className="cohere-story-features mono">
+                <div className="cohere-story-item">
+                  <Check size={14} strokeWidth={2.5} color="#344D41" />
+                  <span>Instant multi-device attendance reconciliation</span>
+                </div>
+                <div className="cohere-story-item">
+                  <Check size={14} strokeWidth={2.5} color="#344D41" />
+                  <span>Hardware-bound cryptographic leader token verification</span>
+                </div>
+                <div className="cohere-story-item">
+                  <Check size={14} strokeWidth={2.5} color="#344D41" />
+                  <span>Automated final CSV/PDF export for university records</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 6. THREE MILESTONE COMPARTMENTS                                           */}
+      {/* ========================================================================= */}
+      <section className="cohere-milestones-section">
+        <div className="cohere-section-container">
+          <div className="cohere-section-header">
+            <div className="cohere-section-tag mono">EVALUATION ROADMAP</div>
+            <h2 className="cohere-section-title">The Three Milestones</h2>
+            <p className="cohere-section-desc">
+              Structured progressive deliverables guiding projects from proposal to final defense.
             </p>
           </div>
 
-          <div className="grid-cols-2">
-            {/* Student Leader */}
-            <div className="card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'var(--color-canvas-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Users size={15} color="var(--color-ink)" />
-                </div>
-                <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Student Team Leader</h3>
+          <div className="cohere-milestones-grid">
+            <div className="cohere-milestone-card">
+              <div className="cohere-card-img-box">
+                <img
+                  src="/images/absurd/phase1.webp"
+                  alt="Phase 1 Genesis - Surreal line art by absurd.design"
+                  className="cohere-milestone-img"
+                />
               </div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px', color: 'var(--color-ink-soft)', lineHeight: '1.8', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Submit and lock problem statements</li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Request mentor meetings via &quot;Want to Meet&quot;</li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Upload finalized Phase 3 documentation</li>
-              </ul>
+              <div className="cohere-card-tag mono">PHASE 01</div>
+              <h3 className="cohere-card-title">Genesis & Problem Lock</h3>
+              <p className="cohere-card-desc">
+                Teams elect their leader offline, select their registered domain, and lock the problem statement for supervisor clearance.
+              </p>
             </div>
 
-            {/* Supervisor Mentor */}
-            <div className="card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'var(--color-canvas-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Compass size={15} color="var(--color-ink)" />
-                </div>
-                <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Faculty Supervisor (Mentor)</h3>
+            <div className="cohere-milestone-card active">
+              <div className="cohere-card-img-box">
+                <img
+                  src="/images/absurd/phase2.webp"
+                  alt="Phase 2 Sprint & Mentorship - Surreal line art by absurd.design"
+                  className="cohere-milestone-img"
+                />
               </div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px', color: 'var(--color-ink-soft)', lineHeight: '1.8', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Approve and lock problem statements</li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Schedule meetings & log attendance rosters</li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Grant Phase 1, Phase 2 & Phase 3 clearances</li>
-              </ul>
+              <div className="cohere-card-tag mono">PHASE 02</div>
+              <h3 className="cohere-card-title">Sprint & Mentorship</h3>
+              <p className="cohere-card-desc">
+                Core development sprints, active consultations with faculty supervisors, and mid-term technical progress verification.
+              </p>
             </div>
 
-            {/* Evaluation Judge */}
-            <div className="card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'var(--color-canvas-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Award size={15} color="var(--color-ink)" />
-                </div>
-                <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Panel Judge (Faculty)</h3>
+            <div className="cohere-milestone-card">
+              <div className="cohere-card-img-box">
+                <img
+                  src="/images/absurd/phase3.webp"
+                  alt="Phase 3 Defense & Final Marks - Surreal line art by absurd.design"
+                  className="cohere-milestone-img"
+                />
               </div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px', color: 'var(--color-ink-soft)', lineHeight: '1.8', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Conflict-free panel assignment</li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Score presentation rounds out of 10 points</li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Final defense & viva evaluation</li>
-              </ul>
-            </div>
-
-            {/* Project Incharge */}
-            <div className="card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'var(--color-canvas-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Shield size={15} color="var(--color-ink)" />
-                </div>
-                <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Project Incharge (Admin)</h3>
-              </div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px', color: 'var(--color-ink-soft)', lineHeight: '1.8', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Manage presentation dates & venue halls (AB10)</li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Toggle phases to Live & audit defaulting teams</li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Export verified marks to institutional Excel sheets</li>
-              </ul>
+              <div className="cohere-card-tag mono">PHASE 03</div>
+              <h3 className="cohere-card-title">Defense & Final Marks</h3>
+              <p className="cohere-card-desc">
+                Final report submission, Hall AB10 panel presentations, standardized judge rubric scoring, and institutional grade publishing.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Unified Footer */}
-      <Footer />
+      {/* ========================================================================= */}
+      {/* 7. BOTTOM CTA BANNER: Single-Device Protected Governance                  */}
+      {/* ========================================================================= */}
+      <section className="cohere-cta-section">
+        <div className="cohere-section-container">
+          <div className="cohere-cta-card">
+            <div className="cohere-cta-left">
+              <div className="cohere-protection-badge">
+                <img
+                  src="/images/undraw/protection-dark.svg"
+                  alt="Single-Device Protection & Integrity Guarantee"
+                  className="cohere-protection-img"
+                />
+              </div>
+              <div className="cohere-cta-content">
+                <div className="cohere-cta-tag mono">INSTITUTIONAL INTEGRITY GUARANTEE</div>
+                <h2 className="cohere-cta-title">Single-Device Protected Governance.</h2>
+                <p className="cohere-cta-subtitle">
+                  Hardware-bound leader authentication ensures single-device session integrity, preventing proxy registrations and unauthorized milestone edits.
+                </p>
+              </div>
+            </div>
+
+            <div className="cohere-cta-actions">
+              <Link href={user ? dashboardHref : '/signup'} className="cohere-slant-btn-root">
+                <svg viewBox="0 0 176 44" className="cohere-slant-unified-svg" aria-hidden="true">
+                  <path
+                    d="M 8,0 L 118.25,0 Q 122.75,0 121.5,3.5 L 109,40.5 Q 107.75,44 103.25,44 L 8,44 Q 0,44 0,36 L 0,8 Q 0,0 8,0 Z"
+                    className="cohere-slant-svg-path"
+                  />
+                  <path
+                    d="M 134.75,0 L 168,0 Q 176,0 176,8 L 176,36 Q 176,44 168,44 L 120.75,44 Q 116.25,44 117.5,40.5 L 130,3.5 Q 131.25,0 134.75,0 Z"
+                    className="cohere-slant-svg-path"
+                  />
+                </svg>
+
+                <span className="cohere-slant-text-overlay" style={{ width: '114px' }}>
+                  {user ? 'Dashboard' : 'Claim Team'}
+                </span>
+
+                <span className="cohere-slant-icon-overlay" style={{ left: '120px', width: '56px' }}>
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#FFFFFF"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="4" y1="12" x2="20" y2="12" />
+                    <polyline points="14 6 20 12 14 18" />
+                  </svg>
+                </span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 8. COHERE BOTTOM BAR                                                      */}
+      {/* ========================================================================= */}
+      <footer className="cohere-bottom-bar">
+        <div className="cohere-footer-left">
+          <span className="cohere-footer-brand">CodeShastra Hub</span>
+          <span className="cohere-footer-subline mono">GLA UNIVERSITY • DEPT. OF COMPUTER APPLICATIONS</span>
+        </div>
+
+        <div className="cohere-footer-devs">
+          <span className="cohere-dev-tag mono">DEVELOPED BY:</span>
+          <div className="cohere-dev-list">
+            {developers.map((dev) => (
+              <FooterDevPill key={dev.name} dev={dev} />
+            ))}
+          </div>
+        </div>
+
+        <div className="cohere-footer-right">
+          <span className="cohere-curated-text">powered by</span>
+          <span className="cohere-curated-brand">ProjectHub 2026</span>
+        </div>
+      </footer>
+
+      {/* ========================================================================= */}
+      {/* COHERE GLOBAL STYLING SYSTEM                                              */}
+      {/* ========================================================================= */}
+      <style jsx global>{`
+        .cohere-page-wrapper {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          background-color: #f4f5f4;
+          color: #111827;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          position: relative;
+          overflow-x: hidden;
+        }
+
+        .mono {
+          font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, Menlo, monospace;
+        }
+
+        /* Top Header */
+        .cohere-top-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 24px 44px;
+          position: relative;
+          z-index: 10;
+        }
+
+        .cohere-brand-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          text-decoration: none;
+          color: #111827;
+        }
+
+        .cohere-brand-name {
+          font-size: 19px;
+          font-weight: 600;
+          letter-spacing: -0.03em;
+          color: #1e293b;
+        }
+
+        .cohere-top-right {
+          display: flex;
+          align-items: center;
+        }
+
+        .cohere-top-link {
+          font-size: 13.5px;
+          font-weight: 500;
+          color: #374151;
+          text-decoration: none;
+          transition: opacity 0.15s ease;
+        }
+        .cohere-top-link:hover {
+          color: #111827;
+        }
+
+        .cohere-top-login-pill {
+          font-size: 13px;
+          font-weight: 600;
+          color: #ffffff !important;
+          background-color: #344d41;
+          padding: 7px 16px;
+          border-radius: 999px;
+          text-decoration: none;
+          transition: background-color 0.15s ease;
+        }
+        .cohere-top-login-pill:hover {
+          background-color: #263c32;
+          color: #ffffff !important;
+        }
+
+        .cohere-top-dash-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          font-weight: 600;
+          color: #ffffff !important;
+          background-color: #344d41;
+          padding: 7px 16px;
+          border-radius: 999px;
+          text-decoration: none;
+          transition: background-color 0.15s ease;
+        }
+        .cohere-top-dash-btn:hover {
+          background-color: #263c32;
+          color: #ffffff !important;
+        }
+
+        /* Hero Section */
+        .cohere-hero-section {
+          padding: 40px 24px 60px;
+        }
+
+        .cohere-hero-container {
+          max-width: 1180px;
+          margin: 0 auto;
+        }
+
+        .cohere-hero-grid {
+          display: grid;
+          grid-template-columns: 1.15fr 1fr;
+          gap: 48px;
+          align-items: center;
+        }
+
+        .cohere-hero-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          background-color: #e9ece8;
+          border: 1px solid #d8ded6;
+          border-radius: 999px;
+          padding: 5px 12px;
+          font-size: 11px;
+          font-weight: 700;
+          color: #344d41;
+          margin-bottom: 20px;
+          letter-spacing: 0.04em;
+        }
+
+        .cohere-pill-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background-color: #344d41;
+        }
+
+        .cohere-hero-title {
+          font-size: clamp(34px, 4.5vw, 52px);
+          font-weight: 700;
+          line-height: 1.1;
+          letter-spacing: -0.035em;
+          color: #111827;
+          margin-bottom: 18px;
+        }
+
+        .cohere-title-accent {
+          color: #344d41;
+        }
+
+        .cohere-hero-desc {
+          font-size: 15.5px;
+          color: #4b5563;
+          line-height: 1.55;
+          max-width: 520px;
+          margin-bottom: 28px;
+        }
+
+        .cohere-hero-actions {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          flex-wrap: wrap;
+          margin-bottom: 30px;
+        }
+
+        .cohere-secondary-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          height: 44px;
+          padding: 0 22px;
+          background-color: #ffffff;
+          border: 1px solid #d1d5db;
+          border-radius: 999px;
+          font-size: 14px;
+          font-weight: 500;
+          color: #111827 !important;
+          text-decoration: none;
+          transition: border-color 0.15s ease, background-color 0.15s ease;
+        }
+        .cohere-secondary-btn:hover {
+          border-color: #111827;
+          background-color: #f9fafb;
+          color: #111827 !important;
+        }
+
+        .cohere-hero-highlights {
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          font-size: 11.5px;
+          color: #4b5563;
+          flex-wrap: wrap;
+        }
+
+        .cohere-highlight-item {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        }
+
+        /* Seamless Blended Art in Hero */
+        .cohere-hero-art-wrapper {
+          position: relative;
+        }
+
+        .cohere-art-composition {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .cohere-art-glow {
+          position: absolute;
+          width: 320px;
+          height: 320px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(248, 196, 22, 0.15) 0%, rgba(102, 54, 221, 0.08) 50%, transparent 70%);
+          filter: blur(24px);
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .cohere-transhuman-img {
+          width: 100%;
+          max-width: 390px;
+          max-height: 450px;
+          object-fit: contain;
+          display: block;
+          position: relative;
+          z-index: 1;
+          transform: scaleX(-1);
+          -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 82%, rgba(0, 0, 0, 0) 100%);
+          mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 82%, rgba(0, 0, 0, 0) 100%);
+          filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.06));
+        }
+
+        .cohere-blended-illustration {
+          width: 100%;
+          max-height: 420px;
+          object-fit: contain;
+          display: block;
+          mix-blend-mode: multiply;
+          opacity: 0.88;
+          filter: contrast(108%);
+        }
+
+        /* Slanted Button */
+        .cohere-slant-btn-root {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          background: transparent;
+          border: none;
+          padding: 0;
+          cursor: pointer;
+          outline: none;
+          width: 176px;
+          height: 44px;
+          text-decoration: none;
+          transition: transform 0.05s ease;
+        }
+
+        .cohere-slant-btn-root:active {
+          transform: scale(0.99);
+        }
+
+        .cohere-slant-unified-svg {
+          width: 176px;
+          height: 44px;
+          display: block;
+          pointer-events: none;
+        }
+
+        .cohere-slant-svg-path {
+          fill: #344d41;
+          transition: fill 0.15s ease;
+        }
+
+        .cohere-slant-btn-root:hover .cohere-slant-svg-path {
+          fill: #263c32;
+        }
+
+        .cohere-slant-text-overlay {
+          position: absolute;
+          left: 0;
+          top: 0;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #ffffff;
+          font-size: 14.5px;
+          font-weight: 500;
+          letter-spacing: -0.01em;
+          user-select: none;
+          pointer-events: none;
+          padding-left: 4px;
+        }
+
+        .cohere-slant-icon-overlay {
+          position: absolute;
+          top: 0;
+          height: 44px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #ffffff;
+          pointer-events: none;
+          padding-left: 2px;
+        }
+
+        .cohere-slant-icon-overlay svg {
+          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .cohere-slant-btn-root:hover .cohere-slant-icon-overlay svg {
+          transform: translateX(3px);
+        }
+
+        /* Stats Section */
+        .cohere-stats-section {
+          padding: 28px 24px;
+          border-top: 1px solid #e5e7eb;
+          border-bottom: 1px solid #e5e7eb;
+          background-color: #fafbfa;
+        }
+
+        .cohere-section-container {
+          max-width: 1180px;
+          margin: 0 auto;
+        }
+
+        .cohere-stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 20px;
+        }
+
+        .cohere-stat-box {
+          background-color: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 10px;
+          padding: 18px 16px;
+          text-align: center;
+        }
+
+        .cohere-stat-num {
+          font-size: clamp(28px, 3.5vw, 36px);
+          font-weight: 700;
+          letter-spacing: -0.03em;
+          color: #111827;
+          line-height: 1;
+        }
+
+        .cohere-stat-label {
+          font-size: 10.5px;
+          font-weight: 600;
+          color: #6b7280;
+          margin-top: 8px;
+          letter-spacing: 0.05em;
+        }
+
+        /* Editorial Stories */
+        .cohere-story-section {
+          padding: 70px 24px;
+        }
+
+        .cohere-story-section.alt {
+          background-color: #ffffff;
+          border-top: 1px solid #e5e7eb;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .cohere-story-grid {
+          display: grid;
+          grid-template-columns: 1fr 1.15fr;
+          gap: 60px;
+          align-items: center;
+        }
+
+        .cohere-story-grid.reverse {
+          grid-template-columns: 1.15fr 1fr;
+        }
+
+        .cohere-story-visual {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .cohere-blended-illustration.story-img {
+          max-height: 340px;
+          width: auto;
+        }
+
+        .cohere-story-vector-img {
+          max-width: 100%;
+          max-height: 290px;
+          object-fit: contain;
+          display: block;
+        }
+
+        .cohere-story-title {
+          font-size: clamp(28px, 3.5vw, 38px);
+          font-weight: 700;
+          letter-spacing: -0.03em;
+          line-height: 1.15;
+          color: #111827;
+          margin: 8px 0 16px;
+        }
+
+        .cohere-story-desc {
+          font-size: 15px;
+          color: #4b5563;
+          line-height: 1.6;
+          margin-bottom: 24px;
+        }
+
+        .cohere-story-features {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          font-size: 13px;
+          color: #374151;
+        }
+
+        .cohere-story-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        /* Milestone Compartments Section */
+        .cohere-milestones-section {
+          padding: 60px 24px 70px;
+        }
+
+        .cohere-section-header {
+          text-align: center;
+          margin-bottom: 40px;
+        }
+
+        .cohere-section-tag {
+          font-size: 11px;
+          font-weight: 700;
+          color: #344d41;
+          letter-spacing: 0.08em;
+          margin-bottom: 8px;
+        }
+
+        .cohere-section-title {
+          font-size: clamp(24px, 3vw, 32px);
+          font-weight: 700;
+          letter-spacing: -0.025em;
+          color: #111827;
+          margin-bottom: 8px;
+        }
+
+        .cohere-section-desc {
+          font-size: 14.5px;
+          color: #4b5563;
+          max-width: 520px;
+          margin: 0 auto;
+          line-height: 1.5;
+        }
+
+        .cohere-milestones-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 20px;
+        }
+
+        .cohere-milestone-card {
+          background-color: #ffffff;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          padding: 20px 20px 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .cohere-milestone-card.active {
+          border-color: #344d41;
+          box-shadow: 0 4px 16px rgba(52, 77, 65, 0.08);
+        }
+
+        .cohere-card-img-box {
+          width: 100%;
+          height: 150px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #fafbfa;
+          border: 1px solid #f0f2f0;
+          border-radius: 8px;
+          overflow: hidden;
+          margin-bottom: 6px;
+        }
+
+        .cohere-milestone-img {
+          max-width: 100%;
+          max-height: 140px;
+          object-fit: contain;
+          mix-blend-mode: multiply;
+          opacity: 0.9;
+          filter: contrast(110%);
+        }
+
+        .cohere-card-tag {
+          font-size: 10.5px;
+          font-weight: 700;
+          color: #344d41;
+          letter-spacing: 0.06em;
+        }
+
+        .cohere-card-title {
+          font-size: 16px;
+          font-weight: 700;
+          color: #111827;
+          margin: 0;
+        }
+
+        .cohere-card-desc {
+          font-size: 13px;
+          color: #4b5563;
+          line-height: 1.5;
+          margin: 0;
+        }
+
+        /* CTA Section */
+        .cohere-cta-section {
+          padding: 0 24px 60px;
+        }
+
+        .cohere-cta-card {
+          background-color: #1e2229;
+          border-radius: 14px;
+          padding: 40px 40px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 28px;
+          color: #ffffff;
+        }
+
+        .cohere-cta-left {
+          display: flex;
+          align-items: center;
+          gap: 24px;
+          max-width: 680px;
+        }
+
+        .cohere-protection-badge {
+          width: 72px;
+          height: 72px;
+          min-width: 72px;
+          border-radius: 14px;
+          background: rgba(52, 77, 65, 0.35);
+          border: 1px solid rgba(52, 77, 65, 0.6);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 10px;
+        }
+
+        .cohere-protection-img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+
+        .cohere-cta-tag {
+          font-size: 10.5px;
+          font-weight: 700;
+          color: #10b981;
+          letter-spacing: 0.08em;
+          margin-bottom: 6px;
+        }
+
+        .cohere-cta-title {
+          font-size: 24px;
+          font-weight: 700;
+          letter-spacing: -0.025em;
+          margin-bottom: 6px;
+          color: #ffffff;
+        }
+
+        .cohere-cta-subtitle {
+          font-size: 13.5px;
+          color: #9ca3af;
+          max-width: 540px;
+          line-height: 1.5;
+        }
+
+        /* Unified Theme-Relatable Cohere Footer */
+        .cohere-bottom-bar {
+          background-color: #fafbfa;
+          border-top: 1px solid #e5e7eb;
+          color: #374151;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 22px 48px 30px;
+          position: relative;
+          z-index: 10;
+          flex-wrap: wrap;
+          gap: 20px;
+        }
+
+        .cohere-footer-left {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .cohere-footer-brand {
+          font-size: 15px;
+          font-weight: 700;
+          letter-spacing: -0.02em;
+          color: #111827;
+        }
+
+        .cohere-footer-subline {
+          font-size: 10px;
+          color: #64748b;
+          letter-spacing: 0.05em;
+          font-weight: 600;
+        }
+
+        .cohere-footer-devs {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .cohere-dev-tag {
+          font-size: 10px;
+          color: #64748b;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+        }
+
+        .cohere-dev-list {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .cohere-dev-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 11px 4px 4px;
+          background-color: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 999px;
+          text-decoration: none;
+          color: #1e293b !important;
+          transition: all 0.15s ease;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        }
+
+        .cohere-dev-pill:hover {
+          background-color: #ffffff;
+          border-color: #344d41;
+          color: #344d41 !important;
+          box-shadow: 0 3px 8px rgba(52, 77, 65, 0.08);
+        }
+
+        .cohere-dev-avatar-box {
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          overflow: hidden;
+          background-color: #f1f5f9;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          border: 1px solid #cbd5e1;
+        }
+
+        .cohere-dev-avatar-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .cohere-dev-avatar-fallback {
+          font-size: 8.5px;
+          font-weight: 700;
+          color: #344d41;
+          line-height: 1;
+        }
+
+        .cohere-dev-name {
+          font-size: 11.5px;
+          font-weight: 600;
+          color: #1e293b;
+        }
+
+        .cohere-dev-pill:hover .cohere-dev-name {
+          color: #344d41;
+        }
+
+        .cohere-dev-ext-icon {
+          color: #94a3b8;
+          transition: color 0.15s ease;
+          margin-left: -1px;
+        }
+
+        .cohere-dev-pill:hover .cohere-dev-ext-icon {
+          color: #344d41;
+        }
+
+        .cohere-footer-right {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .cohere-curated-text {
+          color: #64748b;
+          font-size: 11.5px;
+        }
+
+        .cohere-curated-brand {
+          font-weight: 700;
+          color: #111827;
+          font-size: 13.5px;
+          letter-spacing: -0.02em;
+        }
+
+        /* Responsive Layout */
+        @media (max-width: 960px) {
+          .cohere-hero-grid {
+            grid-template-columns: 1fr;
+            gap: 36px;
+          }
+          .cohere-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .cohere-story-grid,
+          .cohere-story-grid.reverse {
+            grid-template-columns: 1fr;
+            gap: 36px;
+          }
+          .cohere-milestones-grid {
+            grid-template-columns: 1fr;
+          }
+          .cohere-bottom-bar {
+            padding: 20px 24px 30px;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .cohere-top-header {
+            padding: 16px 20px;
+          }
+          .cohere-hero-section {
+            padding: 24px 16px 40px;
+          }
+          .cohere-story-section {
+            padding: 40px 16px;
+          }
+          .cohere-cta-card {
+            padding: 28px 20px;
+          }
+          .cohere-bottom-bar {
+            padding: 20px 20px 32px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 16px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
