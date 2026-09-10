@@ -65,6 +65,7 @@ export default function Navbar({
 
   const isInitialFetchRef = React.useRef<boolean>(true);
   const isFetchingRef = React.useRef<boolean>(false);
+  const notifiedSubjectsRef = React.useRef<Set<string>>(new Set());
   const userMenuRef = React.useRef<HTMLDivElement>(null);
 
   const persistNotifiedIds = (ids: Set<string>) => {
@@ -97,8 +98,16 @@ export default function Navbar({
 
   const dispatchSingleNotification = (n: { id: string; subject?: string; body?: string; salutation?: string; category?: string; url?: string }) => {
     const notifId = String(n.id);
-    if (notifiedIdsRef.current.has(notifId)) return;
+    const subjectSig = (n.subject || '').trim();
+
+    if (notifiedIdsRef.current.has(notifId) || (subjectSig && notifiedSubjectsRef.current.has(subjectSig))) {
+      return;
+    }
+
     notifiedIdsRef.current.add(notifId);
+    if (subjectSig) {
+      notifiedSubjectsRef.current.add(subjectSig);
+    }
     persistNotifiedIds(notifiedIdsRef.current);
 
     triggerSystemNotification({
@@ -125,16 +134,28 @@ export default function Navbar({
 
         if (isInitialFetchRef.current) {
           // On first page load: Seed all existing notifications as acknowledged so past history is NOT spammed
-          notifs.forEach((n) => notifiedIdsRef.current.add(String(n.id)));
+          notifs.forEach((n) => {
+            notifiedIdsRef.current.add(String(n.id));
+            if (n.subject) notifiedSubjectsRef.current.add(n.subject.trim());
+          });
           persistNotifiedIds(notifiedIdsRef.current);
           isInitialFetchRef.current = false;
         } else if (!isManual) {
           // Only trigger OS notification for genuinely newly arrived unread notifications
-          const unreadNew = notifs.filter((n) => !n.is_read && !notifiedIdsRef.current.has(String(n.id)));
+          const unreadNew = notifs.filter(
+            (n) =>
+              !n.is_read &&
+              !notifiedIdsRef.current.has(String(n.id)) &&
+              (!n.subject || !notifiedSubjectsRef.current.has(n.subject.trim()))
+          );
+
           if (unreadNew.length > 0) {
             // Pick latest one to avoid cascading spam
             const latest = unreadNew[0];
-            unreadNew.forEach((n) => notifiedIdsRef.current.add(String(n.id)));
+            unreadNew.forEach((n) => {
+              notifiedIdsRef.current.add(String(n.id));
+              if (n.subject) notifiedSubjectsRef.current.add(n.subject.trim());
+            });
             persistNotifiedIds(notifiedIdsRef.current);
 
             triggerSystemNotification({
