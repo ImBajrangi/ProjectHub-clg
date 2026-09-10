@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ExternalLink,
 } from 'lucide-react';
+import LoadingScreen from '@/components/LoadingScreen';
 
 interface DevProfile {
   name: string;
@@ -1237,7 +1238,7 @@ function SignUpForm() {
 
 export default function SignUpPage() {
   return (
-    <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center' }}>Loading sign up...</div>}>
+    <Suspense fallback={<LoadingScreen label="Loading CodeShastra Team Activation..." sublabel="Fetching project teams & rosters" />}>
       <SignUpForm />
     </Suspense>
   );

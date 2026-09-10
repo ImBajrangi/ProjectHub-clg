@@ -21,7 +21,7 @@ import NotificationDrawer from './NotificationDrawer';
 import PasswordChangeModal from './PasswordChangeModal';
 import HelpModal from './HelpModal';
 import { NotificationItem } from '@/lib/types';
-import { triggerSystemNotification } from '@/lib/deviceNotification';
+import { triggerSystemNotification, requestDeviceNotificationPermission, playNotificationChime } from '@/lib/deviceNotification';
 
 interface NavbarProps {
   user?: {
@@ -50,9 +50,31 @@ export default function Navbar({
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
-  const notifiedIdsRef = React.useRef<Set<string>>(new Set());
+  const notifiedIdsRef = React.useRef<Set<string>>((() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('codeshastra_notified_ids');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) return new Set(parsed);
+        }
+      } catch {}
+    }
+    return new Set();
+  })());
+
   const isInitialFetchRef = React.useRef<boolean>(true);
+  const isFetchingRef = React.useRef<boolean>(false);
   const userMenuRef = React.useRef<HTMLDivElement>(null);
+
+  const persistNotifiedIds = (ids: Set<string>) => {
+    if (typeof window !== 'undefined') {
+      try {
+        const arr = Array.from(ids).slice(-200); // keep last 200
+        localStorage.setItem('codeshastra_notified_ids', JSON.stringify(arr));
+      } catch {}
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -73,8 +95,25 @@ export default function Navbar({
     }
   }, [userMenuOpen]);
 
-  const fetchNotifications = async () => {
-    if (!user) return;
+  const dispatchSingleNotification = (n: { id: string; subject?: string; body?: string; salutation?: string; category?: string; url?: string }) => {
+    const notifId = String(n.id);
+    if (notifiedIdsRef.current.has(notifId)) return;
+    notifiedIdsRef.current.add(notifId);
+    persistNotifiedIds(notifiedIdsRef.current);
+
+    triggerSystemNotification({
+      id: notifId,
+      subject: n.subject,
+      body: n.body,
+      salutation: n.salutation,
+      category: n.category,
+      url: n.url,
+    });
+  };
+
+  const fetchNotifications = async (isManual = false) => {
+    if (!user || isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
       const res = await fetch('/api/notifications');
       if (res.ok) {
@@ -85,29 +124,33 @@ export default function Navbar({
         setNotifications(notifs);
 
         if (isInitialFetchRef.current) {
-          // On first load, seed existing notification IDs to avoid alerting past history
+          // On first page load: Seed all existing notifications as acknowledged so past history is NOT spammed
           notifs.forEach((n) => notifiedIdsRef.current.add(String(n.id)));
+          persistNotifiedIds(notifiedIdsRef.current);
           isInitialFetchRef.current = false;
-        } else {
-          // On subsequent polls, trigger system OS notifications for genuinely new unread items
-          const unread = notifs.filter((n) => !n.is_read);
-          unread.forEach((n) => {
-            const notifId = String(n.id);
-            if (!notifiedIdsRef.current.has(notifId)) {
-              notifiedIdsRef.current.add(notifId);
-              triggerSystemNotification({
-                id: notifId,
-                subject: n.subject,
-                body: n.body,
-                salutation: n.salutation,
-                category: n.category,
-              });
-            }
-          });
+        } else if (!isManual) {
+          // Only trigger OS notification for genuinely newly arrived unread notifications
+          const unreadNew = notifs.filter((n) => !n.is_read && !notifiedIdsRef.current.has(String(n.id)));
+          if (unreadNew.length > 0) {
+            // Pick latest one to avoid cascading spam
+            const latest = unreadNew[0];
+            unreadNew.forEach((n) => notifiedIdsRef.current.add(String(n.id)));
+            persistNotifiedIds(notifiedIdsRef.current);
+
+            triggerSystemNotification({
+              id: String(latest.id),
+              subject: unreadNew.length > 1 ? `${latest.subject} (+${unreadNew.length - 1} new)` : latest.subject,
+              body: latest.body,
+              salutation: latest.salutation,
+              category: latest.category,
+            });
+          }
         }
       }
     } catch {
       // Gracefully ignore temporary network disconnects
+    } finally {
+      isFetchingRef.current = false;
     }
   };
 
@@ -115,13 +158,13 @@ export default function Navbar({
     if (user) {
       fetchNotifications();
 
-      // Background heartbeat polling every 8 seconds for live OS notifications
+      // Lightweight 15-second heartbeat polling for live notifications
       const intervalId = setInterval(() => {
         fetchNotifications();
-      }, 8000);
+      }, 15000);
 
       const handleImmediateUpdate = () => {
-        fetchNotifications();
+        fetchNotifications(true);
       };
 
       const handleInstantNotif = (e: any) => {
@@ -130,29 +173,12 @@ export default function Navbar({
           const notifId = String(item.id);
           setNotifications((prev) => [item, ...prev.filter((n) => String(n.id) !== notifId)]);
           setUnreadCount((prev) => prev + 1);
-          if (!notifiedIdsRef.current.has(notifId)) {
-            notifiedIdsRef.current.add(notifId);
-            triggerSystemNotification({
-              id: notifId,
-              subject: item.subject,
-              body: item.body,
-              salutation: item.salutation,
-              category: item.category,
-            });
-          }
+          dispatchSingleNotification(item);
         }
       };
 
       window.addEventListener('codeshastra_notification_instant', handleInstantNotif);
       window.addEventListener('codeshastra_notification_update', handleImmediateUpdate);
-      window.addEventListener('focus', handleImmediateUpdate);
-
-      const handleVisibility = () => {
-        if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-          fetchNotifications();
-        }
-      };
-      document.addEventListener('visibilitychange', handleVisibility);
 
       let bc: BroadcastChannel | null = null;
       try {
@@ -164,18 +190,9 @@ export default function Navbar({
               const notifId = String(item.id);
               setNotifications((prev) => [item, ...prev.filter((n) => String(n.id) !== notifId)]);
               setUnreadCount((prev) => prev + 1);
-              if (!notifiedIdsRef.current.has(notifId)) {
-                notifiedIdsRef.current.add(notifId);
-                triggerSystemNotification({
-                  id: notifId,
-                  subject: item.subject,
-                  body: item.body,
-                  salutation: item.salutation,
-                  category: item.category,
-                });
-              }
+              dispatchSingleNotification(item);
             } else {
-              fetchNotifications();
+              fetchNotifications(true);
             }
           };
         }
@@ -185,8 +202,6 @@ export default function Navbar({
         clearInterval(intervalId);
         window.removeEventListener('codeshastra_notification_instant', handleInstantNotif);
         window.removeEventListener('codeshastra_notification_update', handleImmediateUpdate);
-        window.removeEventListener('focus', handleImmediateUpdate);
-        document.removeEventListener('visibilitychange', handleVisibility);
         if (bc) {
           try {
             bc.close();
@@ -384,11 +399,12 @@ export default function Navbar({
                 <button
                   type="button"
                   onClick={() => {
+                    requestDeviceNotificationPermission();
                     fetchNotifications();
                     setDrawerOpen(true);
                   }}
                   className="nav-btn nav-btn-icon"
-                  title="Notifications"
+                  title="Notifications & System Alerts"
                 >
                   <Bell size={15} />
                   {unreadCount > 0 && (
@@ -859,3 +875,4 @@ export default function Navbar({
     </>
   );
 }
+

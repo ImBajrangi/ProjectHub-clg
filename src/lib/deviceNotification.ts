@@ -1,3 +1,78 @@
+// Utility for cross-platform OS Notifications (macOS Notification Center, Windows Toast, Android Chrome, iOS Web App)
+
+let audioContext: AudioContext | null = null;
+
+export function playNotificationChime() {
+  if (typeof window === 'undefined') return;
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    if (!audioContext || audioContext.state === 'suspended') {
+      audioContext = new AudioCtx();
+    }
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
+
+    const now = audioContext.currentTime;
+    
+    // Note 1: High crisp bell (D6 = 1174.66Hz)
+    const osc1 = audioContext.createOscillator();
+    const gain1 = audioContext.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(880, now);
+    osc1.frequency.exponentialRampToValueAtTime(1174.66, now + 0.12);
+    
+    gain1.gain.setValueAtTime(0.2, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+    osc1.connect(gain1);
+    gain1.connect(audioContext.destination);
+
+    osc1.start(now);
+    osc1.stop(now + 0.36);
+
+    // Note 2: Harmonic shimmer (F#6 = 1479.98Hz)
+    const osc2 = audioContext.createOscillator();
+    const gain2 = audioContext.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1479.98, now + 0.08);
+
+    gain2.gain.setValueAtTime(0.12, now + 0.08);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+    osc2.connect(gain2);
+    gain2.connect(audioContext.destination);
+
+    osc2.start(now + 0.08);
+    osc2.stop(now + 0.46);
+  } catch {
+    // Gracefully ignore audio autoplay restrictions
+  }
+}
+
+export async function requestDeviceNotificationPermission(): Promise<NotificationPermission> {
+  if (typeof window === 'undefined' || !('Notification' in window)) {
+    return 'denied';
+  }
+
+  if (Notification.permission === 'granted') {
+    return 'granted';
+  }
+
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      // Play a quick test confirmation chime so user knows it's active
+      playNotificationChime();
+    }
+    return permission;
+  } catch (err) {
+    console.warn('Error requesting notification permission:', err);
+    return Notification.permission;
+  }
+}
+
 export async function triggerSystemNotification(item: {
   id: string;
   subject?: string;
@@ -8,13 +83,26 @@ export async function triggerSystemNotification(item: {
 }) {
   if (typeof window === 'undefined') return;
 
-  // Verify notification support and permission
+  // 1. Play acoustic notification chime
+  playNotificationChime();
+
+  // 2. Verify browser Notification support
   if (!('Notification' in window)) {
-    console.warn('System notifications not supported in this environment');
+    console.warn('[CodeShastra Notification] Notification API not supported on this platform');
     return;
   }
 
-  if (Notification.permission !== 'granted') {
+  let permission = Notification.permission;
+  if (permission === 'default') {
+    try {
+      permission = await Notification.requestPermission();
+    } catch {
+      permission = 'default';
+    }
+  }
+
+  if (permission !== 'granted') {
+    console.warn('[CodeShastra Notification] Notification permission is not granted (current: ' + permission + ')');
     return;
   }
 
@@ -24,41 +112,59 @@ export async function triggerSystemNotification(item: {
 
   const title = item.subject
     ? `CodeShastra: ${item.subject}`
-    : 'CodeShastra ProjectHub Notification';
+    : 'CodeShastra ProjectHub Notice';
+
+  const origin = window.location.origin;
+  const iconUrl = `${origin}/favicon.ico`;
 
   const notifOptions: NotificationOptions = {
     body: cleanBody,
-    icon: '/favicon.svg',
-    badge: '/favicon.svg',
-    tag: `codeshastra-${item.id}`,
+    icon: iconUrl,
+    badge: iconUrl,
+    tag: `cs-${item.id}-${Date.now()}`,
     data: {
       url: item.url || '/dashboard/leader',
     },
-    requireInteraction: false,
+    requireInteraction: true,
     silent: false,
   };
 
-  // Method 1: Active Service Worker Registration (Highest reliability on macOS, Windows & Mobile)
+  console.log('[CodeShastra Notification] 🚀 Dispatching OS notification:', { title, body: cleanBody });
+
+  let swSucceeded = false;
+
+  // Method 1: Active Service Worker showNotification (macOS & Windows Background / Minimized)
   if ('serviceWorker' in navigator) {
     try {
       const reg = await navigator.serviceWorker.ready;
       if (reg && typeof reg.showNotification === 'function') {
         await reg.showNotification(title, notifOptions);
-        return;
+        console.log('[CodeShastra Notification] ✅ ServiceWorker showNotification executed successfully');
+        swSucceeded = true;
       }
     } catch (err) {
-      console.warn('Service worker showNotification fallback:', err);
+      console.warn('[CodeShastra Notification] ⚠️ Service worker showNotification fallback:', err);
     }
   }
 
-  // Method 2: Native Window Notification Constructor
+  // Method 2: Native Window Notification Constructor (Foreground / Desktop immediate banner)
   try {
     const notif = new Notification(title, notifOptions);
+    notif.onshow = () => {
+      console.log('[CodeShastra Notification] ✅ Native OS Notification displayed on screen');
+    };
     notif.onclick = () => {
       window.focus();
+      if (item.url) {
+        window.location.href = item.url;
+      }
       notif.close();
     };
   } catch (err) {
-    console.error('Direct Notification constructor failed:', err);
+    if (!swSucceeded) {
+      console.warn('[CodeShastra Notification] ⚠️ Direct Notification constructor error:', err);
+    }
   }
 }
+
+

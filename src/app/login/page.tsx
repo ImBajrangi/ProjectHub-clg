@@ -14,6 +14,8 @@ import {
   X,
   ExternalLink,
 } from 'lucide-react';
+import { requestDeviceNotificationPermission } from '@/lib/deviceNotification';
+import LoadingScreen from '@/components/LoadingScreen';
 
 interface DevProfile {
   name: string;
@@ -182,6 +184,13 @@ function LoginForm() {
 
       if (data.token) {
         localStorage.setItem('codeshastra_token', data.token);
+      }
+
+      // Proactively request native OS desktop notification permission on login user gesture
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+        try {
+          await requestDeviceNotificationPermission();
+        } catch {}
       }
 
       const role = data.user?.role;
@@ -1212,7 +1221,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div style={{ padding: '60px', textAlign: 'center' }}>Loading authentication...</div>}>
+    <Suspense fallback={<LoadingScreen label="Loading CodeShastra Portal..." sublabel="Securing authentication & workspace" />}>
       <LoginForm />
     </Suspense>
   );

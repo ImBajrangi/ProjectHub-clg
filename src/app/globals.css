@@ -891,10 +891,10 @@ div.desktop-only[style*="display:flex"] {
 
 .spinner {
   display: inline-block;
-  width: 22px;
-  height: 22px;
-  border: 2.5px solid rgba(37, 99, 235, 0.15);
-  border-top-color: var(--color-accent);
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(52, 77, 65, 0.18);
+  border-top-color: #344D41;
   border-radius: 50%;
   animation: spin 0.75s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   will-change: transform;
@@ -904,12 +904,16 @@ div.desktop-only[style*="display:flex"] {
   width: 14px;
   height: 14px;
   border-width: 2px;
+  border: 2px solid rgba(52, 77, 65, 0.18);
+  border-top-color: #344D41;
 }
 
 .spinner-lg {
   width: 32px;
   height: 32px;
   border-width: 3px;
+  border: 3px solid rgba(52, 77, 65, 0.18);
+  border-top-color: #344D41;
 }
 
 .page-loader {
@@ -920,7 +924,7 @@ div.desktop-only[style*="display:flex"] {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 50% 45%, rgba(37, 99, 235, 0.05) 0%, var(--color-canvas) 70%);
+  background: radial-gradient(circle at 50% 45%, rgba(52, 77, 65, 0.06) 0%, #F8FAFC 70%);
   position: relative;
   overflow: hidden;
   padding: 24px;
@@ -933,12 +937,12 @@ div.desktop-only[style*="display:flex"] {
   position: relative;
   gap: 16px;
   padding: 32px 40px;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  border: 1px solid #D8DFD5;
   border-radius: 20px;
-  box-shadow: 0 12px 36px -8px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+  box-shadow: 0 16px 36px -8px rgba(52, 77, 65, 0.12), 0 4px 12px -2px rgba(52, 77, 65, 0.04);
   max-width: 90vw;
   animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

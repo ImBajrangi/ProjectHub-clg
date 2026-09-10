@@ -20,7 +20,7 @@ import {
   Info,
 } from 'lucide-react';
 import { NotificationItem } from '@/lib/types';
-import { triggerSystemNotification } from '@/lib/deviceNotification';
+import { triggerSystemNotification, requestDeviceNotificationPermission } from '@/lib/deviceNotification';
 
 interface NotificationDrawerProps {
   isOpen: boolean;
@@ -352,6 +352,14 @@ export default function NotificationDrawer({
     });
   }, [parsedItems, activeFilter]);
 
+  const [permState, setPermState] = useState<NotificationPermission>('default');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setPermState(Notification.permission);
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
@@ -563,6 +571,58 @@ export default function NotificationDrawer({
               Clearances & Reviews
             </button>
           </div>
+
+          {/* System OS Notification Enable Banner */}
+          {permState !== 'granted' && (
+            <div
+              style={{
+                marginTop: '12px',
+                padding: '9px 12px',
+                borderRadius: '8px',
+                backgroundColor: '#F0FDF4',
+                border: '1px solid #BBF7D0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '10px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                <Bell size={14} style={{ color: '#16A34A', flexShrink: 0 }} />
+                <span style={{ fontSize: '11.5px', color: '#15803D', fontWeight: 600 }}>
+                  Enable direct desktop OS alerts
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await requestDeviceNotificationPermission();
+                  setPermState(res);
+                  if (res === 'granted') {
+                    triggerSystemNotification({
+                      id: 'test-welcome',
+                      subject: 'System Alerts Enabled',
+                      body: 'You will receive instant desktop notifications for evaluations, milestones, and meetings.',
+                    });
+                  }
+                }}
+                style={{
+                  padding: '4px 10px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  backgroundColor: '#16A34A',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  boxShadow: '0 1px 2px rgba(22, 163, 74, 0.2)',
+                }}
+              >
+                Enable OS Alerts
+              </button>
+            </div>
+          )}
 
           {/* Mobile Mark All Read Full Bar */}
           {unreadCount > 0 && (

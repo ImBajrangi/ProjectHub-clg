@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Lock, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import LoadingScreen from '@/components/LoadingScreen';
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -138,7 +139,7 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div>Loading reset form...</div>}>
+    <Suspense fallback={<LoadingScreen label="Loading CodeShastra Password Reset..." sublabel="Validating cryptographic security token" />}>
       <ResetPasswordForm />
     </Suspense>
   );
