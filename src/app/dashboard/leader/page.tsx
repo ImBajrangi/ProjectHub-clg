@@ -19,9 +19,13 @@ import {
   MapPin,
   Clock,
   Building,
+  ChevronDown,
+  ChevronUp,
+  X,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import LoadingScreen from '@/components/LoadingScreen';
 
 export default function LeaderDashboardPage() {
   const router = useRouter();
@@ -41,24 +45,88 @@ export default function LeaderDashboardPage() {
 
   // Meeting request
   const [requestingMeeting, setRequestingMeeting] = useState(false);
+  const [cancellingMeetingId, setCancellingMeetingId] = useState<string | null>(null);
   const [meetingMessage, setMeetingMessage] = useState('');
+  const [expandedMeetingIds, setExpandedMeetingIds] = useState<Set<string>>(new Set());
+
+  const toggleMeetingExpand = (meetingId: string) => {
+    setExpandedMeetingIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(meetingId)) {
+        next.delete(meetingId);
+      } else {
+        next.add(meetingId);
+      }
+      return next;
+    });
+  };
+
+  const handleCancelMeeting = async (meetingId: string) => {
+    if (!meetingId) return;
+    setCancellingMeetingId(meetingId);
+    setMeetingMessage('Withdrawing meeting request...');
+
+    // Optimistic UI update (0ms)
+    setTeamData((prev: any) => {
+      if (!prev) return prev;
+      const filtered = (prev.meetings || []).filter((m: any) => m.id !== meetingId);
+      const reindexed = filtered.map((m: any, idx: number) => ({
+        ...m,
+        meeting_index: idx + 1,
+      }));
+      return {
+        ...prev,
+        meetings: reindexed,
+      };
+    });
+
+    try {
+      const res = await fetch('/api/meetings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel', meetingId }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMeetingMessage(`Error: ${data.error}`);
+        loadDashboard();
+      } else {
+        setMeetingMessage('Meeting request was successfully withdrawn.');
+      }
+    } catch (e: any) {
+      setMeetingMessage(`Error: ${e.message}`);
+      loadDashboard();
+    } finally {
+      setCancellingMeetingId(null);
+    }
+  };
 
   const loadDashboard = async () => {
     try {
-      const authRes = await fetch('/api/auth/me');
-      if (!authRes.ok) {
-        router.push('/login');
-        return;
-      }
-      const authData = await authRes.json();
-      if (authData.user?.role !== 'leader') {
-        router.push(authData.user?.role === 'supervisor' ? '/dashboard/faculty' : '/admin');
-        return;
-      }
-      setCurrentUser(authData.user);
+      const [authRes, teamRes] = await Promise.all([
+        currentUser ? Promise.resolve(null) : fetch('/api/auth/me'),
+        fetch('/api/team'),
+      ]);
 
-      const teamRes = await fetch('/api/team');
-      if (teamRes.ok) {
+      if (authRes) {
+        if (!authRes.ok) {
+          router.push('/login');
+          return;
+        }
+        const authData = await authRes.json();
+        if (!authData.authenticated || !authData.user) {
+          router.push('/login');
+          return;
+        }
+        if (authData.user.role !== 'leader') {
+          router.push(authData.user.role === 'supervisor' ? '/dashboard/faculty' : '/admin');
+          return;
+        }
+        setCurrentUser(authData.user);
+      }
+
+      if (teamRes && teamRes.ok) {
         const tData = await teamRes.json();
         setTeamData(tData);
         if (tData.problemStatement) {
@@ -116,6 +184,18 @@ export default function LeaderDashboardPage() {
 
     const finalDescription = editorRef.current ? editorRef.current.innerHTML : psDescription;
 
+    // Optimistic UI update (0ms)
+    setTeamData((prev: any) => ({
+      ...prev,
+      problemStatement: {
+        ...(prev?.problemStatement || {}),
+        title: psTitle,
+        description: finalDescription,
+        status: 'pending',
+      },
+    }));
+    setPsMessage('Problem statement submitted successfully for supervisor review.');
+
     try {
       const res = await fetch('/api/problem-statement', {
         method: 'POST',
@@ -126,12 +206,11 @@ export default function LeaderDashboardPage() {
 
       if (!res.ok) {
         setPsMessage(`Error: ${data.error}`);
-      } else {
-        setPsMessage('Problem statement submitted successfully for supervisor review.');
         loadDashboard();
       }
     } catch (e: any) {
       setPsMessage(`Error: ${e.message}`);
+      loadDashboard();
     } finally {
       setSubmittingPs(false);
     }
@@ -139,7 +218,24 @@ export default function LeaderDashboardPage() {
 
   const handleWantToMeet = async () => {
     setRequestingMeeting(true);
-    setMeetingMessage('');
+    setMeetingMessage('Meeting request sent! Your supervisor has received an immediate alert.');
+
+    // Optimistic UI update (0ms)
+    setTeamData((prev: any) => {
+      if (!prev) return prev;
+      const currentMeetings = prev.meetings || [];
+      const newMeet = {
+        id: 'temp-' + Date.now(),
+        meeting_index: currentMeetings.length + 1,
+        status: 'requested',
+        requested_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      };
+      return {
+        ...prev,
+        meetings: [...currentMeetings, newMeet],
+      };
+    });
 
     try {
       const res = await fetch('/api/meetings', {
@@ -151,23 +247,27 @@ export default function LeaderDashboardPage() {
 
       if (!res.ok) {
         setMeetingMessage(`Error: ${data.error}`);
-      } else {
-        setMeetingMessage('Meeting request sent! Your supervisor has received an immediate alert.');
         loadDashboard();
+      } else if (data.meeting) {
+        setTeamData((prev: any) => {
+          if (!prev) return prev;
+          const filtered = (prev.meetings || []).filter((m: any) => !m.id.startsWith('temp-'));
+          return {
+            ...prev,
+            meetings: [...filtered, data.meeting],
+          };
+        });
       }
     } catch (e: any) {
       setMeetingMessage(`Error: ${e.message}`);
+      loadDashboard();
     } finally {
       setRequestingMeeting(false);
     }
   };
 
   if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <RefreshCw size={28} className="spin" style={{ color: 'var(--color-ink)' }} />
-      </div>
-    );
+    return <LoadingScreen label="Loading project workspace..." />;
   }
 
   const team = teamData?.team;
@@ -184,30 +284,39 @@ export default function LeaderDashboardPage() {
 
       <main className="container" style={{ flex: 1, paddingBottom: '60px' }}>
         {/* Team Banner */}
-        <div className="card-soft" style={{ padding: '24px', marginBottom: '24px' }}>
+        <div className="card-soft" style={{ marginBottom: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                 <span className="badge badge-neutral">{team?.program}</span>
                 <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Code: {team?.team_code}</span>
               </div>
-              <h1 style={{ fontSize: '26px', fontWeight: 700 }}>{team?.team_name}</h1>
+              <h1 style={{ fontSize: 'clamp(20px, 4vw, 26px)', fontWeight: 700 }}>{team?.team_name}</h1>
               <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                 Leader: <strong style={{ color: 'var(--color-ink)' }}>{currentUser?.fullName}</strong> ({currentUser?.email})
               </div>
             </div>
 
             {/* Guide Info */}
-            <div style={{ backgroundColor: '#FFFFFF', padding: '12px 18px', borderRadius: 'var(--rounded-sm)', border: '1px solid var(--color-hairline)' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+            <div style={{ backgroundColor: '#FFFFFF', padding: '12px 16px', borderRadius: 'var(--rounded-sm)', border: '1px solid var(--color-hairline)', width: '100%', maxWidth: '360px', boxSizing: 'border-box' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Assigned Supervisor
               </div>
               <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-ink)', marginTop: '2px' }}>
                 {supervisor?.fullName || 'Not Allocated'}
               </div>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                {supervisor?.email} • {supervisor?.phone}
-              </div>
+              {supervisor?.email && (
+                <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  <a href={`mailto:${supervisor.email}`} style={{ color: 'var(--color-accent)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    ✉️ {supervisor.email}
+                  </a>
+                  {supervisor.phone && (
+                    <a href={`tel:${supervisor.phone}`} style={{ color: 'var(--color-ink-soft)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      📞 {supervisor.phone}
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -286,23 +395,23 @@ export default function LeaderDashboardPage() {
         {/* TAB 2: PROBLEM STATEMENT (WITH RICH AUTO-EXPANDING BOLD TEXTAREA) */}
         {activeTab === 'problem' && (
           <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '18px' }}>
+              <div style={{ flex: '1 1 240px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Milestone 1: Problem Statement Proposal</h3>
-                <p style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
+                <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
                   Once approved by your supervisor, this proposal is permanently locked against further edits.
                 </p>
               </div>
 
-              <div>
+              <div style={{ flexShrink: 0 }}>
                 {problemStatement?.status === 'approved' ? (
-                  <span className="badge badge-success">✓ Approved & Locked</span>
+                  <span className="badge badge-success" style={{ whiteSpace: 'nowrap' }}>✓ Approved & Locked</span>
                 ) : problemStatement?.status === 'revision_requested' ? (
-                  <span className="badge badge-warning">⚠ Revision Requested</span>
+                  <span className="badge badge-warning" style={{ whiteSpace: 'nowrap' }}>⚠ Revision Requested</span>
                 ) : problemStatement?.status === 'pending' ? (
-                  <span className="badge badge-warning">Pending Supervisor Review</span>
+                  <span className="badge badge-warning" style={{ whiteSpace: 'nowrap' }}>⏳ Pending Supervisor Review</span>
                 ) : (
-                  <span className="badge badge-neutral">Not Submitted</span>
+                  <span className="badge badge-neutral" style={{ whiteSpace: 'nowrap' }}>Not Submitted</span>
                 )}
               </div>
             </div>
@@ -347,8 +456,8 @@ export default function LeaderDashboardPage() {
 
               {/* Dynamic Auto-Expanding Rich Bold Text Area */}
               <div className="input-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <label className="input-label" style={{ marginBottom: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                  <label className="input-label" style={{ marginBottom: 0, flex: '1 1 auto' }}>
                     Problem Scope & Methodology Description
                   </label>
                   {!isLocked && (
@@ -356,10 +465,10 @@ export default function LeaderDashboardPage() {
                       type="button"
                       onClick={handleBoldClick}
                       className="btn btn-soft"
-                      style={{ padding: '4px 10px', fontSize: '12px', fontWeight: 700 }}
-                      title="Make selected text Bold (Ctrl+B)"
+                      style={{ padding: '4px 10px', fontSize: '12px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}
+                      title="Make selected text Bold (Ctrl+B / ⌘+B)"
                     >
-                      <Bold size={13} /> Bold (Ctrl+B)
+                      <Bold size={13} /> <span>Bold</span>
                     </button>
                   )}
                 </div>
@@ -391,30 +500,34 @@ export default function LeaderDashboardPage() {
                       padding: '14px 16px',
                       backgroundColor: 'var(--color-field)',
                       borderRadius: 'var(--rounded-sm)',
-                      border: '1px solid transparent',
                       color: 'var(--color-ink)',
                       fontSize: '14px',
                       lineHeight: '1.6',
                       outline: 'none',
                       boxSizing: 'border-box',
-                      transition: 'border-color 0.2s ease',
                       whiteSpace: 'pre-wrap',
                       overflowY: 'visible',
                     }}
                     className="rich-bold-editor"
-                    data-placeholder="Detail the technical approach, system design, and expected deliverables... (Select text and press Ctrl+B or click Bold button)"
+                    data-placeholder="Detail the technical approach, system design, and expected deliverables... (Select text and click Bold or press Ctrl+B)"
                   />
                 )}
                 <span style={{ fontSize: '11px', color: 'var(--color-text-faint)', marginTop: '6px', display: 'block' }}>
-                  • Box automatically expands to fit your text without scrollbars. Format bold text with Ctrl+B or the Bold button.
+                  • Box automatically expands to fit your text without scrollbars. Format bold text with the Bold button or Ctrl+B.
                 </span>
               </div>
 
               {!isLocked && (
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
-                  <button type="submit" className="btn btn-primary" disabled={submittingPs}>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={submittingPs}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    {submittingPs && <span className="spinner spinner-sm" style={{ borderTopColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.25)' }} />}
                     <Send size={14} />
-                    {submittingPs ? 'Submitting...' : 'Submit for Review'}
+                    <span>{submittingPs ? 'Submitting...' : problemStatement?.status === 'pending' ? 'Update Proposal' : 'Submit for Review'}</span>
                   </button>
                 </div>
               )}
@@ -430,7 +543,7 @@ export default function LeaderDashboardPage() {
               <div>
                 <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Request Supervisor Review</h3>
                 <p style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                  Click "Want to Meet" to notify Prof. {supervisor?.fullName || 'Supervisor'} immediately.
+                  Click "Want to Meet" to notify Prof. {supervisor?.fullName || 'Supervisor'}.
                 </p>
               </div>
 
@@ -461,35 +574,403 @@ export default function LeaderDashboardPage() {
                   No meetings requested or logged yet.
                 </p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {meetings.map((m: any) => (
-                    <div
-                      key={m.id}
-                      style={{
-                        backgroundColor: 'var(--color-canvas-soft)',
-                        borderRadius: 'var(--rounded-sm)',
-                        padding: '16px',
-                        border: '1px solid var(--color-hairline)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <strong style={{ fontSize: '14px', color: 'var(--color-ink)' }}>Meet {m.meeting_index} Info</strong>
-                        <span className="badge badge-neutral" style={{ fontSize: '10px' }}>{m.status}</span>
-                      </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {meetings.map((m: any) => {
+                    const isCompleted = m.status === 'completed';
+                    const isExpanded = expandedMeetingIds.has(m.id);
+                    const presentStudents = members?.filter((s: any) =>
+                      m.attendance?.some((a: any) => a.student_id === s.id && a.is_present)
+                    ) || [];
+                    const absentStudents = members?.filter((s: any) =>
+                      m.attendance?.some((a: any) => a.student_id === s.id && !a.is_present)
+                    ) || [];
+                    const totalCount = members?.length || (presentStudents.length + absentStudents.length);
 
-                      {m.scheduled_date && (
-                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
-                          Scheduled: <strong>{m.scheduled_date}</strong> at <strong>{m.time_slot}</strong> • Venue: <strong>{m.venue}</strong>
+                    return (
+                      <div
+                        key={m.id}
+                        style={{
+                          backgroundColor: '#FFFFFF',
+                          border: '1px solid var(--color-hairline)',
+                          borderLeft: isCompleted ? '4px solid #059669' : m.status === 'scheduled' ? '4px solid #2563EB' : '4px solid #D97706',
+                          borderRadius: '10px',
+                          overflow: 'hidden',
+                          boxShadow: isExpanded ? '0 4px 16px rgba(15, 23, 42, 0.05)' : '0 1px 3px rgba(15, 23, 42, 0.02)',
+                        }}
+                      >
+                        {/* Header Summary Row */}
+                        <div
+                          onClick={() => {
+                            if (isCompleted || m.summary_notes) {
+                              toggleMeetingExpand(m.id);
+                            }
+                          }}
+                          style={{
+                            padding: '14px 18px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '10px',
+                            cursor: (isCompleted || m.summary_notes) ? 'pointer' : 'default',
+                            userSelect: 'none',
+                            backgroundColor: isExpanded ? '#F8FAFC' : '#FFFFFF',
+                            borderBottom: isExpanded ? '1px solid var(--color-hairline)' : 'none',
+                          }}
+                        >
+                          {/* Row 1: Meet Index + Primary Status Badge + Action Button */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '15px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.02em' }}>
+                                Meet {m.meeting_index}
+                              </span>
+
+                              <span
+                                style={{
+                                  fontSize: '11px',
+                                  padding: '3px 9px',
+                                  borderRadius: '6px',
+                                  fontWeight: 600,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  backgroundColor: isCompleted ? '#ECFDF5' : m.status === 'scheduled' ? '#EFF6FF' : '#FFFBEB',
+                                  color: isCompleted ? '#065F46' : m.status === 'scheduled' ? '#1E40AF' : '#92400E',
+                                  border: '1px solid',
+                                  borderColor: isCompleted ? '#A7F3D0' : m.status === 'scheduled' ? '#BFDBFE' : '#FDE68A',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {isCompleted ? '✓ Completed' : m.status === 'scheduled' ? '🗓️ Scheduled' : '⏳ Requested'}
+                              </span>
+                            </div>
+
+                            {/* Right Action Button */}
+                            <div>
+                              {(isCompleted || m.summary_notes) ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleMeetingExpand(m.id);
+                                  }}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    padding: '5px 12px',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    color: isExpanded ? '#1D4ED8' : 'var(--color-ink-soft)',
+                                    backgroundColor: isExpanded ? '#EFF6FF' : '#FFFFFF',
+                                    border: '1px solid',
+                                    borderColor: isExpanded ? '#BFDBFE' : 'var(--color-hairline)',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  <span>{isExpanded ? 'Hide Details' : 'View Details'}</span>
+                                  {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                                </button>
+                              ) : m.status === 'requested' ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCancelMeeting(m.id);
+                                  }}
+                                  disabled={cancellingMeetingId === m.id}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '4px 10px',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    color: '#DC2626',
+                                    backgroundColor: '#FEF2F2',
+                                    border: '1px solid #FECACA',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                  title="Withdraw / Cancel this request"
+                                >
+                                  <X size={12} />
+                                  <span>{cancellingMeetingId === m.id ? 'Withdrawing...' : 'Cancel Request'}</span>
+                                </button>
+                              ) : (
+                                <span style={{ fontSize: '11px', fontWeight: 600, color: '#2563EB', backgroundColor: '#EFF6FF', padding: '4px 10px', borderRadius: '6px', border: '1px solid #DBEAFE', whiteSpace: 'nowrap' }}>
+                                  🗓️ Confirmed Session
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Row 2: Initiator Tag, Attendance, and Scheduled Meta Chips */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                fontWeight: 500,
+                                backgroundColor: '#F1F5F9',
+                                color: '#475569',
+                                border: '1px solid #E2E8F0',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {m.status === 'requested' || (!m.scheduled_date && m.meeting_index === 1) ? '🎓 Student Requested' : '👨‍🏫 Supervisor Scheduled'}
+                            </span>
+
+                            {isCompleted && (
+                              <span
+                                style={{
+                                  fontSize: '11px',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  fontWeight: 600,
+                                  backgroundColor: absentStudents.length === 0 ? '#ECFDF5' : '#FFFBEB',
+                                  color: absentStudents.length === 0 ? '#047857' : '#B45309',
+                                  border: '1px solid',
+                                  borderColor: absentStudents.length === 0 ? '#A7F3D0' : '#FDE68A',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                👥 {presentStudents.length}/{totalCount || 'All'} Present
+                              </span>
+                            )}
+
+                            {m.status === 'requested' && (
+                              <span
+                                style={{
+                                  fontSize: '11px',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  fontWeight: 600,
+                                  backgroundColor: '#FFFBEB',
+                                  color: '#B45309',
+                                  border: '1px solid #FDE68A',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                ⏳ Awaiting Faculty Schedule
+                              </span>
+                            )}
+
+                            {m.scheduled_date && (
+                              <span style={{ fontSize: '11px', color: '#334155', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '2px 8px', borderRadius: '5px', whiteSpace: 'nowrap' }}>
+                                📅 {m.scheduled_date}
+                              </span>
+                            )}
+
+                            {m.time_slot && (
+                              <span style={{ fontSize: '11px', color: '#334155', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '2px 8px', borderRadius: '5px', whiteSpace: 'nowrap' }}>
+                                🕒 {m.time_slot}
+                              </span>
+                            )}
+
+                            {m.venue && (
+                              <span style={{ fontSize: '11px', color: '#334155', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '2px 8px', borderRadius: '5px', wordBreak: 'break-word' }}>
+                                📍 {m.venue}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      )}
 
-                      {m.summary_notes && (
-                        <p style={{ fontSize: '13px', color: 'var(--color-ink-soft)', whiteSpace: 'pre-wrap' }}>
-                          {m.summary_notes}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                        {/* Collapsible Details: Balanced 2-Column Layout */}
+                        {isExpanded && isCompleted && (
+                          <div
+                            style={{
+                              padding: '16px',
+                              backgroundColor: '#F8FAFC',
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                              gap: '14px',
+                              alignItems: 'stretch',
+                            }}
+                          >
+                            {/* Left Column: Meeting Notes & Actions */}
+                            <div
+                              style={{
+                                backgroundColor: '#FFFFFF',
+                                border: '1px solid var(--color-hairline)',
+                                borderRadius: '8px',
+                                padding: '16px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'space-between',
+                                gap: '12px',
+                              }}
+                            >
+                              <div>
+                                <div style={{ fontSize: '11px', fontWeight: 800, color: '#1D4ED8', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  📝 Discussion Summary & Feedback
+                                </div>
+                                {m.summary_notes ? (
+                                  <div
+                                    style={{
+                                      backgroundColor: '#F8FAFC',
+                                      padding: '12px 14px',
+                                      borderRadius: '6px',
+                                      borderLeft: '3px solid #2563EB',
+                                      color: 'var(--color-ink)',
+                                      fontSize: '13px',
+                                      lineHeight: '1.6',
+                                      whiteSpace: 'pre-wrap',
+                                    }}
+                                  >
+                                    {m.summary_notes}
+                                  </div>
+                                ) : (
+                                  <p style={{ fontSize: '12px', color: 'var(--color-text-faint)', fontStyle: 'italic', margin: 0 }}>
+                                    No discussion notes recorded for this session.
+                                  </p>
+                                )}
+                              </div>
+
+                              {m.action_directives && (
+                                <div
+                                  style={{
+                                    backgroundColor: '#FFFBEB',
+                                    padding: '12px 14px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #FDE68A',
+                                    borderLeft: '3px solid #D97706',
+                                  }}
+                                >
+                                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
+                                    🎯 Action Directives & Next Tasks
+                                  </div>
+                                  <p style={{ color: '#78350F', fontSize: '12px', margin: 0, whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                                    {m.action_directives}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Right Column: Attendance Registry */}
+                            <div
+                              style={{
+                                backgroundColor: '#FFFFFF',
+                                border: '1px solid var(--color-hairline)',
+                                borderRadius: '8px',
+                                padding: '16px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '10px',
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-hairline)', paddingBottom: '8px' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                  👥 Attendance Registry
+                                </span>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                  <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0' }}>
+                                    {presentStudents.length} Present
+                                  </span>
+                                  {absentStudents.length > 0 && (
+                                    <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: '#FEF2F2', color: '#991B1B', border: '1px solid #FECACA' }}>
+                                      {absentStudents.length} Absent
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '240px', overflowY: 'auto' }}>
+                                {presentStudents.map((s: any) => (
+                                  <div
+                                    key={s.id}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      padding: '7px 10px',
+                                      borderRadius: '6px',
+                                      backgroundColor: '#F8FAFC',
+                                      border: '1px solid var(--color-hairline)',
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <span
+                                        style={{
+                                          width: '18px',
+                                          height: '18px',
+                                          borderRadius: '50%',
+                                          backgroundColor: '#D1FAE5',
+                                          color: '#047857',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          fontSize: '11px',
+                                          fontWeight: 800,
+                                        }}
+                                      >
+                                        ✓
+                                      </span>
+                                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-ink)' }}>
+                                        {s.full_name}
+                                      </span>
+                                    </div>
+                                    <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--color-text-muted)', backgroundColor: '#FFFFFF', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--color-hairline)' }}>
+                                      {s.roll_no}
+                                    </span>
+                                  </div>
+                                ))}
+
+                                {absentStudents.map((s: any) => (
+                                  <div
+                                    key={s.id}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      padding: '7px 10px',
+                                      borderRadius: '6px',
+                                      backgroundColor: '#FEF2F2',
+                                      border: '1px solid #FECACA',
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <span
+                                        style={{
+                                          width: '18px',
+                                          height: '18px',
+                                          borderRadius: '50%',
+                                          backgroundColor: '#FEE2E2',
+                                          color: '#DC2626',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          fontSize: '11px',
+                                          fontWeight: 800,
+                                        }}
+                                      >
+                                        ✕
+                                      </span>
+                                      <span style={{ fontSize: '12px', fontWeight: 600, color: '#991B1B' }}>
+                                        {s.full_name}
+                                      </span>
+                                    </div>
+                                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#B91C1C', backgroundColor: '#FFFFFF', padding: '2px 6px', borderRadius: '4px', border: '1px solid #FECACA' }}>
+                                      Absent
+                                    </span>
+                                  </div>
+                                ))}
+
+                                {presentStudents.length === 0 && absentStudents.length === 0 && (
+                                  <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', textAlign: 'center', padding: '12px', margin: 0 }}>
+                                    All registered team members recorded present.
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

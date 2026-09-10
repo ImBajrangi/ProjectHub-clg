@@ -17,12 +17,16 @@ import {
   ExternalLink,
   ShieldAlert,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   UserCheck,
   RefreshCw,
   X,
+  Plus,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import LoadingScreen from '@/components/LoadingScreen';
 
 export default function FacultyDashboardPage() {
   const router = useRouter();
@@ -36,12 +40,26 @@ export default function FacultyDashboardPage() {
   const [supTab, setSupTab] = useState<'problem' | 'meetings' | 'clearance'>('problem');
   const [problemReviewText, setProblemReviewText] = useState('');
   const [reviewActionLoading, setReviewActionLoading] = useState(false);
+  const [expandedMeetingIds, setExpandedMeetingIds] = useState<Set<string>>(new Set());
 
-  // Meeting Schedule Modal
+  const toggleMeetingExpand = (meetingId: string) => {
+    setExpandedMeetingIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(meetingId)) {
+        next.delete(meetingId);
+      } else {
+        next.add(meetingId);
+      }
+      return next;
+    });
+  };
+
+  // Meeting Schedule Modal (Real Clock Time Pickers)
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [targetMeetingId, setTargetMeetingId] = useState('');
   const [schedDate, setSchedDate] = useState('');
-  const [schedTime, setSchedTime] = useState('');
+  const [schedStartTime, setSchedStartTime] = useState('11:00');
+  const [schedEndTime, setSchedEndTime] = useState('11:45');
   const [schedVenue, setSchedVenue] = useState('');
 
   // Meeting Logging Modal
@@ -62,30 +80,44 @@ export default function FacultyDashboardPage() {
 
   const loadFacultyData = async () => {
     try {
-      const authRes = await fetch('/api/auth/me');
-      if (!authRes.ok) {
-        router.push('/login');
-        return;
-      }
-      const authData = await authRes.json();
-      if (authData.user?.role !== 'supervisor' && authData.user?.role !== 'admin') {
-        router.push('/dashboard/leader');
-        return;
-      }
-      setCurrentUser(authData.user);
+      const [authRes, teamsRes, panelRes] = await Promise.all([
+        currentUser ? Promise.resolve(null) : fetch('/api/auth/me'),
+        fetch('/api/team'),
+        fetch('/api/panels'),
+      ]);
 
-      const teamsRes = await fetch('/api/team');
-      if (teamsRes.ok) {
+      if (authRes) {
+        if (!authRes.ok) {
+          router.push('/login');
+          return;
+        }
+        const authData = await authRes.json();
+        if (!authData.authenticated || !authData.user) {
+          router.push('/login');
+          return;
+        }
+        if (authData.user.role !== 'supervisor' && authData.user.role !== 'admin') {
+          router.push('/dashboard/leader');
+          return;
+        }
+        setCurrentUser(authData.user);
+      }
+
+      if (teamsRes && teamsRes.ok) {
         const tData = await teamsRes.json();
         const teams = tData.teams || [];
         setGuidedTeams(teams);
-        if (teams.length > 0 && !selectedTeam) {
-          setSelectedTeam(teams[0]);
-        }
+        setSelectedTeam((prev: any) => {
+          if (!prev && teams.length > 0) return teams[0];
+          if (prev) {
+            const fresh = teams.find((t: any) => t.id === prev.id);
+            return fresh || teams[0] || null;
+          }
+          return null;
+        });
       }
 
-      const panelRes = await fetch('/api/panels');
-      if (panelRes.ok) {
+      if (panelRes && panelRes.ok) {
         const pData = await panelRes.json();
         setPanelData(pData.panels || []);
       }
@@ -104,6 +136,21 @@ export default function FacultyDashboardPage() {
     if (!selectedTeam) return;
     setReviewActionLoading(true);
 
+    const updatedPs = selectedTeam.problemStatement
+      ? {
+          ...selectedTeam.problemStatement,
+          status: action === 'approve' ? 'approved' : 'revision_requested',
+          locked: action === 'approve',
+          supervisor_remarks: problemReviewText || (action === 'approve' ? 'Approved without modifications.' : 'Revisions required.'),
+        }
+      : null;
+
+    // Optimistic update (0ms)
+    setSelectedTeam((prev: any) => (prev ? { ...prev, problemStatement: updatedPs } : prev));
+    setGuidedTeams((prev: any[]) =>
+      prev.map((t) => (t.id === selectedTeam.id ? { ...t, problemStatement: updatedPs } : t))
+    );
+
     try {
       const res = await fetch('/api/problem-statement', {
         method: 'POST',
@@ -116,44 +163,101 @@ export default function FacultyDashboardPage() {
       });
 
       if (res.ok) {
-        alert(action === 'approve' ? 'Problem Statement Approved and Permanently Locked!' : 'Revision Requested!');
         setProblemReviewText('');
-        loadFacultyData();
       } else {
         const data = await res.json();
         alert(`Error: ${data.error}`);
+        loadFacultyData();
       }
     } catch (e: any) {
       alert(`Error: ${e.message}`);
+      loadFacultyData();
     } finally {
       setReviewActionLoading(false);
     }
   };
 
+  const format12Hour = (timeStr: string) => {
+    if (!timeStr) return '';
+    const [hours, minutes] = timeStr.split(':');
+    let h = parseInt(hours, 10);
+    const m = minutes || '00';
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    h = h ? h : 12;
+    return `${h}:${m} ${ampm}`;
+  };
+
   const handleScheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const timeSlotFormatted = schedEndTime
+      ? `${format12Hour(schedStartTime)} - ${format12Hour(schedEndTime)}`
+      : format12Hour(schedStartTime);
+
+    // Close modal instantly (0ms)
+    setScheduleModalOpen(false);
+
     try {
       const res = await fetch('/api/meetings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'schedule',
-          meetingId: targetMeetingId,
+          meetingId: targetMeetingId || undefined,
+          teamId: selectedTeam?.id,
           date: schedDate,
-          timeSlot: schedTime,
+          timeSlot: timeSlotFormatted,
           venue: schedVenue,
         }),
       });
 
       if (res.ok) {
-        setScheduleModalOpen(false);
-        loadFacultyData();
+        const data = await res.json();
+        const updatedMeeting = data.meeting;
+        if (updatedMeeting && selectedTeam) {
+          setSelectedTeam((prev: any) => {
+            if (!prev) return prev;
+            const existingIdx = (prev.meetings || []).findIndex((m: any) => m.id === updatedMeeting.id);
+            let nextMeetings = [...(prev.meetings || [])];
+            if (existingIdx !== -1) {
+              nextMeetings[existingIdx] = { ...nextMeetings[existingIdx], ...updatedMeeting };
+            } else {
+              nextMeetings.push(updatedMeeting);
+            }
+            return {
+              ...prev,
+              meetings: nextMeetings,
+              totalMeetings: nextMeetings.length,
+              pendingMeetings: nextMeetings.filter((m: any) => m.status === 'requested').length,
+            };
+          });
+          setGuidedTeams((prev: any[]) =>
+            prev.map((t) => {
+              if (t.id !== selectedTeam.id) return t;
+              const existingIdx = (t.meetings || []).findIndex((m: any) => m.id === updatedMeeting.id);
+              let nextMeetings = [...(t.meetings || [])];
+              if (existingIdx !== -1) {
+                nextMeetings[existingIdx] = { ...nextMeetings[existingIdx], ...updatedMeeting };
+              } else {
+                nextMeetings.push(updatedMeeting);
+              }
+              return {
+                ...t,
+                meetings: nextMeetings,
+                totalMeetings: nextMeetings.length,
+                pendingMeetings: nextMeetings.filter((m: any) => m.status === 'requested').length,
+              };
+            })
+          );
+        }
       } else {
         const data = await res.json();
         alert(data.error);
+        loadFacultyData();
       }
     } catch (e: any) {
       alert(e.message);
+      loadFacultyData();
     }
   };
 
@@ -177,6 +281,8 @@ export default function FacultyDashboardPage() {
 
   const handleLogSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLogModalOpen(false);
+
     try {
       const res = await fetch('/api/meetings', {
         method: 'POST',
@@ -194,20 +300,58 @@ export default function FacultyDashboardPage() {
       });
 
       if (res.ok) {
-        setLogModalOpen(false);
-        loadFacultyData();
+        const data = await res.json();
+        const updatedMeeting = data.meeting;
+        if (updatedMeeting && selectedTeam) {
+          const attendance = attendanceList.map((a) => ({
+            id: a.studentId,
+            meeting_id: logMeetingId,
+            student_id: a.studentId,
+            is_present: a.isPresent,
+            created_at: new Date().toISOString(),
+          }));
+          const fullMeeting = { ...updatedMeeting, attendance };
+
+          setSelectedTeam((prev: any) => {
+            if (!prev) return prev;
+            const nextMeetings = (prev.meetings || []).map((m: any) =>
+              m.id === logMeetingId ? fullMeeting : m
+            );
+            return { ...prev, meetings: nextMeetings };
+          });
+          setGuidedTeams((prev: any[]) =>
+            prev.map((t) => {
+              if (t.id !== selectedTeam.id) return t;
+              const nextMeetings = (t.meetings || []).map((m: any) =>
+                m.id === logMeetingId ? fullMeeting : m
+              );
+              return { ...t, meetings: nextMeetings };
+            })
+          );
+        }
       } else {
         const data = await res.json();
         alert(data.error);
+        loadFacultyData();
       }
     } catch (e: any) {
       alert(e.message);
+      loadFacultyData();
     }
   };
 
   const handleTogglePhaseClearance = async (phaseNum: 1 | 2 | 3, currentApproved: boolean) => {
     if (!selectedTeam) return;
+    const newApproved = !currentApproved;
+    const key = `phase${phaseNum}_approved` as 'phase1_approved' | 'phase2_approved' | 'phase3_approved';
 
+    // 1. INSTANT OPTIMISTIC UPDATE (0ms)
+    setSelectedTeam((prev: any) => (prev ? { ...prev, [key]: newApproved } : prev));
+    setGuidedTeams((prev: any[]) =>
+      prev.map((t) => (t.id === selectedTeam.id ? { ...t, [key]: newApproved } : t))
+    );
+
+    // 2. Persist in background
     try {
       const res = await fetch('/api/phases', {
         method: 'POST',
@@ -216,18 +360,25 @@ export default function FacultyDashboardPage() {
           action: 'supervisor_approval',
           teamId: selectedTeam.id,
           phaseNumber: phaseNum,
-          approved: !currentApproved,
+          approved: newApproved,
         }),
       });
 
-      if (res.ok) {
-        loadFacultyData();
-      } else {
+      if (!res.ok) {
         const data = await res.json();
         alert(data.error);
+        // Rollback on failure
+        setSelectedTeam((prev: any) => (prev ? { ...prev, [key]: currentApproved } : prev));
+        setGuidedTeams((prev: any[]) =>
+          prev.map((t) => (t.id === selectedTeam.id ? { ...t, [key]: currentApproved } : t))
+        );
       }
     } catch (e: any) {
       alert(e.message);
+      setSelectedTeam((prev: any) => (prev ? { ...prev, [key]: currentApproved } : prev));
+      setGuidedTeams((prev: any[]) =>
+        prev.map((t) => (t.id === selectedTeam.id ? { ...t, [key]: currentApproved } : t))
+      );
     }
   };
 
@@ -236,13 +387,16 @@ export default function FacultyDashboardPage() {
     setScoreMessage('');
 
     try {
-      const res = await fetch(`/api/team?teamId=${team.id}`);
-      const data = await res.json();
+      const [teamRes, evRes] = await Promise.all([
+        fetch(`/api/team?teamId=${team.id}`),
+        fetch(`/api/evaluations?phaseNumber=${phaseNumber}&teamId=${team.id}`),
+      ]);
+
+      const data = teamRes.ok ? await teamRes.json() : {};
       const students = data.members || [];
       setPanelTeamMembers(students);
 
-      const evRes = await fetch(`/api/evaluations?phaseNumber=${phaseNumber}&teamId=${team.id}`);
-      const evData = await evRes.json();
+      const evData = evRes.ok ? await evRes.json() : {};
       const evals = evData.evaluations || [];
 
       const initialScores: Record<string, any> = {};
@@ -321,11 +475,7 @@ export default function FacultyDashboardPage() {
   };
 
   if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <RefreshCw size={28} className="spin" style={{ color: 'var(--color-ink)' }} />
-      </div>
-    );
+    return <LoadingScreen label="Loading faculty portal..." />;
   }
 
   return (
@@ -562,9 +712,81 @@ export default function FacultyDashboardPage() {
                 {/* SUB-TAB 2: MEETINGS & LOGS */}
                 {supTab === 'meetings' && (
                   <div className="card">
-                    <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px' }}>
-                      Review Sessions & Attendance Logs
-                    </h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                      <div>
+                        <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '2px' }}>
+                          Review Sessions & Attendance Logs
+                        </h3>
+                        <p style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                          Coordinate milestone meetings, log attendance, and record action directives.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setTargetMeetingId('');
+                          setSchedDate('');
+                          setSchedStartTime('11:00');
+                          setSchedEndTime('11:45');
+                          setSchedVenue('');
+                          setScheduleModalOpen(true);
+                        }}
+                        className="btn btn-primary"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          fontSize: '13px',
+                          padding: '8px 16px',
+                          borderRadius: 'var(--rounded-full)',
+                          boxShadow: '0 2px 8px rgba(37, 99, 235, 0.2)',
+                        }}
+                      >
+                        <Plus size={14} /> Add Meeting Schedule
+                      </button>
+                    </div>
+
+                    {/* Empty State when no meetings exist */}
+                    {(!selectedTeam.meetings || selectedTeam.meetings.length === 0) && (
+                      <div
+                        style={{
+                          padding: '36px 20px',
+                          textAlign: 'center',
+                          backgroundColor: 'var(--color-canvas-soft)',
+                          borderRadius: 'var(--rounded-md)',
+                          border: '1px dashed var(--color-hairline)',
+                          margin: '12px 0 24px',
+                        }}
+                      >
+                        <Calendar size={36} style={{ color: 'var(--color-text-muted)', margin: '0 auto 12px' }} />
+                        <h4 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--color-ink)', marginBottom: '4px' }}>
+                          No Scheduled Review Sessions Yet
+                        </h4>
+                        <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', maxWidth: '420px', margin: '0 auto 16px' }}>
+                          Set a confirmed date, time, and venue or Google Meet link for this team's next milestone review session.
+                        </p>
+                        <button
+                          onClick={() => {
+                            setTargetMeetingId('');
+                            setSchedDate('');
+                            setSchedStartTime('11:00');
+                            setSchedEndTime('11:45');
+                            setSchedVenue('');
+                            setScheduleModalOpen(true);
+                          }}
+                          className="btn btn-primary"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '13px',
+                            padding: '8px 18px',
+                            borderRadius: 'var(--rounded-full)',
+                          }}
+                        >
+                          <Plus size={14} /> Schedule First Meeting
+                        </button>
+                      </div>
+                    )}
 
                     {/* Pending Requests */}
                     {selectedTeam.meetings?.filter((m: any) => m.status === 'requested').length > 0 && (
@@ -634,9 +856,20 @@ export default function FacultyDashboardPage() {
                               }}
                             >
                               <div>
-                                <strong style={{ color: 'var(--color-ink)', fontSize: '13px' }}>
-                                  Meet {m.meeting_index}
-                                </strong>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                                  <strong style={{ color: 'var(--color-ink)', fontSize: '13px' }}>
+                                    Meet {m.meeting_index}
+                                  </strong>
+                                  {m.meeting_index === 1 ? (
+                                    <span className="badge badge-success" style={{ fontSize: '10px', padding: '2px 8px' }}>
+                                      🎓 Student Requested
+                                    </span>
+                                  ) : (
+                                    <span style={{ fontSize: '10px', padding: '2px 8px', backgroundColor: '#EEF2FF', color: '#4F46E5', border: '1px solid #C7D2FE', borderRadius: 'var(--rounded-full)', fontWeight: 600 }}>
+                                      👨‍🏫 Faculty Scheduled
+                                    </span>
+                                  )}
+                                </div>
                                 <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
                                   {m.scheduled_date} at {m.time_slot} | {m.venue}
                                 </div>
@@ -655,32 +888,346 @@ export default function FacultyDashboardPage() {
 
                     {/* Completed Meeting Logs */}
                     <div>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: '10px' }}>
                         Archived Meeting History:
                       </div>
                       {selectedTeam.meetings?.filter((m: any) => m.status === 'completed').length === 0 ? (
                         <p style={{ fontSize: '12px', color: 'var(--color-text-faint)' }}>No completed meetings logged yet.</p>
                       ) : (
-                        selectedTeam.meetings
-                          ?.filter((m: any) => m.status === 'completed')
-                          .map((m: any) => (
-                            <div
-                              key={m.id}
-                              style={{
-                                backgroundColor: 'var(--color-canvas-soft)',
-                                borderRadius: 'var(--rounded-sm)',
-                                padding: '12px 16px',
-                                marginBottom: '8px',
-                                fontSize: '13px',
-                              }}
-                            >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                <strong style={{ color: 'var(--color-ink)' }}>Meet {m.meeting_index} Info</strong>
-                                <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{m.scheduled_date}</span>
-                              </div>
-                              <p style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>{m.summary_notes}</p>
-                            </div>
-                          ))
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {selectedTeam.meetings
+                            ?.filter((m: any) => m.status === 'completed')
+                            .map((m: any) => {
+                              const isExpanded = expandedMeetingIds.has(m.id);
+                              const presentStudents = selectedTeam.members?.filter((s: any) =>
+                                m.attendance?.some((a: any) => a.student_id === s.id && a.is_present)
+                              ) || [];
+                              const absentStudents = selectedTeam.members?.filter((s: any) =>
+                                m.attendance?.some((a: any) => a.student_id === s.id && !a.is_present)
+                              ) || [];
+                              const totalCount = selectedTeam.members?.length || (presentStudents.length + absentStudents.length);
+
+                              return (
+                                <div
+                                  key={m.id}
+                                  style={{
+                                    backgroundColor: '#FFFFFF',
+                                    border: '1px solid var(--color-hairline)',
+                                    borderLeft: '4px solid #059669',
+                                    borderRadius: '10px',
+                                    overflow: 'hidden',
+                                    boxShadow: isExpanded ? '0 4px 16px rgba(15, 23, 42, 0.05)' : '0 1px 3px rgba(15, 23, 42, 0.02)',
+                                  }}
+                                >
+                                  {/* Header Summary Row */}
+                                  <div
+                                    onClick={() => toggleMeetingExpand(m.id)}
+                                    style={{
+                                      padding: '12px 18px',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      flexWrap: 'wrap',
+                                      gap: '12px',
+                                      cursor: 'pointer',
+                                      userSelect: 'none',
+                                      backgroundColor: isExpanded ? '#F8FAFC' : '#FFFFFF',
+                                      borderBottom: isExpanded ? '1px solid var(--color-hairline)' : 'none',
+                                    }}
+                                  >
+                                    {/* Left Badges & Meeting Index */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                      <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.02em', minWidth: '54px' }}>
+                                        Meet {m.meeting_index}
+                                      </span>
+                                      
+                                      <span
+                                        style={{
+                                          fontSize: '11px',
+                                          padding: '3px 9px',
+                                          borderRadius: '6px',
+                                          fontWeight: 600,
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px',
+                                          backgroundColor: '#ECFDF5',
+                                          color: '#065F46',
+                                          border: '1px solid #A7F3D0',
+                                        }}
+                                      >
+                                        ✓ Completed
+                                      </span>
+
+                                      <span
+                                        style={{
+                                          fontSize: '11px',
+                                          padding: '3px 9px',
+                                          borderRadius: '6px',
+                                          fontWeight: 500,
+                                          backgroundColor: '#F1F5F9',
+                                          color: '#475569',
+                                          border: '1px solid #E2E8F0',
+                                        }}
+                                      >
+                                        {m.meeting_index === 1 ? '🎓 Student Initiated' : '👨‍🏫 Supervisor Scheduled'}
+                                      </span>
+
+                                      <span
+                                        style={{
+                                          fontSize: '11px',
+                                          padding: '3px 9px',
+                                          borderRadius: '6px',
+                                          fontWeight: 600,
+                                          backgroundColor: absentStudents.length === 0 ? '#ECFDF5' : '#FFFBEB',
+                                          color: absentStudents.length === 0 ? '#047857' : '#B45309',
+                                          border: '1px solid',
+                                          borderColor: absentStudents.length === 0 ? '#A7F3D0' : '#FDE68A',
+                                        }}
+                                      >
+                                        👥 {presentStudents.length}/{totalCount || 'All'} Present
+                                      </span>
+                                    </div>
+
+                                    {/* Right Metadata & Action Button */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                                      {m.scheduled_date && (
+                                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                            📅 {m.scheduled_date}
+                                          </span>
+                                          {m.time_slot && (
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                              🕒 {m.time_slot}
+                                            </span>
+                                          )}
+                                          {m.venue && (
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                              📍 {m.venue}
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
+
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleMeetingExpand(m.id);
+                                        }}
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '5px',
+                                          padding: '5px 12px',
+                                          fontSize: '11px',
+                                          fontWeight: 600,
+                                          color: isExpanded ? '#1D4ED8' : 'var(--color-ink-soft)',
+                                          backgroundColor: isExpanded ? '#EFF6FF' : '#FFFFFF',
+                                          border: '1px solid',
+                                          borderColor: isExpanded ? '#BFDBFE' : 'var(--color-hairline)',
+                                          borderRadius: '6px',
+                                          cursor: 'pointer',
+                                        }}
+                                      >
+                                        <span>{isExpanded ? 'Hide Details' : 'View Details'}</span>
+                                        {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Collapsible Details: Balanced 2-Column Layout */}
+                                  {isExpanded && (
+                                    <div
+                                      style={{
+                                        padding: '18px 20px',
+                                        backgroundColor: '#F8FAFC',
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                                        gap: '16px',
+                                        alignItems: 'stretch',
+                                      }}
+                                    >
+                                      {/* Left Column: Meeting Notes & Actions */}
+                                      <div
+                                        style={{
+                                          backgroundColor: '#FFFFFF',
+                                          border: '1px solid var(--color-hairline)',
+                                          borderRadius: '8px',
+                                          padding: '16px',
+                                          display: 'flex',
+                                          flexDirection: 'column',
+                                          justifyContent: 'space-between',
+                                          gap: '12px',
+                                        }}
+                                      >
+                                        <div>
+                                          <div style={{ fontSize: '11px', fontWeight: 800, color: '#1D4ED8', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            📝 Discussion Summary & Feedback
+                                          </div>
+                                          {m.summary_notes ? (
+                                            <div
+                                              style={{
+                                                backgroundColor: '#F8FAFC',
+                                                padding: '12px 14px',
+                                                borderRadius: '6px',
+                                                borderLeft: '3px solid #2563EB',
+                                                color: 'var(--color-ink)',
+                                                fontSize: '13px',
+                                                lineHeight: '1.6',
+                                                whiteSpace: 'pre-wrap',
+                                              }}
+                                            >
+                                              {m.summary_notes}
+                                            </div>
+                                          ) : (
+                                            <p style={{ fontSize: '12px', color: 'var(--color-text-faint)', fontStyle: 'italic', margin: 0 }}>
+                                              No discussion notes recorded for this session.
+                                            </p>
+                                          )}
+                                        </div>
+
+                                        {m.action_directives && (
+                                          <div
+                                            style={{
+                                              backgroundColor: '#FFFBEB',
+                                              padding: '12px 14px',
+                                              borderRadius: '6px',
+                                              border: '1px solid #FDE68A',
+                                              borderLeft: '3px solid #D97706',
+                                            }}
+                                          >
+                                            <div style={{ fontSize: '10px', fontWeight: 800, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
+                                              🎯 Action Directives & Next Tasks
+                                            </div>
+                                            <p style={{ color: '#78350F', fontSize: '12px', margin: 0, whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
+                                              {m.action_directives}
+                                            </p>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Right Column: Attendance Registry */}
+                                      <div
+                                        style={{
+                                          backgroundColor: '#FFFFFF',
+                                          border: '1px solid var(--color-hairline)',
+                                          borderRadius: '8px',
+                                          padding: '16px',
+                                          display: 'flex',
+                                          flexDirection: 'column',
+                                          gap: '10px',
+                                        }}
+                                      >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-hairline)', paddingBottom: '8px' }}>
+                                          <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                            👥 Attendance Registry
+                                          </span>
+                                          <div style={{ display: 'flex', gap: '6px' }}>
+                                            <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0' }}>
+                                              {presentStudents.length} Present
+                                            </span>
+                                            {absentStudents.length > 0 && (
+                                              <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: '#FEF2F2', color: '#991B1B', border: '1px solid #FECACA' }}>
+                                                {absentStudents.length} Absent
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '240px', overflowY: 'auto' }}>
+                                          {presentStudents.map((s: any) => (
+                                            <div
+                                              key={s.id}
+                                              style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                padding: '7px 10px',
+                                                borderRadius: '6px',
+                                                backgroundColor: '#F8FAFC',
+                                                border: '1px solid var(--color-hairline)',
+                                              }}
+                                            >
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span
+                                                  style={{
+                                                    width: '18px',
+                                                    height: '18px',
+                                                    borderRadius: '50%',
+                                                    backgroundColor: '#D1FAE5',
+                                                    color: '#047857',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    fontSize: '11px',
+                                                    fontWeight: 800,
+                                                  }}
+                                                >
+                                                  ✓
+                                                </span>
+                                                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-ink)' }}>
+                                                  {s.full_name}
+                                                </span>
+                                              </div>
+                                              <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--color-text-muted)', backgroundColor: '#FFFFFF', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--color-hairline)' }}>
+                                                {s.roll_no}
+                                              </span>
+                                            </div>
+                                          ))}
+
+                                          {absentStudents.map((s: any) => (
+                                            <div
+                                              key={s.id}
+                                              style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                padding: '7px 10px',
+                                                borderRadius: '6px',
+                                                backgroundColor: '#FEF2F2',
+                                                border: '1px solid #FECACA',
+                                              }}
+                                            >
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span
+                                                  style={{
+                                                    width: '18px',
+                                                    height: '18px',
+                                                    borderRadius: '50%',
+                                                    backgroundColor: '#FEE2E2',
+                                                    color: '#DC2626',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    fontSize: '11px',
+                                                    fontWeight: 800,
+                                                  }}
+                                                >
+                                                  ✕
+                                                </span>
+                                                <span style={{ fontSize: '12px', fontWeight: 600, color: '#991B1B' }}>
+                                                  {s.full_name}
+                                                </span>
+                                              </div>
+                                              <span style={{ fontSize: '10px', fontWeight: 700, color: '#B91C1C', backgroundColor: '#FFFFFF', padding: '2px 6px', borderRadius: '4px', border: '1px solid #FECACA' }}>
+                                                Absent
+                                              </span>
+                                            </div>
+                                          ))}
+
+                                          {presentStudents.length === 0 && absentStudents.length === 0 && (
+                                            <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', textAlign: 'center', padding: '12px', margin: 0 }}>
+                                              All registered team members recorded present.
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -968,7 +1515,14 @@ export default function FacultyDashboardPage() {
           onClick={() => setScheduleModalOpen(false)}
         >
           <div className="card" style={{ width: '100%', maxWidth: '440px', backgroundColor: '#FFFFFF' }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px' }}>Schedule Meeting</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>
+              {targetMeetingId ? 'Schedule Requested Meeting' : `Schedule Meeting with ${selectedTeam?.team_name || 'Team'}`}
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '18px' }}>
+              {targetMeetingId
+                ? 'Confirm date, time slot, and cabin/Google Meet link for this requested session.'
+                : 'Set a formal review milestone session for student team members.'}
+            </p>
             <form onSubmit={handleScheduleSubmit}>
               <div className="input-group">
                 <label className="input-label">Date</label>
@@ -980,16 +1534,50 @@ export default function FacultyDashboardPage() {
                   required
                 />
               </div>
-              <div className="input-group">
-                <label className="input-label">Time Slot</label>
-                <input
-                  type="text"
-                  className="input-field"
-                  placeholder="e.g. 11:30 AM - 12:15 PM"
-                  value={schedTime}
-                  onChange={(e) => setSchedTime(e.target.value)}
-                  required
-                />
+              {/* Real Clock Time Pickers */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '6px' }}>
+                <div className="input-group" style={{ marginBottom: '8px' }}>
+                  <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Clock size={12} /> Start Time
+                  </label>
+                  <input
+                    type="time"
+                    className="input-field"
+                    value={schedStartTime}
+                    onChange={(e) => setSchedStartTime(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="input-group" style={{ marginBottom: '8px' }}>
+                  <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Clock size={12} /> End Time
+                  </label>
+                  <input
+                    type="time"
+                    className="input-field"
+                    value={schedEndTime}
+                    onChange={(e) => setSchedEndTime(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Formatted Clock Time Preview */}
+              <div
+                style={{
+                  fontSize: '11px',
+                  color: 'var(--color-text-muted)',
+                  marginTop: '0px',
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <span>Selected Time Slot:</span>
+                <span className="badge badge-neutral" style={{ fontSize: '11px', padding: '2px 8px', fontWeight: 600 }}>
+                  {format12Hour(schedStartTime)} – {format12Hour(schedEndTime)}
+                </span>
               </div>
               <div className="input-group">
                 <label className="input-label">Venue (Room/Cabin OR Meet Link)</label>

@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const result = await auth.loginUser(email, password, userAgent);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 403 });
+      return NextResponse.json({ error: result.error }, { status: 401 });
     }
 
     const res = NextResponse.json({

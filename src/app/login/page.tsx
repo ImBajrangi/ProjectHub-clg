@@ -21,6 +21,7 @@ import {
   FileCheck,
   Calendar,
   MapPin,
+  Lightbulb,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -236,28 +237,218 @@ function LoginForm() {
               </p>
             </div>
 
-            {/* Visual: Compact Single-Screen 16:9 Three-Phase Graphic */}
+            {/* Interactive Precision 3-Phase Stepper Journey Component */}
             <div
               style={{
-                position: 'relative',
-                borderRadius: '12px',
-                overflow: 'hidden',
-                border: '1px solid var(--color-hairline)',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
                 backgroundColor: '#FFFFFF',
-                maxHeight: '260px',
+                border: '1px solid var(--color-hairline)',
+                borderRadius: '14px',
+                padding: '18px',
+                boxShadow: '0 2px 8px rgba(15, 23, 42, 0.03)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '14px',
               }}
             >
-              <img
-                src="/images/single_screen_hero.jpg"
-                alt="Three-Phase Academic Evaluation Lifecycle (Phase 1: Idea Pitch, Phase 2: Prototype Review, Phase 3: Final Defense)"
+              {/* Connected 3-Phase Cards Pipeline */}
+              <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                {/* Connecting Track Line */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '22px',
+                    left: '14%',
+                    right: '14%',
+                    height: '2px',
+                    background: 'linear-gradient(90deg, #2563EB 0%, #059669 50%, #D97706 100%)',
+                    zIndex: 0,
+                    opacity: 0.3,
+                  }}
+                />
+
+                {/* Phase 1 Card */}
+                <div
+                  style={{
+                    position: 'relative',
+                    zIndex: 1,
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderTop: '3px solid #2563EB',
+                    borderRadius: '10px',
+                    padding: '12px 10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '9px', fontWeight: 800, color: '#2563EB', letterSpacing: '0.06em' }}>
+                      PHASE 1
+                    </span>
+                    <div
+                      style={{
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        backgroundColor: '#EFF6FF',
+                        border: '1px solid #BFDBFE',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#2563EB',
+                      }}
+                    >
+                      <Lightbulb size={11} />
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>
+                      IDEA PITCH
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '2px', lineHeight: 1.3 }}>
+                      Problem statement review & immutable lock.
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', marginTop: 'auto', paddingTop: '4px' }}>
+                    <span style={{ fontSize: '9px', fontWeight: 600, padding: '1px 5px', borderRadius: '3px', backgroundColor: '#EFF6FF', color: '#1D4ED8' }}>
+                      🔒 Locked PS
+                    </span>
+                  </div>
+                </div>
+
+                {/* Phase 2 Card */}
+                <div
+                  style={{
+                    position: 'relative',
+                    zIndex: 1,
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderTop: '3px solid #059669',
+                    borderRadius: '10px',
+                    padding: '12px 10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '9px', fontWeight: 800, color: '#059669', letterSpacing: '0.06em' }}>
+                      PHASE 2
+                    </span>
+                    <div
+                      style={{
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        backgroundColor: '#ECFDF5',
+                        border: '1px solid #A7F3D0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#059669',
+                      }}
+                    >
+                      <Layers size={11} />
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>
+                      PROTOTYPE
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '2px', lineHeight: 1.3 }}>
+                      Working demo & 3-judge panel rubric scoring.
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', marginTop: 'auto', paddingTop: '4px' }}>
+                    <span style={{ fontSize: '9px', fontWeight: 600, padding: '1px 5px', borderRadius: '3px', backgroundColor: '#ECFDF5', color: '#047857' }}>
+                      👥 3 Judges
+                    </span>
+                  </div>
+                </div>
+
+                {/* Phase 3 Card */}
+                <div
+                  style={{
+                    position: 'relative',
+                    zIndex: 1,
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderTop: '3px solid #D97706',
+                    borderRadius: '10px',
+                    padding: '12px 10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '9px', fontWeight: 800, color: '#D97706', letterSpacing: '0.06em' }}>
+                      PHASE 3
+                    </span>
+                    <div
+                      style={{
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        backgroundColor: '#FFFBEB',
+                        border: '1px solid #FDE68A',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#D97706',
+                      }}
+                    >
+                      <Award size={11} />
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>
+                      FINAL DEFENSE
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--color-text-muted)', marginTop: '2px', lineHeight: 1.3 }}>
+                      Report clearance, viva voce & final grades.
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', marginTop: 'auto', paddingTop: '4px' }}>
+                    <span style={{ fontSize: '9px', fontWeight: 600, padding: '1px 5px', borderRadius: '3px', backgroundColor: '#FFFBEB', color: '#B45309' }}>
+                      📜 Clearance
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Quick-Audit Stat Bar */}
+              <div
                 style={{
-                  width: '100%',
-                  maxHeight: '240px',
-                  objectFit: 'contain',
-                  display: 'block',
+                  backgroundColor: '#F8FAFC',
+                  borderRadius: '6px',
+                  padding: '8px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  border: '1px solid var(--color-hairline)',
                 }}
-              />
+              >
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--color-ink)' }}>102</div>
+                  <div style={{ fontSize: '9px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Project Teams</div>
+                </div>
+                <div style={{ width: '1px', height: '18px', backgroundColor: 'var(--color-hairline)' }} />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--color-ink)' }}>601</div>
+                  <div style={{ fontSize: '9px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Students</div>
+                </div>
+                <div style={{ width: '1px', height: '18px', backgroundColor: 'var(--color-hairline)' }} />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--color-ink)' }}>23</div>
+                  <div style={{ fontSize: '9px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Mentors & Judges</div>
+                </div>
+                <div style={{ width: '1px', height: '18px', backgroundColor: 'var(--color-hairline)' }} />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: '#059669' }}>100%</div>
+                  <div style={{ fontSize: '9px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Audit Integrity</div>
+                </div>
+              </div>
             </div>
 
             {/* Bottom Safeguards */}
@@ -396,10 +587,11 @@ function LoginForm() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  style={{ width: '100%', height: '44px', fontSize: '14px', borderRadius: 'var(--rounded-full)' }}
+                  style={{ width: '100%', height: '44px', fontSize: '14px', borderRadius: 'var(--rounded-full)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                   disabled={loading}
                 >
-                  {loading ? 'Authenticating...' : 'Sign In'}
+                  {loading && <span className="spinner spinner-sm" style={{ borderTopColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.25)' }} />}
+                  <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
                 </button>
               </form>
 

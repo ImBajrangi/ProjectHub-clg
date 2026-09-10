@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 403 });
     }
 
-    const store = db.getStore();
+    const store = await db.getStore();
     const teams = store.teams;
     const students = store.students;
     const supervisors = store.users.filter((u) => u.role === 'supervisor');

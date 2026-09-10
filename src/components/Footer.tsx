@@ -136,13 +136,12 @@ export default function Footer() {
           display: flex;
           flex-direction: column;
           justifyContent: space-between;
-          transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
         }
         .dev-profile-card:hover {
           border-color: var(--color-hairline-strong);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
         .linkedin-btn {
           display: inline-flex;
@@ -157,12 +156,11 @@ export default function Footer() {
           font-size: 13px;
           font-weight: 600;
           text-decoration: none;
-          transition: background-color 0.2s ease, transform 0.2s ease;
+          transition: background-color 0.15s ease;
           box-sizing: border-box;
         }
         .linkedin-btn:hover {
           background-color: #004182 !important;
-          transform: translateY(-1px);
         }
         .linkedin-btn * {
           color: #FFFFFF !important;

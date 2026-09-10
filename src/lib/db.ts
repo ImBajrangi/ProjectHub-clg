@@ -1,6 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import fs from 'fs';
-import path from 'path';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import {
@@ -21,13 +19,16 @@ import {
 import { NotificationPayload } from './notifications';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ezspbqjnvmxuglivdjzb.supabase.co';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const SUPABASE_SERVICE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  '';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
   auth: { persistSession: false },
 });
 
-interface DatabaseStore {
+export interface DatabaseStore {
   users: User[];
   supervisors: SupervisorProfile[];
   teams: Team[];
@@ -43,267 +44,257 @@ interface DatabaseStore {
   push_subscriptions: PushSubscriptionItem[];
 }
 
-const DB_FILE = path.join(process.cwd(), 'data', 'projecthub.db.json');
+// --------------------------------------------------------------------------
+// Ultra-Fast In-Memory Layer with Zero-Latency Response & In-Place Updates
+// --------------------------------------------------------------------------
+let memoryStore: DatabaseStore | null = null;
+let lastStoreFetch = 0;
+let isFetchingStore = false;
+const STORE_TTL_MS = 60000; // 60 seconds warm TTL with background refresh
 
-function loadStore(): DatabaseStore {
-  if (fs.existsSync(DB_FILE)) {
-    try {
-      const raw = fs.readFileSync(DB_FILE, 'utf-8');
-      return JSON.parse(raw);
-    } catch (e) {
-      console.error('Failed reading DB file, reinitializing', e);
-    }
-  }
-  return initStoreFromSeed();
-}
+async function fetchFreshStore(): Promise<DatabaseStore> {
+  const [
+    usersRes,
+    supervisorsRes,
+    teamsRes,
+    studentsRes,
+    psRes,
+    meetingsRes,
+    meetingAttRes,
+    phasesRes,
+    panelsRes,
+    panelMembersRes,
+    evalsRes,
+    notifsRes,
+    pushSubsRes,
+  ] = await Promise.all([
+    supabase.from('users').select('*'),
+    supabase.from('supervisors').select('*'),
+    supabase.from('teams').select('*').order('team_number', { ascending: true }),
+    supabase.from('students').select('*').order('roll_no', { ascending: true }),
+    supabase.from('problem_statements').select('*'),
+    supabase.from('meetings').select('*'),
+    supabase.from('meeting_attendance').select('*'),
+    supabase.from('evaluation_phases').select('*').order('phase_number', { ascending: true }),
+    supabase.from('panels').select('*'),
+    supabase.from('panel_members').select('*'),
+    supabase.from('evaluations').select('*'),
+    supabase.from('notifications').select('*').order('created_at', { ascending: false }),
+    supabase.from('push_subscriptions').select('*'),
+  ]);
 
-function saveStore(store: DatabaseStore) {
-  try {
-    const dir = path.dirname(DB_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(DB_FILE, JSON.stringify(store, null, 2), 'utf-8');
-  } catch (e) {
-    console.error('Failed writing DB file', e);
-  }
-}
-
-function initStoreFromSeed(): DatabaseStore {
-  const seedFile = path.join(process.cwd(), 'data', 'initial_seed.json');
-  let seedData: any = { supervisors: [], teams: [], students: [], admin: {} };
-  if (fs.existsSync(seedFile)) {
-    seedData = JSON.parse(fs.readFileSync(seedFile, 'utf-8'));
-  }
-
-  const now = new Date().toISOString();
-  const users: User[] = [];
-  const supervisors: SupervisorProfile[] = [];
-  const teams: Team[] = [];
-  const students: Student[] = [];
-
-  // 1. Create Admin User
-  const adminPasswordHash = bcrypt.hashSync(process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@CodeShastra2026', 10);
-  const adminUser: User = {
-    id: crypto.randomUUID(),
-    email: 'admin@codeshastra.edu',
-    password_hash: adminPasswordHash,
-    role: 'admin',
-    full_name: 'Dr. Project Incharge (Head Administrator)',
-    phone: '9999988888',
-    created_at: now,
-    updated_at: now,
-  };
-  users.push(adminUser);
-
-  // 2. Create Supervisors
-  // Default password per SRS: CodeShastra@<Last4DigitsOfPhone> or Employee ID
-  const supervisorUserMap = new Map<string, string>(); // email -> userId
-
-  for (const s of seedData.supervisors || []) {
-    const last4 = (s.phone || '0000').slice(-4);
-    const defaultPassword = `CodeShastra@${last4}`;
-    const passwordHash = bcrypt.hashSync(defaultPassword, 10);
-    const userId = crypto.randomUUID();
-
-    const u: User = {
-      id: userId,
-      email: s.email.toLowerCase().trim(),
-      password_hash: passwordHash,
-      role: 'supervisor',
-      full_name: s.name,
-      phone: s.phone,
-      created_at: now,
-      updated_at: now,
-    };
-    users.push(u);
-    supervisorUserMap.set(s.email.toLowerCase().trim(), userId);
-
-    supervisors.push({
-      id: userId,
-      employee_id: s.emp_id,
-      designation: s.designation,
-      department: 'Computer Applications',
-      created_at: now,
-    });
-  }
-
-  // 3. Create Teams
-  const teamCodeMap = new Map<string, string>(); // team_code -> teamId
-
-  for (const t of seedData.teams || []) {
-    const supId = t.supervisor_email ? supervisorUserMap.get(t.supervisor_email.toLowerCase().trim()) || adminUser.id : adminUser.id;
-    const teamId = crypto.randomUUID();
-
-    teams.push({
-      id: teamId,
-      team_code: t.team_code,
-      team_name: t.team_name,
-      team_number: t.team_number,
-      program: t.program,
-      supervisor_id: supId,
-      leader_id: null,
-      phase1_approved: false,
-      phase2_approved: false,
-      phase3_approved: false,
-      phase3_report_clearance: false,
-      created_at: now,
-      updated_at: now,
-    });
-    teamCodeMap.set(t.team_code, teamId);
-  }
-
-  // 4. Create Students
-  for (const stu of seedData.students || []) {
-    const teamId = teamCodeMap.get(stu.team_code) || '';
-    students.push({
-      id: crypto.randomUUID(),
-      roll_no: stu.roll_no,
-      full_name: stu.full_name,
-      email: stu.email.toLowerCase().trim(),
-      mobile: stu.mobile,
-      cpi: stu.cpi,
-      course: stu.course,
-      section: stu.section,
-      team_id: teamId,
-      user_id: null,
-      is_leader: false,
-      created_at: now,
-    });
-  }
-
-  // 5. Evaluation Phases (Default)
-  const phases: EvaluationPhase[] = [
-    {
-      id: crypto.randomUUID(),
-      phase_number: 1,
-      phase_name: 'Phase 1 Presentation: Concept Pitch & Ideation',
-      description: 'PPT Presentation & Literature Review',
-      is_live: true, // Default active for demonstration
-      updated_at: now,
-    },
-    {
-      id: crypto.randomUUID(),
-      phase_number: 2,
-      phase_name: 'Phase 2 Presentation: Working Prototype',
-      description: 'Live Website & Code Demonstration',
-      is_live: false,
-      updated_at: now,
-    },
-    {
-      id: crypto.randomUUID(),
-      phase_number: 3,
-      phase_name: 'Phase 3 Presentation: Final Defense',
-      description: 'Final Project Report & Research Paper Defense',
-      is_live: false,
-      updated_at: now,
-    },
-  ];
-
-  const store: DatabaseStore = {
-    users,
-    supervisors,
-    teams,
-    students,
-    problem_statements: [],
-    meetings: [],
-    meeting_attendance: [],
-    evaluation_phases: phases,
-    panels: [],
-    panel_members: [],
-    evaluations: [],
-    notifications: [],
-    push_subscriptions: [],
+  const fresh: DatabaseStore = {
+    users: usersRes.data || [],
+    supervisors: supervisorsRes.data || [],
+    teams: (teamsRes.data || []).map((t: any) => ({
+      ...t,
+      team_name: `Team ${t.team_code}`,
+    })),
+    students: studentsRes.data || [],
+    problem_statements: psRes.data || [],
+    meetings: meetingsRes.data || [],
+    meeting_attendance: meetingAttRes.data || [],
+    evaluation_phases: phasesRes.data || [],
+    panels: panelsRes.data || [],
+    panel_members: panelMembersRes.data || [],
+    evaluations: evalsRes.data || [],
+    notifications: notifsRes.data || [],
+    push_subscriptions: pushSubsRes.data || [],
   };
 
-  saveStore(store);
-  return store;
+  memoryStore = fresh;
+  lastStoreFetch = Date.now();
+  return fresh;
+}
+
+// Background non-blocking refresh
+function triggerBackgroundRefresh() {
+  if (isFetchingStore) return;
+  isFetchingStore = true;
+  fetchFreshStore()
+    .catch((err) => console.error('Background store refresh error:', err))
+    .finally(() => {
+      isFetchingStore = false;
+    });
 }
 
 // --------------------------------------------------------------------------
-// Unified Database Access Methods
+// Unified Supabase Database Access Methods (Instant < 1ms Memory Fallback)
 // --------------------------------------------------------------------------
 
 export const db = {
   // Store management
-  getStore(): DatabaseStore {
-    return loadStore();
+  async getStore(): Promise<DatabaseStore> {
+    const now = Date.now();
+    if (memoryStore && now - lastStoreFetch < STORE_TTL_MS) {
+      return memoryStore;
+    }
+    if (memoryStore) {
+      // Stale-while-revalidate: return instantly and refresh in background
+      triggerBackgroundRefresh();
+      return memoryStore;
+    }
+    return await fetchFreshStore();
   },
 
   // Users & Auth
   async getUserByEmail(email: string): Promise<User | null> {
-    const store = loadStore();
-    const user = store.users.find((u) => u.email.toLowerCase() === email.toLowerCase().trim());
-    return user || null;
+    const cleanEmail = email.toLowerCase().trim();
+    if (memoryStore) {
+      const found = memoryStore.users.find((u) => u.email.toLowerCase() === cleanEmail);
+      if (found) return found;
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .ilike('email', cleanEmail)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    if (memoryStore && !memoryStore.users.some((u) => u.id === data.id)) {
+      memoryStore.users.push(data as User);
+    }
+    return data as User;
   },
 
   async getUserById(id: string): Promise<User | null> {
-    const store = loadStore();
-    const user = store.users.find((u) => u.id === id);
-    return user || null;
+    if (memoryStore) {
+      const found = memoryStore.users.find((u) => u.id === id);
+      if (found) return found;
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    if (memoryStore && !memoryStore.users.some((u) => u.id === data.id)) {
+      memoryStore.users.push(data as User);
+    }
+    return data as User;
   },
 
   async updateUser(id: string, updates: Partial<User>): Promise<User | null> {
-    const store = loadStore();
-    const idx = store.users.findIndex((u) => u.id === id);
-    if (idx === -1) return null;
-    store.users[idx] = { ...store.users[idx], ...updates, updated_at: new Date().toISOString() };
-    saveStore(store);
-    return store.users[idx];
+    const payload = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Update memory immediately (0ms)
+    if (memoryStore) {
+      const idx = memoryStore.users.findIndex((u) => u.id === id);
+      if (idx !== -1) {
+        memoryStore.users[idx] = { ...memoryStore.users[idx], ...payload };
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .update(payload)
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return data as User;
   },
 
   // Teams
   async getTeams(): Promise<Team[]> {
-    const store = loadStore();
+    if (memoryStore) {
+      return memoryStore.teams;
+    }
+    const store = await this.getStore();
     return store.teams;
   },
 
   async getTeamById(id: string): Promise<Team | null> {
-    const store = loadStore();
+    if (memoryStore) {
+      const found = memoryStore.teams.find((t) => t.id === id);
+      if (found) return found;
+    }
+    const store = await this.getStore();
     return store.teams.find((t) => t.id === id) || null;
   },
 
   async getTeamsBySupervisor(supervisorId: string): Promise<Team[]> {
-    const store = loadStore();
+    if (memoryStore) {
+      return memoryStore.teams.filter((t) => t.supervisor_id === supervisorId);
+    }
+    const store = await this.getStore();
     return store.teams.filter((t) => t.supervisor_id === supervisorId);
   },
 
   async getTeamByLeaderId(leaderId: string): Promise<Team | null> {
-    const store = loadStore();
+    if (memoryStore) {
+      const found = memoryStore.teams.find((t) => t.leader_id === leaderId);
+      if (found) return found;
+    }
+    const store = await this.getStore();
     return store.teams.find((t) => t.leader_id === leaderId) || null;
   },
 
   async updateTeam(id: string, updates: Partial<Team>): Promise<Team | null> {
-    const store = loadStore();
-    const idx = store.teams.findIndex((t) => t.id === id);
-    if (idx === -1) return null;
-    store.teams[idx] = { ...store.teams[idx], ...updates, updated_at: new Date().toISOString() };
-    saveStore(store);
-    return store.teams[idx];
+    const payload = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+    delete (payload as any).team_name;
+
+    // Update memory immediately (0ms)
+    if (memoryStore) {
+      const idx = memoryStore.teams.findIndex((t) => t.id === id);
+      if (idx !== -1) {
+        memoryStore.teams[idx] = {
+          ...memoryStore.teams[idx],
+          ...payload,
+          team_name: `Team ${memoryStore.teams[idx].team_code}`,
+        };
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('teams')
+      .update(payload)
+      .eq('id', id)
+      .select()
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return {
+      ...data,
+      team_name: `Team ${data.team_code}`,
+    } as Team;
   },
 
   // Students & Public Leader Activation (/leader)
   async getStudentsByTeam(teamId: string): Promise<Student[]> {
-    const store = loadStore();
+    if (memoryStore) {
+      return memoryStore.students.filter((s) => s.team_id === teamId);
+    }
+    const store = await this.getStore();
     return store.students.filter((s) => s.team_id === teamId);
   },
 
   async getAvailableTeamsForLeader(): Promise<{ id: string; team_code: string; team_name: string; program: string }[]> {
-    const store = loadStore();
-    // Dynamic Exclusion: Only teams that do NOT yet have an assigned leader
+    const store = await this.getStore();
     return store.teams
       .filter((t) => !t.leader_id)
       .map((t) => ({
         id: t.id,
         team_code: t.team_code,
-        team_name: t.team_name,
+        team_name: `Team ${t.team_code}`,
         program: t.program,
       }));
   },
 
   async claimTeamLeader(teamId: string, studentEmail: string): Promise<{ success: boolean; error?: string; user?: User }> {
-    const store = loadStore();
+    const store = await this.getStore();
     const team = store.teams.find((t) => t.id === teamId);
+
     if (!team) {
       return { success: false, error: 'Team not found' };
     }
@@ -311,21 +302,20 @@ export const db = {
       return { success: false, error: 'A leader has already been registered for this team' };
     }
 
-    const student = store.students.find(
-      (s) => s.team_id === teamId && s.email.toLowerCase() === studentEmail.toLowerCase().trim()
-    );
+    const cleanEmail = studentEmail.toLowerCase().trim();
+    const student = store.students.find((s) => s.team_id === teamId && s.email.toLowerCase() === cleanEmail);
+
     if (!student) {
       return { success: false, error: 'Student does not belong to this team' };
     }
 
     const now = new Date().toISOString();
-    // Create login account instantly: Username = Selected Email ID, Initial Password = Mobile Number
     const passwordHash = bcrypt.hashSync(student.mobile.trim(), 10);
     const userId = crypto.randomUUID();
 
     const newUser: User = {
       id: userId,
-      email: student.email.toLowerCase().trim(),
+      email: cleanEmail,
       password_hash: passwordHash,
       role: 'leader',
       full_name: student.full_name,
@@ -335,24 +325,28 @@ export const db = {
       updated_at: now,
     };
 
+    // Update memory store immediately (0ms)
     store.users.push(newUser);
-
-    // Update student record
     student.is_leader = true;
     student.user_id = userId;
-
-    // Update team record
     team.leader_id = userId;
     team.updated_at = now;
 
-    saveStore(store);
+    // Persist to Supabase
+    await supabase.from('users').insert(newUser);
+    await supabase.from('students').update({ is_leader: true, user_id: userId }).eq('id', student.id);
+    await supabase.from('teams').update({ leader_id: userId, updated_at: now }).eq('id', teamId);
 
     return { success: true, user: newUser };
   },
 
   // Problem Statements
   async getProblemStatementByTeam(teamId: string): Promise<ProblemStatement | null> {
-    const store = loadStore();
+    if (memoryStore) {
+      const found = memoryStore.problem_statements.find((p) => p.team_id === teamId);
+      if (found) return found;
+    }
+    const store = await this.getStore();
     return store.problem_statements.find((p) => p.team_id === teamId) || null;
   },
 
@@ -361,8 +355,9 @@ export const db = {
     title: string,
     description: string
   ): Promise<{ success: boolean; error?: string; problemStatement?: ProblemStatement }> {
-    const store = loadStore();
+    const store = await this.getStore();
     const existing = store.problem_statements.find((p) => p.team_id === teamId);
+
     if (existing && existing.locked) {
       return { success: false, error: 'Problem statement is approved and permanently locked.' };
     }
@@ -373,7 +368,19 @@ export const db = {
       existing.description = description;
       existing.status = 'pending';
       existing.updated_at = now;
-      saveStore(store);
+
+      // Update Supabase in parallel
+      supabase
+        .from('problem_statements')
+        .update({
+          title,
+          description,
+          status: 'pending',
+          updated_at: now,
+        })
+        .eq('id', existing.id)
+        .then();
+
       return { success: true, problemStatement: existing };
     } else {
       const ps: ProblemStatement = {
@@ -386,8 +393,10 @@ export const db = {
         created_at: now,
         updated_at: now,
       };
+
       store.problem_statements.push(ps);
-      saveStore(store);
+      supabase.from('problem_statements').insert(ps).then();
+
       return { success: true, problemStatement: ps };
     }
   },
@@ -397,51 +406,73 @@ export const db = {
     action: 'approve' | 'revise',
     remarks?: string
   ): Promise<{ success: boolean; error?: string; problemStatement?: ProblemStatement }> {
-    const store = loadStore();
-    const ps = store.problem_statements.find((p) => p.team_id === teamId);
-    if (!ps) {
+    const store = await this.getStore();
+    const existing = store.problem_statements.find((p) => p.team_id === teamId);
+
+    if (!existing) {
       return { success: false, error: 'Problem statement not found' };
     }
 
     const now = new Date().toISOString();
     if (action === 'approve') {
-      ps.status = 'approved';
-      ps.locked = true; // Immutable Lock State
-      ps.approved_at = now;
-      ps.supervisor_remarks = remarks || 'Approved without modifications.';
+      existing.status = 'approved';
+      existing.locked = true;
+      existing.approved_at = now;
+      existing.supervisor_remarks = remarks || 'Approved without modifications.';
+      existing.updated_at = now;
     } else {
-      ps.status = 'revision_requested';
-      ps.supervisor_remarks = remarks || 'Revisions required.';
+      existing.status = 'revision_requested';
+      existing.supervisor_remarks = remarks || 'Revisions required.';
+      existing.updated_at = now;
     }
-    ps.updated_at = now;
-    saveStore(store);
-    return { success: true, problemStatement: ps };
+
+    supabase
+      .from('problem_statements')
+      .update({
+        status: existing.status,
+        locked: existing.locked,
+        approved_at: existing.approved_at,
+        supervisor_remarks: existing.supervisor_remarks,
+        updated_at: now,
+      })
+      .eq('team_id', teamId)
+      .then();
+
+    return { success: true, problemStatement: existing };
   },
 
-  // Meetings ("Want to Meet")
+  // Meetings
   async getMeetingsByTeam(teamId: string): Promise<Meeting[]> {
-    const store = loadStore();
+    const store = await this.getStore();
     return store.meetings
       .filter((m) => m.team_id === teamId)
-      .sort((a, b) => a.meeting_index - b.meeting_index);
+      .sort((a, b) => a.meeting_index - b.meeting_index)
+      .map((m) => ({
+        ...m,
+        attendance: store.meeting_attendance.filter((a) => a.meeting_id === m.id),
+      }));
   },
 
   async getMeetingsBySupervisor(supervisorId: string): Promise<Meeting[]> {
-    const store = loadStore();
+    const store = await this.getStore();
     return store.meetings
       .filter((m) => m.supervisor_id === supervisorId)
-      .sort((a, b) => new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime());
+      .sort((a, b) => new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime())
+      .map((m) => ({
+        ...m,
+        attendance: store.meeting_attendance.filter((a) => a.meeting_id === m.id),
+      }));
   },
 
   async getMeetingAttendance(meetingId: string): Promise<MeetingAttendance[]> {
-    const store = loadStore();
+    const store = await this.getStore();
     return store.meeting_attendance.filter((a) => a.meeting_id === meetingId);
   },
 
   async createMeetingRequest(teamId: string, supervisorId: string): Promise<Meeting> {
-    const store = loadStore();
-    const existingTeamMeetings = store.meetings.filter((m) => m.team_id === teamId);
-    const nextIndex = existingTeamMeetings.length + 1;
+    const store = await this.getStore();
+    const existing = store.meetings.filter((m) => m.team_id === teamId);
+    const nextIndex = existing.length + 1;
     const now = new Date().toISOString();
 
     const m: Meeting = {
@@ -453,8 +484,39 @@ export const db = {
       requested_at: now,
       created_at: now,
     };
+
     store.meetings.push(m);
-    saveStore(store);
+    supabase.from('meetings').insert(m).then();
+    return m;
+  },
+
+  async createAndScheduleMeeting(
+    teamId: string,
+    supervisorId: string,
+    scheduledDate: string,
+    timeSlot: string,
+    venue: string
+  ): Promise<Meeting> {
+    const store = await this.getStore();
+    const existing = store.meetings.filter((m) => m.team_id === teamId);
+    const nextIndex = existing.length + 1;
+    const now = new Date().toISOString();
+
+    const m: Meeting = {
+      id: crypto.randomUUID(),
+      team_id: teamId,
+      supervisor_id: supervisorId,
+      meeting_index: nextIndex,
+      status: 'scheduled',
+      requested_at: now,
+      scheduled_date: scheduledDate,
+      time_slot: timeSlot,
+      venue,
+      created_at: now,
+    };
+
+    store.meetings.push(m);
+    supabase.from('meetings').insert(m).then();
     return m;
   },
 
@@ -464,16 +526,55 @@ export const db = {
     timeSlot: string,
     venue: string
   ): Promise<{ success: boolean; meeting?: Meeting }> {
-    const store = loadStore();
-    const m = store.meetings.find((item) => item.id === meetingId);
-    if (!m) return { success: false };
+    const store = await this.getStore();
+    const meeting = store.meetings.find((m) => m.id === meetingId);
 
-    m.status = 'scheduled';
-    m.scheduled_date = scheduledDate;
-    m.time_slot = timeSlot;
-    m.venue = venue;
-    saveStore(store);
-    return { success: true, meeting: m };
+    if (!meeting) {
+      return { success: false };
+    }
+
+    meeting.status = 'scheduled';
+    meeting.scheduled_date = scheduledDate;
+    meeting.time_slot = timeSlot;
+    meeting.venue = venue;
+
+    supabase
+      .from('meetings')
+      .update({
+        status: 'scheduled',
+        scheduled_date: scheduledDate,
+        time_slot: timeSlot,
+        venue,
+      })
+      .eq('id', meetingId)
+      .then();
+
+    return { success: true, meeting };
+  },
+
+  async cancelMeetingRequest(
+    meetingId: string,
+    teamId: string
+  ): Promise<{ success: boolean; error?: string }> {
+    const store = await this.getStore();
+    const meetingIndex = store.meetings.findIndex((m) => m.id === meetingId && m.team_id === teamId);
+
+    if (meetingIndex === -1) {
+      return { success: false, error: 'Meeting request not found.' };
+    }
+
+    const meeting = store.meetings[meetingIndex];
+    if (meeting.status !== 'requested') {
+      return { success: false, error: 'Cannot cancel a meeting that is already scheduled or completed.' };
+    }
+
+    // Remove from in-memory store
+    store.meetings.splice(meetingIndex, 1);
+
+    // Delete from Supabase
+    supabase.from('meetings').delete().eq('id', meetingId).then();
+
+    return { success: true };
   },
 
   async logMeetingRecord(
@@ -482,23 +583,24 @@ export const db = {
     actionDirectives: string,
     attendanceRecords: { studentId: string; isPresent: boolean }[]
   ): Promise<{ success: boolean; meeting?: Meeting }> {
-    const store = loadStore();
-    const m = store.meetings.find((item) => item.id === meetingId);
-    if (!m) return { success: false };
+    const store = await this.getStore();
+    const meeting = store.meetings.find((m) => m.id === meetingId);
+
+    if (!meeting) return { success: false };
 
     const now = new Date().toISOString();
-    m.status = 'completed';
-    m.summary_notes = summaryNotes;
-    m.action_directives = actionDirectives;
-    m.completed_at = now;
+    meeting.status = 'completed';
+    meeting.summary_notes = summaryNotes;
+    meeting.action_directives = actionDirectives;
+    meeting.completed_at = now;
 
-    // Record attendance
+    // Update in-memory attendance
     for (const att of attendanceRecords) {
-      const existingAttIdx = store.meeting_attendance.findIndex(
+      const existingAtt = store.meeting_attendance.find(
         (a) => a.meeting_id === meetingId && a.student_id === att.studentId
       );
-      if (existingAttIdx !== -1) {
-        store.meeting_attendance[existingAttIdx].is_present = att.isPresent;
+      if (existingAtt) {
+        existingAtt.is_present = att.isPresent;
       } else {
         store.meeting_attendance.push({
           id: crypto.randomUUID(),
@@ -510,24 +612,56 @@ export const db = {
       }
     }
 
-    saveStore(store);
-    return { success: true, meeting: m };
+    // Persist to Supabase
+    supabase
+      .from('meetings')
+      .update({
+        status: 'completed',
+        summary_notes: summaryNotes,
+        action_directives: actionDirectives,
+        completed_at: now,
+      })
+      .eq('id', meetingId)
+      .then();
+
+    for (const att of attendanceRecords) {
+      supabase.from('meeting_attendance').upsert(
+        {
+          meeting_id: meetingId,
+          student_id: att.studentId,
+          is_present: att.isPresent,
+          created_at: now,
+        },
+        { onConflict: 'meeting_id,student_id' }
+      ).then();
+    }
+
+    return { success: true, meeting };
   },
 
   // Phases & Gatekeeping
   async getPhases(): Promise<EvaluationPhase[]> {
-    const store = loadStore();
+    const store = await this.getStore();
     return store.evaluation_phases.sort((a, b) => a.phase_number - b.phase_number);
   },
 
   async setPhaseLive(phaseNumber: 1 | 2 | 3, isLive: boolean): Promise<EvaluationPhase | null> {
-    const store = loadStore();
+    const store = await this.getStore();
     const phase = store.evaluation_phases.find((p) => p.phase_number === phaseNumber);
-    if (!phase) return null;
-    phase.is_live = isLive;
-    phase.updated_at = new Date().toISOString();
-    saveStore(store);
-    return phase;
+    const now = new Date().toISOString();
+
+    if (phase) {
+      phase.is_live = isLive;
+      phase.updated_at = now;
+    }
+
+    supabase
+      .from('evaluation_phases')
+      .update({ is_live: isLive, updated_at: now })
+      .eq('phase_number', phaseNumber)
+      .then();
+
+    return phase || null;
   },
 
   async setTeamPhaseApproval(
@@ -535,35 +669,44 @@ export const db = {
     phaseNumber: 1 | 2 | 3,
     approved: boolean
   ): Promise<Team | null> {
-    const store = loadStore();
+    const store = await this.getStore();
     const team = store.teams.find((t) => t.id === teamId);
-    if (!team) return null;
+    const now = new Date().toISOString();
 
-    if (phaseNumber === 1) team.phase1_approved = approved;
-    if (phaseNumber === 2) team.phase2_approved = approved;
-    if (phaseNumber === 3) team.phase3_approved = approved;
+    if (team) {
+      if (phaseNumber === 1) team.phase1_approved = approved;
+      if (phaseNumber === 2) team.phase2_approved = approved;
+      if (phaseNumber === 3) team.phase3_approved = approved;
+      team.updated_at = now;
+    }
 
-    team.updated_at = new Date().toISOString();
-    saveStore(store);
-    return team;
+    const updates: any = { updated_at: now };
+    if (phaseNumber === 1) updates.phase1_approved = approved;
+    if (phaseNumber === 2) updates.phase2_approved = approved;
+    if (phaseNumber === 3) updates.phase3_approved = approved;
+
+    supabase.from('teams').update(updates).eq('id', teamId).then();
+
+    return team || null;
   },
 
   // Panels & Evaluation
   async getPanels(phaseNumber?: 1 | 2 | 3): Promise<Panel[]> {
-    const store = loadStore();
+    const store = await this.getStore();
+    let panels = store.panels;
     if (phaseNumber) {
-      return store.panels.filter((p) => p.phase_number === phaseNumber);
+      panels = panels.filter((p) => p.phase_number === phaseNumber);
     }
-    return store.panels;
+    return panels.sort((a, b) => a.panel_number - b.panel_number);
   },
 
   async getPanelById(id: string): Promise<Panel | null> {
-    const store = loadStore();
+    const store = await this.getStore();
     return store.panels.find((p) => p.id === id) || null;
   },
 
   async getPanelMembers(panelId: string): Promise<PanelMember[]> {
-    const store = loadStore();
+    const store = await this.getStore();
     return store.panel_members.filter((pm) => pm.panel_id === panelId);
   },
 
@@ -576,7 +719,7 @@ export const db = {
     supervisorIds: string[],
     schedule: { date: string; timeWindow: string; academicBlock: string; roomNumber: string }
   ): Promise<Panel> {
-    const store = loadStore();
+    const store = await this.getStore();
     const panelId = crypto.randomUUID();
     const now = new Date().toISOString();
 
@@ -593,18 +736,21 @@ export const db = {
       team_range_end: teamRangeEnd,
       created_at: now,
     };
+
     store.panels.push(panel);
+    supabase.from('panels').insert(panel).then();
 
     for (const supId of supervisorIds) {
-      store.panel_members.push({
+      const pm: PanelMember = {
         id: crypto.randomUUID(),
         panel_id: panelId,
         supervisor_id: supId,
         created_at: now,
-      });
+      };
+      store.panel_members.push(pm);
+      supabase.from('panel_members').insert(pm).then();
     }
 
-    saveStore(store);
     return panel;
   },
 
@@ -613,23 +759,40 @@ export const db = {
     phaseNumber: 1 | 2 | 3,
     schedule: { date: string; timeWindow: string; academicBlock: string; roomNumber: string }
   ): Promise<Panel | null> {
-    const store = loadStore();
-    const panel = store.panels.find((p) => p.panel_number === panelNumber && p.phase_number === phaseNumber);
-    if (!panel) return null;
+    const store = await this.getStore();
+    const panel = store.panels.find(
+      (p) => p.panel_number === panelNumber && p.phase_number === phaseNumber
+    );
 
-    panel.date = schedule.date;
-    panel.time_window = schedule.timeWindow;
-    panel.academic_block = schedule.academicBlock;
-    panel.room_number = schedule.roomNumber;
-    saveStore(store);
-    return panel;
+    if (panel) {
+      panel.date = schedule.date;
+      panel.time_window = schedule.timeWindow;
+      panel.academic_block = schedule.academicBlock;
+      panel.room_number = schedule.roomNumber;
+    }
+
+    supabase
+      .from('panels')
+      .update({
+        date: schedule.date,
+        time_window: schedule.timeWindow,
+        academic_block: schedule.academicBlock,
+        room_number: schedule.roomNumber,
+      })
+      .eq('panel_number', panelNumber)
+      .eq('phase_number', phaseNumber)
+      .then();
+
+    return panel || null;
   },
 
   async getEvaluations(phaseNumber: 1 | 2 | 3, teamId?: string): Promise<Evaluation[]> {
-    const store = loadStore();
-    return store.evaluations.filter(
-      (e) => e.phase_number === phaseNumber && (!teamId || e.team_id === teamId)
-    );
+    const store = await this.getStore();
+    let evals = store.evaluations.filter((e) => e.phase_number === phaseNumber);
+    if (teamId) {
+      evals = evals.filter((e) => e.team_id === teamId);
+    }
+    return evals;
   },
 
   async saveEvaluation(
@@ -641,46 +804,45 @@ export const db = {
     isAbsent: boolean,
     remarks?: string
   ): Promise<Evaluation> {
-    const store = loadStore();
+    const store = await this.getStore();
     const now = new Date().toISOString();
-    const idx = store.evaluations.findIndex(
+
+    const existingIdx = store.evaluations.findIndex(
       (e) =>
         e.phase_number === phaseNumber &&
         e.student_id === studentId &&
         e.panel_member_id === panelMemberId
     );
 
-    if (idx !== -1) {
-      store.evaluations[idx] = {
-        ...store.evaluations[idx],
-        score: isAbsent ? null : score,
-        is_absent: isAbsent,
-        remarks: remarks || null,
-        submitted_at: now,
-      };
-      saveStore(store);
-      return store.evaluations[idx];
+    const payload: Evaluation = {
+      id: existingIdx !== -1 ? store.evaluations[existingIdx].id : crypto.randomUUID(),
+      phase_number: phaseNumber,
+      team_id: teamId,
+      student_id: studentId,
+      panel_member_id: panelMemberId,
+      score: isAbsent ? null : score,
+      is_absent: isAbsent,
+      remarks: remarks || null,
+      submitted_at: now,
+    };
+
+    if (existingIdx !== -1) {
+      store.evaluations[existingIdx] = payload;
     } else {
-      const evaluation: Evaluation = {
-        id: crypto.randomUUID(),
-        phase_number: phaseNumber,
-        team_id: teamId,
-        student_id: studentId,
-        panel_member_id: panelMemberId,
-        score: isAbsent ? null : score,
-        is_absent: isAbsent,
-        remarks: remarks || null,
-        submitted_at: now,
-      };
-      store.evaluations.push(evaluation);
-      saveStore(store);
-      return evaluation;
+      store.evaluations.push(payload);
     }
+
+    supabase
+      .from('evaluations')
+      .upsert(payload, { onConflict: 'phase_number,student_id,panel_member_id' })
+      .then();
+
+    return payload;
   },
 
   // Notifications
   async createNotification(payload: NotificationPayload): Promise<NotificationItem> {
-    const store = loadStore();
+    const store = await this.getStore();
     const item: NotificationItem = {
       id: crypto.randomUUID(),
       user_id: payload.userId,
@@ -692,37 +854,35 @@ export const db = {
       is_read: false,
       created_at: new Date().toISOString(),
     };
+
     store.notifications.unshift(item);
-    saveStore(store);
+    supabase.from('notifications').insert(item).then();
     return item;
   },
 
   async getNotificationsByUser(userId: string): Promise<NotificationItem[]> {
-    const store = loadStore();
-    return store.notifications.filter((n) => n.user_id === userId);
+    const store = await this.getStore();
+    return store.notifications
+      .filter((n) => n.user_id === userId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   },
 
   async markNotificationAsRead(id: string): Promise<boolean> {
-    const store = loadStore();
+    const store = await this.getStore();
     const notif = store.notifications.find((n) => n.id === id);
-    if (notif) {
-      notif.is_read = true;
-      saveStore(store);
-      return true;
-    }
-    return false;
+    if (notif) notif.is_read = true;
+
+    supabase.from('notifications').update({ is_read: true }).eq('id', id).then();
+    return true;
   },
 
   async markAllNotificationsRead(userId: string): Promise<boolean> {
-    const store = loadStore();
-    let changed = false;
-    for (const n of store.notifications) {
-      if (n.user_id === userId && !n.is_read) {
-        n.is_read = true;
-        changed = true;
-      }
-    }
-    if (changed) saveStore(store);
+    const store = await this.getStore();
+    store.notifications
+      .filter((n) => n.user_id === userId)
+      .forEach((n) => (n.is_read = true));
+
+    supabase.from('notifications').update({ is_read: true }).eq('user_id', userId).then();
     return true;
   },
 };

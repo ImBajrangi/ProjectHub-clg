@@ -16,48 +16,51 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const teamIdParam = searchParams.get('teamId');
+    const store = await db.getStore();
 
     // If Leader: return their assigned team
     if (sessionUser.role === 'leader') {
-      const team = await db.getTeamByLeaderId(sessionUser.id);
+      const team = store.teams.find((t) => t.leader_id === sessionUser.id);
       if (!team) {
         return NextResponse.json({ error: 'Team not found for this leader' }, { status: 404 });
       }
 
-      const supervisor = team.supervisor_id ? await db.getUserById(team.supervisor_id) : null;
-      const students = await db.getStudentsByTeam(team.id);
-      const problemStatement = await db.getProblemStatementByTeam(team.id);
-      const meetings = await db.getMeetingsByTeam(team.id);
-      const phases = await db.getPhases();
+      const supervisor = team.supervisor_id ? store.users.find((u) => u.id === team.supervisor_id) : null;
+      const students = store.students.filter((s) => s.team_id === team.id);
+      const problemStatement = store.problem_statements.find((p) => p.team_id === team.id) || null;
+      const meetings = store.meetings
+        .filter((m) => m.team_id === team.id)
+        .sort((a, b) => a.meeting_index - b.meeting_index)
+        .map((m) => ({
+          ...m,
+          attendance: store.meeting_attendance.filter((a) => a.meeting_id === m.id),
+        }));
+      const phases = store.evaluation_phases.sort((a, b) => a.phase_number - b.phase_number);
 
-      // Find panel and schedule for this team with full judge details
-      const panels = await db.getPanels();
-      const allSupervisors = (await db.getStore()).users.filter((u) => u.role === 'supervisor');
-      const relevantPanels = await Promise.all(
-        panels
-          .filter(
-            (p) =>
-              team.team_number >= (p.team_range_start || 0) &&
-              team.team_number <= (p.team_range_end || 999)
-          )
-          .map(async (p) => {
-            const members = await db.getPanelMembers(p.id);
-            const judgeUsers = members
-              .map((m) => allSupervisors.find((s) => s.id === m.supervisor_id))
-              .filter(Boolean)
-              .map((j) => ({
-                id: j!.id,
-                name: j!.full_name,
-                email: j!.email,
-                phone: j!.phone,
-              }));
+      // Panels for this team
+      const relevantPanels = store.panels
+        .filter(
+          (p) =>
+            team.team_number >= (p.team_range_start || 0) &&
+            team.team_number <= (p.team_range_end || 999)
+        )
+        .map((p) => {
+          const members = store.panel_members.filter((pm) => pm.panel_id === p.id);
+          const judgeUsers = members
+            .map((m) => store.users.find((u) => u.id === m.supervisor_id))
+            .filter(Boolean)
+            .map((j) => ({
+              id: j!.id,
+              name: j!.full_name,
+              email: j!.email,
+              phone: j!.phone,
+            }));
 
-            return {
-              ...p,
-              judges: judgeUsers,
-            };
-          })
-      );
+          return {
+            ...p,
+            judges: judgeUsers,
+          };
+        });
 
       return NextResponse.json({
         team,
@@ -80,13 +83,19 @@ export async function GET(req: NextRequest) {
     // If Supervisor: return all their guided teams or a specific team
     if (sessionUser.role === 'supervisor') {
       if (teamIdParam) {
-        const team = await db.getTeamById(teamIdParam);
+        const team = store.teams.find((t) => t.id === teamIdParam);
         if (!team) return NextResponse.json({ error: 'Team not found' }, { status: 404 });
 
-        const students = await db.getStudentsByTeam(team.id);
-        const leader = team.leader_id ? await db.getUserById(team.leader_id) : null;
-        const problemStatement = await db.getProblemStatementByTeam(team.id);
-        const meetings = await db.getMeetingsByTeam(team.id);
+        const students = store.students.filter((s) => s.team_id === team.id);
+        const leader = team.leader_id ? store.users.find((u) => u.id === team.leader_id) : null;
+        const problemStatement = store.problem_statements.find((p) => p.team_id === team.id) || null;
+        const meetings = store.meetings
+          .filter((m) => m.team_id === team.id)
+          .sort((a, b) => a.meeting_index - b.meeting_index)
+          .map((m) => ({
+            ...m,
+            attendance: store.meeting_attendance.filter((a) => a.meeting_id === m.id),
+          }));
 
         return NextResponse.json({
           team,
@@ -98,37 +107,43 @@ export async function GET(req: NextRequest) {
       }
 
       // Return all guided teams
-      const guidedTeams = await db.getTeamsBySupervisor(sessionUser.id);
-      const enrichedTeams = await Promise.all(
-        guidedTeams.map(async (t) => {
-          const members = await db.getStudentsByTeam(t.id);
-          const leader = t.leader_id ? await db.getUserById(t.leader_id) : null;
-          const ps = await db.getProblemStatementByTeam(t.id);
-          const meetings = await db.getMeetingsByTeam(t.id);
-          return {
-            ...t,
-            members,
-            leader: leader
-              ? { id: leader.id, fullName: leader.full_name, email: leader.email, phone: leader.phone }
-              : null,
-            problemStatement: ps,
-            pendingMeetings: meetings.filter((m) => m.status === 'requested').length,
-            totalMeetings: meetings.length,
-          };
-        })
-      );
+      const guidedTeams = store.teams.filter((t) => t.supervisor_id === sessionUser.id);
+      const enrichedTeams = guidedTeams.map((t) => {
+        const members = store.students.filter((s) => s.team_id === t.id);
+        const leader = t.leader_id ? store.users.find((u) => u.id === t.leader_id) : null;
+        const ps = store.problem_statements.find((p) => p.team_id === t.id) || null;
+        const meetings = store.meetings
+          .filter((m) => m.team_id === t.id)
+          .sort((a, b) => a.meeting_index - b.meeting_index)
+          .map((m) => ({
+            ...m,
+            attendance: store.meeting_attendance.filter((a) => a.meeting_id === m.id),
+          }));
+
+        return {
+          ...t,
+          members,
+          leader: leader
+            ? { id: leader.id, fullName: leader.full_name, email: leader.email, phone: leader.phone }
+            : null,
+          problemStatement: ps,
+          meetings,
+          pendingMeetings: meetings.filter((m) => m.status === 'requested').length,
+          totalMeetings: meetings.length,
+        };
+      });
 
       return NextResponse.json({ teams: enrichedTeams });
     }
 
     // Admin or Panel
     if (teamIdParam) {
-      const team = await db.getTeamById(teamIdParam);
+      const team = store.teams.find((t) => t.id === teamIdParam);
       if (!team) return NextResponse.json({ error: 'Team not found' }, { status: 404 });
-      const members = await db.getStudentsByTeam(team.id);
-      const leader = team.leader_id ? await db.getUserById(team.leader_id) : null;
-      const supervisor = team.supervisor_id ? await db.getUserById(team.supervisor_id) : null;
-      const ps = await db.getProblemStatementByTeam(team.id);
+      const members = store.students.filter((s) => s.team_id === team.id);
+      const leader = team.leader_id ? store.users.find((u) => u.id === team.leader_id) : null;
+      const supervisor = team.supervisor_id ? store.users.find((u) => u.id === team.supervisor_id) : null;
+      const ps = store.problem_statements.find((p) => p.team_id === team.id) || null;
 
       return NextResponse.json({
         team,
@@ -139,8 +154,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const allTeams = await db.getTeams();
-    return NextResponse.json({ teams: allTeams });
+    return NextResponse.json({ teams: store.teams });
   } catch (error) {
     console.error('Team API error:', error);
     return NextResponse.json({ error: 'Failed to fetch team data' }, { status: 500 });

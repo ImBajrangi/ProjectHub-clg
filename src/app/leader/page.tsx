@@ -317,9 +317,10 @@ export default function LeaderRegistrationPage() {
                   type="submit"
                   className="btn btn-primary"
                   disabled={!selectedTeamId || !selectedEmail || submitting}
-                  style={{ padding: '12px 24px' }}
+                  style={{ padding: '12px 24px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
                 >
-                  {submitting ? 'Activating Credentials...' : 'Confirm & Activate Leader'}
+                  {submitting && <span className="spinner spinner-sm" style={{ borderTopColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.25)' }} />}
+                  <span>{submitting ? 'Activating Credentials...' : 'Confirm & Activate Leader'}</span>
                 </button>
               </div>
             </form>

@@ -5,10 +5,10 @@ import { db } from '@/lib/db';
 export async function GET(req: NextRequest) {
   try {
     const token = req.cookies.get('codeshastra_token')?.value || req.headers.get('authorization')?.replace('Bearer ', '');
-    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!token) return NextResponse.json({ notifications: [], unreadCount: 0 }, { status: 200 });
 
     const sessionUser = await auth.validateSession(token);
-    if (!sessionUser) return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    if (!sessionUser) return NextResponse.json({ notifications: [], unreadCount: 0 }, { status: 200 });
 
     const notifications = await db.getNotificationsByUser(sessionUser.id);
     const unreadCount = notifications.filter((n) => !n.is_read).length;
@@ -27,7 +27,9 @@ export async function POST(req: NextRequest) {
     const sessionUser = await auth.validateSession(token);
     if (!sessionUser) return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
 
-    const { action, notificationId } = await req.json();
+    const body = await req.json();
+    const action = body.action;
+    const notificationId = body.notificationId || body.id;
 
     if (action === 'mark_read' && notificationId) {
       await db.markNotificationAsRead(notificationId);

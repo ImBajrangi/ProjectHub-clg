@@ -62,13 +62,15 @@ export default function Navbar({
 
   const fetchNotifications = async () => {
     if (!user) return;
+    if (typeof document !== 'undefined' && document.hidden) return;
     try {
       const res = await fetch('/api/notifications');
       if (res.ok) {
         const data = await res.json();
         const notifs: NotificationItem[] = data.notifications || [];
+        const newUnread = data.unreadCount ?? notifs.filter((n) => !n.is_read).length;
+        setUnreadCount(newUnread);
         setNotifications(notifs);
-        setUnreadCount(data.unreadCount || 0);
 
         // Real-time device notification trigger for newly received unread notifications
         const unread = notifs.filter((n) => !n.is_read);
@@ -87,17 +89,23 @@ export default function Navbar({
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      const interval = setInterval(fetchNotifications, 10000);
+      const interval = setInterval(fetchNotifications, 30000);
       return () => clearInterval(interval);
     }
   }, [user]);
 
   const handleMarkRead = async (id: string) => {
+    // Instant optimistic UI update
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+    );
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+
     try {
       await fetch('/api/notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'mark_read', id }),
+        body: JSON.stringify({ action: 'mark_read', notificationId: id, id }),
       });
       fetchNotifications();
     } catch (e) {
@@ -106,6 +114,10 @@ export default function Navbar({
   };
 
   const handleMarkAllRead = async () => {
+    // Instant optimistic UI update
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    setUnreadCount(0);
+
     try {
       await fetch('/api/notifications', {
         method: 'POST',
@@ -160,12 +172,32 @@ export default function Navbar({
             >
               <Layers size={18} />
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-              <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--color-ink)', letterSpacing: '-0.02em' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span
+                style={{
+                  fontWeight: 800,
+                  fontSize: '16px',
+                  background: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 60%, #059669 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  letterSpacing: '-0.025em',
+                }}
+              >
                 CodeShastra
               </span>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-muted)' }}>
-                ProjectHub
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  padding: '2px 7px',
+                  borderRadius: '6px',
+                  background: '#FFFBEB',
+                  color: '#B45309',
+                  border: '1px solid #FDE68A',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                Hub
               </span>
             </div>
           </Link>
@@ -221,14 +253,14 @@ export default function Navbar({
                   onClick={() => setHelpModalOpen(true)}
                   className="btn btn-help"
                   style={{
-                    padding: '6px 14px',
+                    padding: '6px 12px',
                     fontSize: '12px',
                     borderRadius: 'var(--rounded-full)',
                   }}
                   title="Portal Help & Feature Guide"
                 >
                   <HelpCircle size={14} />
-                  <span>Help & Guide</span>
+                  <span className="mobile-btn-text">Help & Guide</span>
                 </button>
 
                 {/* Notification Bell */}
@@ -285,10 +317,11 @@ export default function Navbar({
                   type="button"
                   onClick={handleLogout}
                   className="btn btn-soft"
-                  style={{ padding: '6px 14px', fontSize: '12px' }}
+                  style={{ padding: '6px 12px', fontSize: '12px' }}
+                  title="Log out"
                 >
                   <LogOut size={13} />
-                  <span>Logout</span>
+                  <span className="mobile-btn-text">Logout</span>
                 </button>
               </>
             ) : (
@@ -310,6 +343,26 @@ export default function Navbar({
           .mobile-hide-btn {
             display: none !important;
           }
+          .mobile-btn-text {
+            display: none !important;
+          }
+          .nav-pill {
+            padding: 6px 10px !important;
+          }
+          .btn-help, .btn-soft {
+            width: 34px !important;
+            height: 34px !important;
+            padding: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 8px !important;
+          }
+          .btn-outline {
+            width: 34px !important;
+            height: 34px !important;
+            border-radius: 8px !important;
+          }
         }
         @media (min-width: 640px) {
           .desktop-role-pill {
@@ -317,7 +370,7 @@ export default function Navbar({
           }
         }
         .logo-icon-box:hover {
-          transform: rotate(6deg) scale(1.05);
+          opacity: 0.9;
         }
       `}</style>
 

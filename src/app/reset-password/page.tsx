@@ -113,10 +113,11 @@ function ResetPasswordForm() {
               <button
                 type="submit"
                 className="btn btn-primary"
-                style={{ width: '100%', padding: '12px', marginTop: '12px' }}
+                style={{ width: '100%', padding: '12px', marginTop: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                 disabled={loading || !token || !email}
               >
-                {loading ? 'Updating Password...' : 'Save New Password'}
+                {loading && <span className="spinner spinner-sm" style={{ borderTopColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.25)' }} />}
+                <span>{loading ? 'Updating Password...' : 'Save New Password'}</span>
               </button>
             </form>
           )}

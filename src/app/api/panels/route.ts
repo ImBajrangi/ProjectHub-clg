@@ -13,43 +13,47 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const phaseNumber = searchParams.get('phaseNumber') ? parseInt(searchParams.get('phaseNumber')!) as 1 | 2 | 3 : undefined;
 
-    const panels = await db.getPanels(phaseNumber);
-    const allSupervisors = (await db.getStore()).users.filter((u) => u.role === 'supervisor');
-    const allTeams = await db.getTeams();
-    const phases = await db.getPhases();
+    const store = await db.getStore();
+    let panels = store.panels;
+    if (phaseNumber) {
+      panels = panels.filter((p) => p.phase_number === phaseNumber);
+    }
+    const allSupervisors = store.users.filter((u) => u.role === 'supervisor');
+    const allTeams = store.teams;
+    const phases = store.evaluation_phases;
 
-    // Enrich panels with members and assigned teams
-    const enrichedPanels = await Promise.all(
-      panels.map(async (p) => {
-        const members = await db.getPanelMembers(p.id);
-        const judgeUsers = members.map((m) => allSupervisors.find((s) => s.id === m.supervisor_id)).filter(Boolean);
+    // Enrich panels with members and assigned teams synchronously from memory
+    const enrichedPanels = panels.map((p) => {
+      const members = store.panel_members.filter((pm) => pm.panel_id === p.id);
+      const judgeUsers = members
+        .map((m) => allSupervisors.find((s) => s.id === m.supervisor_id))
+        .filter(Boolean);
 
-        // Teams within this panel's range
-        const matchingTeams = allTeams.filter(
-          (t) =>
-            t.team_number >= (p.team_range_start || 0) &&
-            t.team_number <= (p.team_range_end || 999)
-        );
+      // Teams within this panel's range
+      const matchingTeams = allTeams.filter(
+        (t) =>
+          t.team_number >= (p.team_range_start || 0) &&
+          t.team_number <= (p.team_range_end || 999)
+      );
 
-        return {
-          ...p,
-          judges: judgeUsers,
-          teamsCount: matchingTeams.length,
-          teams: matchingTeams.map((t) => ({
-            id: t.id,
-            team_code: t.team_code,
-            team_name: t.team_name,
-            team_number: t.team_number,
-            supervisor_id: t.supervisor_id,
-            phase1_approved: t.phase1_approved,
-            phase2_approved: t.phase2_approved,
-            phase3_approved: t.phase3_approved,
-            report_url: t.report_url,
-            paper_url: t.paper_url,
-          })),
-        };
-      })
-    );
+      return {
+        ...p,
+        judges: judgeUsers,
+        teamsCount: matchingTeams.length,
+        teams: matchingTeams.map((t) => ({
+          id: t.id,
+          team_code: t.team_code,
+          team_name: t.team_name,
+          team_number: t.team_number,
+          supervisor_id: t.supervisor_id,
+          phase1_approved: t.phase1_approved,
+          phase2_approved: t.phase2_approved,
+          phase3_approved: t.phase3_approved,
+          report_url: t.report_url,
+          paper_url: t.paper_url,
+        })),
+      };
+    });
 
     // If faculty in Panel Mode: filter to panels where this user is assigned as judge
     if (sessionUser.role === 'supervisor') {

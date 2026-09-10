@@ -90,6 +90,7 @@ export interface Meeting {
   action_directives?: string | null;
   completed_at?: string | null;
   created_at: string;
+  attendance?: MeetingAttendance[];
 }
 
 export interface MeetingAttendance {

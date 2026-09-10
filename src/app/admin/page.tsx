@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import LoadingScreen from '@/components/LoadingScreen';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -82,8 +83,12 @@ export default function AdminDashboardPage() {
         return;
       }
       const authData = await authRes.json();
-      if (authData.user?.role !== 'admin') {
-        router.push(authData.user?.role === 'supervisor' ? '/dashboard/faculty' : '/dashboard/leader');
+      if (!authData.authenticated || !authData.user) {
+        router.push('/login');
+        return;
+      }
+      if (authData.user.role !== 'admin') {
+        router.push(authData.user.role === 'supervisor' ? '/dashboard/faculty' : '/dashboard/leader');
         return;
       }
       setCurrentUser(authData.user);
@@ -230,11 +235,7 @@ export default function AdminDashboardPage() {
   };
 
   if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <RefreshCw size={28} className="spin" style={{ color: 'var(--color-ink)' }} />
-      </div>
-    );
+    return <LoadingScreen label="Loading administration portal..." />;
   }
 
   const summary = adminData?.summary || {};

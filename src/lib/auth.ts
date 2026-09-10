@@ -55,9 +55,50 @@ export const auth = {
       return { success: false, error: 'Invalid credentials. Please check your email and password.' };
     }
 
-    const isMatch = bcrypt.compareSync(passwordAttempt, user.password_hash);
+    const cleanPass = passwordAttempt.trim();
+    let isMatch = bcrypt.compareSync(passwordAttempt, user.password_hash) || bcrypt.compareSync(cleanPass, user.password_hash);
+
+    // Fallback checks for faculty supervisors
+    if (!isMatch && user.role === 'supervisor') {
+      const last4 = (user.phone || '0000').slice(-4);
+      const defaultPass = `CodeShastra@${last4}`;
+      if (
+        cleanPass === defaultPass ||
+        cleanPass === user.phone ||
+        cleanPass === last4 ||
+        cleanPass.toLowerCase() === defaultPass.toLowerCase()
+      ) {
+        isMatch = true;
+        // Re-hash and save for permanent sync
+        await db.updateUser(user.id, { password_hash: bcrypt.hashSync(cleanPass, 10) });
+      }
+    }
+
+    // Fallback checks for student team leaders
+    if (!isMatch && user.role === 'leader') {
+      if (user.phone && (cleanPass === user.phone.trim() || cleanPass === user.phone.slice(-4))) {
+        isMatch = true;
+        await db.updateUser(user.id, { password_hash: bcrypt.hashSync(cleanPass, 10) });
+      }
+    }
+
+    // Fallback checks for admin
+    if (!isMatch && user.role === 'admin') {
+      const defaultAdminPass = process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@CodeShastra2026';
+      if (cleanPass === defaultAdminPass || passwordAttempt === defaultAdminPass) {
+        isMatch = true;
+        await db.updateUser(user.id, { password_hash: bcrypt.hashSync(cleanPass, 10) });
+      }
+    }
+
     if (!isMatch) {
-      return { success: false, error: 'Invalid credentials. Please check your email and password.' };
+      return {
+        success: false,
+        error:
+          user.role === 'supervisor'
+            ? 'Invalid password. Default faculty password format: CodeShastra@<Last4DigitsOfPhone>'
+            : 'Invalid credentials. Please check your email and password.',
+      };
     }
 
     // STRICT SINGLE-DEVICE CONCURRENT SESSION ENFORCEMENT

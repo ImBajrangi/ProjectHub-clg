@@ -81,17 +81,24 @@ export async function POST(req: NextRequest) {
 
     // 2. Supervisor Schedules Meeting
     if (action === 'schedule' && sessionUser.role === 'supervisor') {
-      const { meetingId, date, timeSlot, venue } = body;
-      if (!meetingId || !date || !timeSlot || !venue) {
-        return NextResponse.json({ error: 'All schedule details are required' }, { status: 400 });
+      const { meetingId, teamId, date, timeSlot, venue } = body;
+      if (!date || !timeSlot || !venue) {
+        return NextResponse.json({ error: 'All schedule details (Date, Time, Venue) are required' }, { status: 400 });
       }
 
-      const scheduleResult = await db.scheduleMeeting(meetingId, date, timeSlot, venue);
-      if (!scheduleResult.success || !scheduleResult.meeting) {
-        return NextResponse.json({ error: 'Failed to schedule meeting' }, { status: 400 });
-      }
+      let meeting: any = null;
 
-      const meeting = scheduleResult.meeting;
+      if (meetingId) {
+        const scheduleResult = await db.scheduleMeeting(meetingId, date, timeSlot, venue);
+        if (!scheduleResult.success || !scheduleResult.meeting) {
+          return NextResponse.json({ error: 'Failed to schedule meeting' }, { status: 400 });
+        }
+        meeting = scheduleResult.meeting;
+      } else if (teamId) {
+        meeting = await db.createAndScheduleMeeting(teamId, sessionUser.id, date, timeSlot, venue);
+      } else {
+        return NextResponse.json({ error: 'Meeting ID or Team ID is required' }, { status: 400 });
+      }
       const team = await db.getTeamById(meeting.team_id);
       if (team && team.leader_id) {
         const leader = await db.getUserById(team.leader_id);
@@ -167,6 +174,29 @@ export async function POST(req: NextRequest) {
         success: true,
         message: 'Meeting record and member attendance saved.',
         meeting,
+      });
+    }
+
+    // 4. Student Leader Cancels / Withdraws Pending Meeting Request
+    if (action === 'cancel' && sessionUser.role === 'leader') {
+      const { meetingId } = body;
+      if (!meetingId) {
+        return NextResponse.json({ error: 'Meeting ID is required' }, { status: 400 });
+      }
+
+      const team = await db.getTeamByLeaderId(sessionUser.id);
+      if (!team) {
+        return NextResponse.json({ error: 'Team not found' }, { status: 404 });
+      }
+
+      const result = await db.cancelMeetingRequest(meetingId, team.id);
+      if (!result.success) {
+        return NextResponse.json({ error: result.error || 'Failed to withdraw meeting request' }, { status: 400 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Meeting request has been successfully withdrawn.',
       });
     }
 

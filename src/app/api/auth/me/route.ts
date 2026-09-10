@@ -6,12 +6,12 @@ export async function GET(req: NextRequest) {
   try {
     const token = req.cookies.get('codeshastra_token')?.value || req.headers.get('authorization')?.replace('Bearer ', '');
     if (!token) {
-      return NextResponse.json({ authenticated: false }, { status: 401 });
+      return NextResponse.json({ authenticated: false, user: null }, { status: 200 });
     }
 
     const user = await auth.validateSession(token);
     if (!user) {
-      return NextResponse.json({ authenticated: false, error: 'Session expired or invalidated' }, { status: 401 });
+      return NextResponse.json({ authenticated: false, user: null, error: 'Session expired or invalidated' }, { status: 200 });
     }
 
     let team = null;

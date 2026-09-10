@@ -15,6 +15,11 @@ import {
   Shield,
   Phone,
   Sparkles,
+  Lock,
+  GraduationCap,
+  Clock,
+  MapPin,
+  Check,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -38,210 +43,390 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--color-canvas)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF' }}>
       <Navbar user={user} />
 
-      {/* Hero Section */}
-      <section style={{ padding: '60px 20px 48px', textAlign: 'center' }}>
-        <div className="container" style={{ maxWidth: '840px' }}>
+      {/* ========================================================================= */}
+      {/* HERO SECTION: Concise, Direct, High-Impact                                */}
+      {/* ========================================================================= */}
+      <section style={{ padding: '36px 20px 40px' }}>
+        <div className="container" style={{ maxWidth: '1180px' }}>
           <div
             style={{
-              display: 'inline-flex',
+              display: 'grid',
+              gridTemplateColumns: '1.05fr 1fr',
+              gap: '40px',
               alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              backgroundColor: 'var(--color-canvas-soft)',
-              borderRadius: 'var(--rounded-full)',
-              fontSize: '12px',
-              fontWeight: 600,
-              color: 'var(--color-ink)',
-              marginBottom: '24px',
-              border: '1px solid var(--color-hairline)',
             }}
+            className="hero-split-grid"
           >
-            <Sparkles size={13} color="var(--color-accent)" /> CodeShastra ProjectHub v3.0
-          </div>
+            {/* Left Column: Punchy & Direct Text */}
+            <div>
+              {/* Badge */}
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '4px 12px',
+                  borderRadius: 'var(--rounded-full)',
+                  backgroundColor: '#EFF6FF',
+                  border: '1px solid #BFDBFE',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: '#1D4ED8',
+                  marginBottom: '16px',
+                }}
+              >
+                <Sparkles size={13} color="#2563EB" /> CodeShastra ProjectHub
+              </div>
 
-          <h1
-            style={{
-              fontSize: 'clamp(36px, 6vw, 64px)',
-              fontWeight: 700,
-              lineHeight: 1.05,
-              letterSpacing: '-0.035em',
-              color: 'var(--color-ink)',
-              marginBottom: '20px',
-            }}
-          >
-            Academic project management. Engineered to get out of the way.
-          </h1>
+              {/* Main Headline */}
+              <h1
+                style={{
+                  fontSize: 'clamp(32px, 4.2vw, 48px)',
+                  fontWeight: 800,
+                  lineHeight: 1.12,
+                  letterSpacing: '-0.03em',
+                  color: 'var(--color-ink)',
+                  marginBottom: '14px',
+                }}
+              >
+                Academic Project Governance.{' '}
+                <span style={{ color: '#2563EB' }}>
+                  Simplified.
+                </span>
+              </h1>
 
-          <p
-            style={{
-              fontSize: '18px',
-              fontWeight: 400,
-              color: 'var(--color-text-muted)',
-              maxWidth: '640px',
-              margin: '0 auto 36px',
-              lineHeight: 1.5,
-            }}
-          >
-            A unified milestone evaluation platform coordinating 102 student teams, 601 students, and 23 faculty mentors with strict single-device concurrency and supervisor gatekeeping.
-          </p>
+              {/* Short & Direct Context */}
+              <p
+                style={{
+                  fontSize: '15px',
+                  color: 'var(--color-text-muted)',
+                  lineHeight: '1.5',
+                  maxWidth: '480px',
+                  marginBottom: '24px',
+                }}
+              >
+                Coordinating <strong>102 student teams</strong>, <strong>601 students</strong>, and <strong>23 faculty mentors</strong> across 3 milestones with conflict-free evaluation.
+              </p>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <Link
-              href="/leader"
-              className="btn btn-primary"
-              style={{ padding: '12px 28px', fontSize: '15px' }}
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '24px' }}>
+                <Link
+                  href="/leader"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '11px 22px',
+                    borderRadius: 'var(--rounded-full)',
+                    backgroundColor: '#2563EB',
+                    color: '#FFFFFF',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    border: '1px solid #1D4ED8',
+                  }}
+                >
+                  Elect Team Leader <ArrowRight size={14} />
+                </Link>
+
+                <Link
+                  href="/login"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '11px 22px',
+                    borderRadius: 'var(--rounded-full)',
+                    backgroundColor: '#FFFFFF',
+                    color: 'var(--color-ink)',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    border: '1px solid var(--color-hairline-strong)',
+                  }}
+                >
+                  Portal Login
+                </Link>
+              </div>
+
+              {/* Scannable Highlights */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: 'var(--color-text-muted)', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <ShieldCheck size={14} color="#059669" /> Single-Device Security
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Compass size={14} color="#2563EB" /> 3 Mentor Clearances
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Award size={14} color="#D97706" /> 3-Judge Panels
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Clean Student Project Milestone Showcase */}
+            <div
+              style={{
+                position: 'relative',
+                minHeight: '400px',
+                borderRadius: '16px',
+                padding: '20px 18px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                overflow: 'hidden',
+                background: 'linear-gradient(145deg, #EFF6FF 0%, #F8FAFC 50%, #ECFDF5 100%)',
+                boxShadow: '0 2px 16px rgba(15, 23, 42, 0.04)',
+                border: '1px solid #E2E8F0',
+              }}
             >
-              Elect Team Leader (/leader) <ArrowRight size={15} />
-            </Link>
-
-            <Link
-              href="/login"
-              className="btn btn-outline"
-              style={{ padding: '12px 28px', fontSize: '15px' }}
-            >
-              Portal Login
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* 4 Library Counters (Per Mobbin Section 329 display style) */}
-      <section style={{ padding: '20px 20px 48px' }}>
-        <div className="container" style={{ maxWidth: '1080px' }}>
-          <div className="card-soft" style={{ padding: '32px 24px' }}>
-            <div className="grid-cols-4" style={{ textAlign: 'center' }}>
-              <div>
-                <div style={{ fontSize: '48px', fontWeight: 700, color: 'var(--color-ink)', letterSpacing: '-0.04em' }}>
-                  102
-                </div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                  Project Groups (BCA & BCA-DS)
-                </div>
-              </div>
-
-              <div>
-                <div style={{ fontSize: '48px', fontWeight: 700, color: 'var(--color-ink)', letterSpacing: '-0.04em' }}>
-                  601
-                </div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                  Pre-Allocated Students
+              {/* Floating Pill Top */}
+              <div
+                style={{
+                  alignSelf: 'flex-end',
+                  backgroundColor: '#FFFFFF',
+                  padding: '7px 12px',
+                  borderRadius: 'var(--rounded-full)',
+                  boxShadow: '0 2px 10px rgba(15, 23, 42, 0.05)',
+                  border: '1px solid var(--color-hairline)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '11px',
+                  color: 'var(--color-ink)',
+                }}
+              >
+                <span style={{ fontWeight: 800, color: '#1E40AF', fontSize: '10px' }}>MILESTONE</span>
+                <span>Team #042 • Phase 1 Approved</span>
+                <div
+                  style={{
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '50%',
+                    backgroundColor: '#059669',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#FFFFFF',
+                  }}
+                >
+                  <Check size={10} />
                 </div>
               </div>
 
-              <div>
-                <div style={{ fontSize: '48px', fontWeight: 700, color: 'var(--color-ink)', letterSpacing: '-0.04em' }}>
-                  23
+              {/* Center Student Project Card */}
+              <div
+                style={{
+                  margin: '8px auto',
+                  width: '100%',
+                  maxWidth: '350px',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '14px',
+                  padding: '18px 16px',
+                  boxShadow: '0 8px 24px -4px rgba(15, 23, 42, 0.06)',
+                  border: '1px solid #E2E8F0',
+                }}
+              >
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ width: '24px', height: '24px', borderRadius: '6px', backgroundColor: '#EFF6FF', color: '#1D4ED8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <GraduationCap size={13} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--color-ink)' }}>BCA Major Project</div>
+                      <div style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>Team CS-2026-042</div>
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      padding: '2px 8px',
+                      borderRadius: 'var(--rounded-full)',
+                      fontWeight: 700,
+                      backgroundColor: '#ECFDF5',
+                      color: '#047857',
+                      border: '1px solid #A7F3D0',
+                    }}
+                  >
+                    Phase 2 Active
+                  </span>
                 </div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                  Faculty Mentors & Judges
+
+                {/* Project Title */}
+                <div style={{ marginBottom: '12px', backgroundColor: '#F8FAFC', padding: '9px 11px', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
+                  <div style={{ fontSize: '9px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '2px' }}>
+                    Problem Statement
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-ink)' }}>
+                    AI Crop Pathology & Irrigation Diagnostics
+                  </div>
+                </div>
+
+                {/* Details */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', borderTop: '1px solid #F1F5F9', paddingTop: '8px' }}>
+                  <div>
+                    <div style={{ fontSize: '9px', color: 'var(--color-text-muted)' }}>Leader</div>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-ink)' }}>Arpit Pandey</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '9px', color: 'var(--color-text-muted)' }}>Team Size</div>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-ink)' }}>6 Members</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '9px', color: 'var(--color-text-muted)' }}>Panel Score</div>
+                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#059669' }}>9.4 / 10</div>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <div style={{ fontSize: '48px', fontWeight: 700, color: 'var(--color-ink)', letterSpacing: '-0.04em' }}>
-                  3
-                </div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                  Evaluation Milestones
-                </div>
+              {/* Floating Pill Bottom */}
+              <div
+                style={{
+                  alignSelf: 'flex-start',
+                  backgroundColor: '#FFFFFF',
+                  padding: '7px 12px',
+                  borderRadius: 'var(--rounded-full)',
+                  boxShadow: '0 2px 10px rgba(15, 23, 42, 0.05)',
+                  border: '1px solid var(--color-hairline)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '11px',
+                  color: 'var(--color-ink)',
+                }}
+              >
+                <span>👨‍🏫 Panel 3: 6 Evaluations Scheduled in AB10</span>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#059669' }} />
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 4 Clean Stakeholder Feature Cards */}
-      <section style={{ padding: '20px 20px 80px' }}>
-        <div className="container" style={{ maxWidth: '1080px' }}>
-          <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-            <h2 style={{ fontSize: '28px', fontWeight: 700, letterSpacing: '-0.025em' }}>
-              Four Dedicated Stakeholder Experiences.
+      {/* ========================================================================= */}
+      {/* 4 AUDITED STATS                                                           */}
+      {/* ========================================================================= */}
+      <section style={{ padding: '24px 20px', borderTop: '1px solid var(--color-hairline)', borderBottom: '1px solid var(--color-hairline)', backgroundColor: '#FAFAFA' }}>
+        <div className="container" style={{ maxWidth: '1180px' }}>
+          <div className="grid-cols-4" style={{ textAlign: 'center' }}>
+            <div>
+              <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.03em' }}>
+                102
+              </div>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                Project Teams
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.03em' }}>
+                601
+              </div>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                Allocated Students
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.03em' }}>
+                23
+              </div>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                Faculty Mentors
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.03em' }}>
+                3
+              </div>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                Milestones (Phases 1-3)
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 4 STAKEHOLDER ROLES (Direct, Scannable Bullets)                            */}
+      {/* ========================================================================= */}
+      <section style={{ padding: '40px 20px 60px' }}>
+        <div className="container" style={{ maxWidth: '1180px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em' }}>
+              Four Platform Roles
             </h2>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '15px', marginTop: '6px' }}>
-              Structured workflows designed around institutional governance and academic integrity.
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '13px', marginTop: '4px' }}>
+              Clear workflows for students, mentors, judges, and administration.
             </p>
           </div>
 
           <div className="grid-cols-2">
             {/* Student Leader */}
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'var(--color-canvas-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Users size={16} color="var(--color-ink)" />
-                  </div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 700 }}>Student Team Leader</h3>
+            <div className="card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'var(--color-canvas-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Users size={15} color="var(--color-ink)" />
                 </div>
-                <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '14px', lineHeight: '1.5' }}>
-                  Elected by their academic group to manage project milestones. Submits the official problem statement, coordinates review meetings via "Want to Meet", and uploads finalized Phase 3 documentation deliverables.
-                </p>
+                <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Student Team Leader</h3>
               </div>
-              <div style={{ fontSize: '12px', color: 'var(--color-ink)', fontWeight: 600 }}>
-                • Single Active Workstation Session Security
-              </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px', color: 'var(--color-ink-soft)', lineHeight: '1.8' }}>
+                <li>✓ Submit and lock problem statements</li>
+                <li>✓ Request mentor meetings via &quot;Want to Meet&quot;</li>
+                <li>✓ Upload finalized Phase 3 documentation</li>
+              </ul>
             </div>
 
             {/* Supervisor Mentor */}
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'var(--color-canvas-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Compass size={16} color="var(--color-ink)" />
-                  </div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 700 }}>Faculty Supervisor (Mentor)</h3>
+            <div className="card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'var(--color-canvas-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Compass size={15} color="var(--color-ink)" />
                 </div>
-                <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '14px', lineHeight: '1.5' }}>
-                  Reviews proposed problem statements with immutable lock enforcement, schedules meetings with venue or Google Meet links, and logs student attendance rosters (*Meet 1*, *Meet 2*...).
-                </p>
+                <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Faculty Supervisor (Mentor)</h3>
               </div>
-              <div style={{ fontSize: '12px', color: 'var(--color-ink)', fontWeight: 600 }}>
-                • Supervisor Gatekeeper: 3 Independent Phase Clearances
-              </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px', color: 'var(--color-ink-soft)', lineHeight: '1.8' }}>
+                <li>✓ Approve and lock problem statements</li>
+                <li>✓ Schedule meetings & log attendance rosters</li>
+                <li>✓ Grant Phase 1, Phase 2 & Phase 3 clearances</li>
+              </ul>
             </div>
 
             {/* Evaluation Judge */}
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'var(--color-canvas-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Award size={16} color="var(--color-ink)" />
-                  </div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 700 }}>Panel Member (Faculty Judge)</h3>
+            <div className="card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'var(--color-canvas-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Award size={15} color="var(--color-ink)" />
                 </div>
-                <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '14px', lineHeight: '1.5' }}>
-                  Shuffled into panels by the Project Incharge. Evaluates presentation rounds, enters individual scores out of 10 or marks absent, and submits Phase 3 report clearances.
-                </p>
+                <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Panel Judge (Faculty)</h3>
               </div>
-              <div style={{ fontSize: '12px', color: 'var(--color-ink)', fontWeight: 600 }}>
-                • Automated Conflict-of-Interest Safeguard
-              </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px', color: 'var(--color-ink-soft)', lineHeight: '1.8' }}>
+                <li>✓ Conflict-free panel assignment</li>
+                <li>✓ Score presentation rounds out of 10 points</li>
+                <li>✓ Final defense & viva evaluation</li>
+              </ul>
             </div>
 
             {/* Project Incharge */}
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'var(--color-canvas-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Shield size={16} color="var(--color-ink)" />
-                  </div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 700 }}>Project Incharge (Head Admin)</h3>
+            <div className="card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'var(--color-canvas-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Shield size={15} color="var(--color-ink)" />
                 </div>
-                <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginBottom: '14px', lineHeight: '1.5' }}>
-                  Master administrative oversight. Controls the presentation calendar, toggles phases to Live, creates panels, schedules logistical venues (AB1/AB2, rooms), and audits defaulting teams.
-                </p>
+                <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Project Incharge (Admin)</h3>
               </div>
-              <div style={{ fontSize: '12px', color: 'var(--color-ink)', fontWeight: 600 }}>
-                • Live Presentation Calendar & Master Excel Ingestion
-              </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px', color: 'var(--color-ink-soft)', lineHeight: '1.8' }}>
+                <li>✓ Manage presentation dates & venue halls (AB10)</li>
+                <li>✓ Toggle phases to Live & audit defaulting teams</li>
+                <li>✓ Export verified marks to institutional Excel sheets</li>
+              </ul>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Unified Footer with LinkedIn Developer Showcase */}
+      {/* Unified Footer */}
       <Footer />
     </div>
   );
