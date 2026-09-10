@@ -1,0 +1,7107 @@
+{
+  "supervisors": [
+    {
+      "emp_id": "GLA107250",
+      "name": "Mr. Narendra Mohan",
+      "phone": "9837356128",
+      "email": "narendra.mohan@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA106248",
+      "name": "Mr. Sachin Sharma",
+      "phone": "8077621113",
+      "email": "sachin.sharma@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA108254",
+      "name": "Dr. Anuj Mangal",
+      "phone": "9897534383",
+      "email": "anuj.mangal@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA115127",
+      "name": "Dr. Dhirendra Prasad Yadav",
+      "phone": "9568207247",
+      "email": "dhirendra.yadav@gla.ac.in",
+      "designation": "Assistant Professor",
+      "aliases": [
+        "Dr. D.P. Yadav",
+        "Dr. Dhirendra Prasad Yadav"
+      ]
+    },
+    {
+      "emp_id": "GLA114099",
+      "name": "Dr. Mayank Agrawal",
+      "phone": "9897626693",
+      "email": "mayank.agrawal@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA119314",
+      "name": "Dr. Anuj Kumar",
+      "phone": "9997189728",
+      "email": "anuj.kumar@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA119315",
+      "name": "Dr. Vinod Jain",
+      "phone": "9813078438",
+      "email": "vinod.jain@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA119316",
+      "name": "Mr. Navin Kumar Agrawal",
+      "phone": "9411253442",
+      "email": "navin.agrawal@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA123254",
+      "name": "Mr. Sanjeev Agrawal",
+      "phone": "8923015116",
+      "email": "sanjiv.agrawal@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA125203",
+      "name": "Mr. Kriti Bansal",
+      "phone": "8273996456",
+      "email": "kriti.bansal@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA123263",
+      "name": "Mr. Santosh Kumar Swarnkar",
+      "phone": "7310663121",
+      "email": "santosh.swarnkar@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA123288",
+      "name": "Ms. Cheshta Bharadwaj",
+      "phone": "8126796015",
+      "email": "cheshtaa.bhardwaj@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA123290",
+      "name": "Dr. Anil Kumar",
+      "phone": "9897667712",
+      "email": "anil.chanchal@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA123053",
+      "name": "Mr. Jayati Krishna Goswami",
+      "phone": "8171806228",
+      "email": "jayati.goswami@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA124174",
+      "name": "Mr. Satish Kumar Maurya",
+      "phone": "9196116503",
+      "email": "satish.maurya@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA124175",
+      "name": "Mr. Aman Deep Singh",
+      "phone": "7500712613",
+      "email": "Aman.deep@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA124196",
+      "name": "Mr. Koushik Choudhury",
+      "phone": "8910496595",
+      "email": "koushik.choudhury@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA123063",
+      "name": "Dr. Puneet Sharma",
+      "phone": "9897265401",
+      "email": "puneet.sharma@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA125219",
+      "name": "Mr Shivam kumar maurya",
+      "phone": "9336393284",
+      "email": "shivamk.maurya@gla.ac.in",
+      "designation": "Teaching Associate"
+    },
+    {
+      "emp_id": "GLA124204",
+      "name": "Mr Ashish kumar",
+      "phone": "9599939837",
+      "email": "kumar.ashish@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA124207",
+      "name": "Ms ROSHNI PATOA",
+      "phone": "8077610485",
+      "email": "roshni.patoa@gla.ac.in",
+      "designation": "Teaching Associate"
+    },
+    {
+      "emp_id": "GLA125222",
+      "name": "Dr Arun Singh yadav",
+      "phone": "9305591293",
+      "email": "arunsingh.yadav@gla.ac.in",
+      "designation": "Assistant Professor"
+    },
+    {
+      "emp_id": "GLA121233",
+      "name": "Mr.Shivank chauhan",
+      "phone": "9694159338",
+      "email": "shivank.chauhan@gla.ac.in",
+      "designation": "Assistant Professor"
+    }
+  ],
+  "teams": [
+    {
+      "team_code": "BCA-1",
+      "team_name": "Team BCA-1",
+      "team_number": 1,
+      "program": "BCA",
+      "guide_name": "Mr. Narendra Mohan",
+      "supervisor_email": "narendra.mohan@gla.ac.in",
+      "supervisor_emp_id": "GLA107250"
+    },
+    {
+      "team_code": "BCA-2",
+      "team_name": "Team BCA-2",
+      "team_number": 2,
+      "program": "BCA",
+      "guide_name": "Mr. Sachin Sharma",
+      "supervisor_email": "sachin.sharma@gla.ac.in",
+      "supervisor_emp_id": "GLA106248"
+    },
+    {
+      "team_code": "BCA-3",
+      "team_name": "Team BCA-3",
+      "team_number": 3,
+      "program": "BCA",
+      "guide_name": "Dr. Anuj Mangal",
+      "supervisor_email": "anuj.mangal@gla.ac.in",
+      "supervisor_emp_id": "GLA108254"
+    },
+    {
+      "team_code": "BCA-4",
+      "team_name": "Team BCA-4",
+      "team_number": 4,
+      "program": "BCA",
+      "guide_name": "Dr. Dhirendra Prasad Yadav",
+      "supervisor_email": "dhirendra.yadav@gla.ac.in",
+      "supervisor_emp_id": "GLA115127"
+    },
+    {
+      "team_code": "BCA-5",
+      "team_name": "Team BCA-5",
+      "team_number": 5,
+      "program": "BCA",
+      "guide_name": "Mr.Shivank chauhan",
+      "supervisor_email": "shivank.chauhan@gla.ac.in",
+      "supervisor_emp_id": "GLA121233"
+    },
+    {
+      "team_code": "BCA-6",
+      "team_name": "Team BCA-6",
+      "team_number": 6,
+      "program": "BCA",
+      "guide_name": "Dr. Anuj Kumar",
+      "supervisor_email": "anuj.kumar@gla.ac.in",
+      "supervisor_emp_id": "GLA119314"
+    },
+    {
+      "team_code": "BCA-7",
+      "team_name": "Team BCA-7",
+      "team_number": 7,
+      "program": "BCA",
+      "guide_name": "Dr. Vinod Jain",
+      "supervisor_email": "vinod.jain@gla.ac.in",
+      "supervisor_emp_id": "GLA119315"
+    },
+    {
+      "team_code": "BCA-8",
+      "team_name": "Team BCA-8",
+      "team_number": 8,
+      "program": "BCA",
+      "guide_name": "Mr. Navin Kumar Agrawal",
+      "supervisor_email": "navin.agrawal@gla.ac.in",
+      "supervisor_emp_id": "GLA119316"
+    },
+    {
+      "team_code": "BCA-9",
+      "team_name": "Team BCA-9",
+      "team_number": 9,
+      "program": "BCA",
+      "guide_name": "Mr. Sanjeev Agrawal",
+      "supervisor_email": "sanjiv.agrawal@gla.ac.in",
+      "supervisor_emp_id": "GLA123254"
+    },
+    {
+      "team_code": "BCA-10",
+      "team_name": "Team BCA-10",
+      "team_number": 10,
+      "program": "BCA",
+      "guide_name": "Mr. Kriti Bansal",
+      "supervisor_email": "kriti.bansal@gla.ac.in",
+      "supervisor_emp_id": "GLA125203"
+    },
+    {
+      "team_code": "BCA-11",
+      "team_name": "Team BCA-11",
+      "team_number": 11,
+      "program": "BCA",
+      "guide_name": "Mr. Santosh Kumar Swarnkar",
+      "supervisor_email": "santosh.swarnkar@gla.ac.in",
+      "supervisor_emp_id": "GLA123263"
+    },
+    {
+      "team_code": "BCA-12",
+      "team_name": "Team BCA-12",
+      "team_number": 12,
+      "program": "BCA",
+      "guide_name": "Ms. Cheshta Bharadwaj",
+      "supervisor_email": "cheshtaa.bhardwaj@gla.ac.in",
+      "supervisor_emp_id": "GLA123288"
+    },
+    {
+      "team_code": "BCA-13",
+      "team_name": "Team BCA-13",
+      "team_number": 13,
+      "program": "BCA",
+      "guide_name": "Dr. Anil Kumar",
+      "supervisor_email": "anil.chanchal@gla.ac.in",
+      "supervisor_emp_id": "GLA123290"
+    },
+    {
+      "team_code": "BCA-14",
+      "team_name": "Team BCA-14",
+      "team_number": 14,
+      "program": "BCA",
+      "guide_name": "Mr. Jayati Krishna Goswami",
+      "supervisor_email": "jayati.goswami@gla.ac.in",
+      "supervisor_emp_id": "GLA123053"
+    },
+    {
+      "team_code": "BCA-15",
+      "team_name": "Team BCA-15",
+      "team_number": 15,
+      "program": "BCA",
+      "guide_name": "Mr. Satish Kumar Maurya",
+      "supervisor_email": "satish.maurya@gla.ac.in",
+      "supervisor_emp_id": "GLA124174"
+    },
+    {
+      "team_code": "BCA-16",
+      "team_name": "Team BCA-16",
+      "team_number": 16,
+      "program": "BCA",
+      "guide_name": "Mr. Aman Deep Singh",
+      "supervisor_email": "Aman.deep@gla.ac.in",
+      "supervisor_emp_id": "GLA124175"
+    },
+    {
+      "team_code": "BCA-17",
+      "team_name": "Team BCA-17",
+      "team_number": 17,
+      "program": "BCA",
+      "guide_name": "Mr. Koushik Choudhury",
+      "supervisor_email": "koushik.choudhury@gla.ac.in",
+      "supervisor_emp_id": "GLA124196"
+    },
+    {
+      "team_code": "BCA-18",
+      "team_name": "Team BCA-18",
+      "team_number": 18,
+      "program": "BCA",
+      "guide_name": "Dr. Puneet Sharma",
+      "supervisor_email": "puneet.sharma@gla.ac.in",
+      "supervisor_emp_id": "GLA123063"
+    },
+    {
+      "team_code": "BCA-19",
+      "team_name": "Team BCA-19",
+      "team_number": 19,
+      "program": "BCA",
+      "guide_name": "Mr Shivam kumar maurya",
+      "supervisor_email": "shivamk.maurya@gla.ac.in",
+      "supervisor_emp_id": "GLA125219"
+    },
+    {
+      "team_code": "BCA-20",
+      "team_name": "Team BCA-20",
+      "team_number": 20,
+      "program": "BCA",
+      "guide_name": "Mr Ashish kumar",
+      "supervisor_email": "kumar.ashish@gla.ac.in",
+      "supervisor_emp_id": "GLA124204"
+    },
+    {
+      "team_code": "BCA-21",
+      "team_name": "Team BCA-21",
+      "team_number": 21,
+      "program": "BCA",
+      "guide_name": "Ms ROSHNI PATOA",
+      "supervisor_email": "roshni.patoa@gla.ac.in",
+      "supervisor_emp_id": "GLA124207"
+    },
+    {
+      "team_code": "BCA-22",
+      "team_name": "Team BCA-22",
+      "team_number": 22,
+      "program": "BCA",
+      "guide_name": "Dr Arun Singh yadav",
+      "supervisor_email": "arunsingh.yadav@gla.ac.in",
+      "supervisor_emp_id": "GLA125222"
+    },
+    {
+      "team_code": "BCA-23",
+      "team_name": "Team BCA-23",
+      "team_number": 23,
+      "program": "BCA",
+      "guide_name": "Dr. Mayank Agrawal",
+      "supervisor_email": "mayank.agrawal@gla.ac.in",
+      "supervisor_emp_id": "GLA114099"
+    },
+    {
+      "team_code": "BCA-24",
+      "team_name": "Team BCA-24",
+      "team_number": 24,
+      "program": "BCA",
+      "guide_name": "Mr. Narendra Mohan",
+      "supervisor_email": "narendra.mohan@gla.ac.in",
+      "supervisor_emp_id": "GLA107250"
+    },
+    {
+      "team_code": "BCA-25",
+      "team_name": "Team BCA-25",
+      "team_number": 25,
+      "program": "BCA",
+      "guide_name": "Mr. Sachin Sharma",
+      "supervisor_email": "sachin.sharma@gla.ac.in",
+      "supervisor_emp_id": "GLA106248"
+    },
+    {
+      "team_code": "BCA-26",
+      "team_name": "Team BCA-26",
+      "team_number": 26,
+      "program": "BCA",
+      "guide_name": "Dr. Anuj Mangal",
+      "supervisor_email": "anuj.mangal@gla.ac.in",
+      "supervisor_emp_id": "GLA108254"
+    },
+    {
+      "team_code": "BCA-27",
+      "team_name": "Team BCA-27",
+      "team_number": 27,
+      "program": "BCA",
+      "guide_name": "Dr. Anil Kumar",
+      "supervisor_email": "anil.chanchal@gla.ac.in",
+      "supervisor_emp_id": "GLA123290"
+    },
+    {
+      "team_code": "BCA-28",
+      "team_name": "Team BCA-28",
+      "team_number": 28,
+      "program": "BCA",
+      "guide_name": "Dr. Mayank Agrawal",
+      "supervisor_email": "mayank.agrawal@gla.ac.in",
+      "supervisor_emp_id": "GLA114099"
+    },
+    {
+      "team_code": "BCA-29",
+      "team_name": "Team BCA-29",
+      "team_number": 29,
+      "program": "BCA",
+      "guide_name": "Dr. Anuj Kumar",
+      "supervisor_email": "anuj.kumar@gla.ac.in",
+      "supervisor_emp_id": "GLA119314"
+    },
+    {
+      "team_code": "BCA-30",
+      "team_name": "Team BCA-30",
+      "team_number": 30,
+      "program": "BCA",
+      "guide_name": "Dr. Vinod Jain",
+      "supervisor_email": "vinod.jain@gla.ac.in",
+      "supervisor_emp_id": "GLA119315"
+    },
+    {
+      "team_code": "BCA-31",
+      "team_name": "Team BCA-31",
+      "team_number": 31,
+      "program": "BCA",
+      "guide_name": "Mr. Navin Kumar Agrawal",
+      "supervisor_email": "navin.agrawal@gla.ac.in",
+      "supervisor_emp_id": "GLA119316"
+    },
+    {
+      "team_code": "BCA-32",
+      "team_name": "Team BCA-32",
+      "team_number": 32,
+      "program": "BCA",
+      "guide_name": "Mr. Sanjeev Agrawal",
+      "supervisor_email": "sanjiv.agrawal@gla.ac.in",
+      "supervisor_emp_id": "GLA123254"
+    },
+    {
+      "team_code": "BCA-33",
+      "team_name": "Team BCA-33",
+      "team_number": 33,
+      "program": "BCA",
+      "guide_name": "Mr. Kriti Bansal",
+      "supervisor_email": "kriti.bansal@gla.ac.in",
+      "supervisor_emp_id": "GLA125203"
+    },
+    {
+      "team_code": "BCA-34",
+      "team_name": "Team BCA-34",
+      "team_number": 34,
+      "program": "BCA",
+      "guide_name": "Mr. Santosh Kumar Swarnkar",
+      "supervisor_email": "santosh.swarnkar@gla.ac.in",
+      "supervisor_emp_id": "GLA123263"
+    },
+    {
+      "team_code": "BCA-35",
+      "team_name": "Team BCA-35",
+      "team_number": 35,
+      "program": "BCA",
+      "guide_name": "Ms. Cheshta Bharadwaj",
+      "supervisor_email": "cheshtaa.bhardwaj@gla.ac.in",
+      "supervisor_emp_id": "GLA123288"
+    },
+    {
+      "team_code": "BCA-36",
+      "team_name": "Team BCA-36",
+      "team_number": 36,
+      "program": "BCA",
+      "guide_name": "Dr. Anil Kumar",
+      "supervisor_email": "anil.chanchal@gla.ac.in",
+      "supervisor_emp_id": "GLA123290"
+    },
+    {
+      "team_code": "BCA-37",
+      "team_name": "Team BCA-37",
+      "team_number": 37,
+      "program": "BCA",
+      "guide_name": "Mr. Jayati Krishna Goswami",
+      "supervisor_email": "jayati.goswami@gla.ac.in",
+      "supervisor_emp_id": "GLA123053"
+    },
+    {
+      "team_code": "BCA-38",
+      "team_name": "Team BCA-38",
+      "team_number": 38,
+      "program": "BCA",
+      "guide_name": "Mr. Satish Kumar Maurya",
+      "supervisor_email": "satish.maurya@gla.ac.in",
+      "supervisor_emp_id": "GLA124174"
+    },
+    {
+      "team_code": "BCA-39",
+      "team_name": "Team BCA-39",
+      "team_number": 39,
+      "program": "BCA",
+      "guide_name": "Mr. Aman Deep Singh",
+      "supervisor_email": "Aman.deep@gla.ac.in",
+      "supervisor_emp_id": "GLA124175"
+    },
+    {
+      "team_code": "BCA-40",
+      "team_name": "Team BCA-40",
+      "team_number": 40,
+      "program": "BCA",
+      "guide_name": "Mr. Koushik Choudhury",
+      "supervisor_email": "koushik.choudhury@gla.ac.in",
+      "supervisor_emp_id": "GLA124196"
+    },
+    {
+      "team_code": "BCA-41",
+      "team_name": "Team BCA-41",
+      "team_number": 41,
+      "program": "BCA",
+      "guide_name": "Dr. Puneet Sharma",
+      "supervisor_email": "puneet.sharma@gla.ac.in",
+      "supervisor_emp_id": "GLA123063"
+    },
+    {
+      "team_code": "BCA-42",
+      "team_name": "Team BCA-42",
+      "team_number": 42,
+      "program": "BCA",
+      "guide_name": "Mr Shivam kumar maurya",
+      "supervisor_email": "shivamk.maurya@gla.ac.in",
+      "supervisor_emp_id": "GLA125219"
+    },
+    {
+      "team_code": "BCA-43",
+      "team_name": "Team BCA-43",
+      "team_number": 43,
+      "program": "BCA",
+      "guide_name": "Mr Ashish kumar",
+      "supervisor_email": "kumar.ashish@gla.ac.in",
+      "supervisor_emp_id": "GLA124204"
+    },
+    {
+      "team_code": "BCA-44",
+      "team_name": "Team BCA-44",
+      "team_number": 44,
+      "program": "BCA",
+      "guide_name": "Ms ROSHNI PATOA",
+      "supervisor_email": "roshni.patoa@gla.ac.in",
+      "supervisor_emp_id": "GLA124207"
+    },
+    {
+      "team_code": "BCA-45",
+      "team_name": "Team BCA-45",
+      "team_number": 45,
+      "program": "BCA",
+      "guide_name": "Dr Arun Singh yadav",
+      "supervisor_email": "arunsingh.yadav@gla.ac.in",
+      "supervisor_emp_id": "GLA125222"
+    },
+    {
+      "team_code": "BCA-46",
+      "team_name": "Team BCA-46",
+      "team_number": 46,
+      "program": "BCA",
+      "guide_name": "Mr.Shivank chauhan",
+      "supervisor_email": "shivank.chauhan@gla.ac.in",
+      "supervisor_emp_id": "GLA121233"
+    },
+    {
+      "team_code": "BCA-47",
+      "team_name": "Team BCA-47",
+      "team_number": 47,
+      "program": "BCA",
+      "guide_name": "Mr. Santosh Kumar Swarnkar",
+      "supervisor_email": "santosh.swarnkar@gla.ac.in",
+      "supervisor_emp_id": "GLA123263"
+    },
+    {
+      "team_code": "BCA-48",
+      "team_name": "Team BCA-48",
+      "team_number": 48,
+      "program": "BCA",
+      "guide_name": "Mr. Narendra Mohan",
+      "supervisor_email": "narendra.mohan@gla.ac.in",
+      "supervisor_emp_id": "GLA107250"
+    },
+    {
+      "team_code": "BCA-49",
+      "team_name": "Team BCA-49",
+      "team_number": 49,
+      "program": "BCA",
+      "guide_name": "Mr. Sachin Sharma",
+      "supervisor_email": "sachin.sharma@gla.ac.in",
+      "supervisor_emp_id": "GLA106248"
+    },
+    {
+      "team_code": "BCA-50",
+      "team_name": "Team BCA-50",
+      "team_number": 50,
+      "program": "BCA",
+      "guide_name": "Dr. Anuj Mangal",
+      "supervisor_email": "anuj.mangal@gla.ac.in",
+      "supervisor_emp_id": "GLA108254"
+    },
+    {
+      "team_code": "BCA-51",
+      "team_name": "Team BCA-51",
+      "team_number": 51,
+      "program": "BCA",
+      "guide_name": "Mr. Jayati Krishna Goswami",
+      "supervisor_email": "jayati.goswami@gla.ac.in",
+      "supervisor_emp_id": "GLA123053"
+    },
+    {
+      "team_code": "BCA-52",
+      "team_name": "Team BCA-52",
+      "team_number": 52,
+      "program": "BCA",
+      "guide_name": "Dr. Mayank Agrawal",
+      "supervisor_email": "mayank.agrawal@gla.ac.in",
+      "supervisor_emp_id": "GLA114099"
+    },
+    {
+      "team_code": "BCA-53",
+      "team_name": "Team BCA-53",
+      "team_number": 53,
+      "program": "BCA",
+      "guide_name": "Dr. Anuj Kumar",
+      "supervisor_email": "anuj.kumar@gla.ac.in",
+      "supervisor_emp_id": "GLA119314"
+    },
+    {
+      "team_code": "BCA-54",
+      "team_name": "Team BCA-54",
+      "team_number": 54,
+      "program": "BCA",
+      "guide_name": "Dr. Vinod Jain",
+      "supervisor_email": "vinod.jain@gla.ac.in",
+      "supervisor_emp_id": "GLA119315"
+    },
+    {
+      "team_code": "BCA-55",
+      "team_name": "Team BCA-55",
+      "team_number": 55,
+      "program": "BCA",
+      "guide_name": "Mr. Navin Kumar Agrawal",
+      "supervisor_email": "navin.agrawal@gla.ac.in",
+      "supervisor_emp_id": "GLA119316"
+    },
+    {
+      "team_code": "BCA-56",
+      "team_name": "Team BCA-56",
+      "team_number": 56,
+      "program": "BCA",
+      "guide_name": "Mr. Sanjeev Agrawal",
+      "supervisor_email": "sanjiv.agrawal@gla.ac.in",
+      "supervisor_emp_id": "GLA123254"
+    },
+    {
+      "team_code": "BCA-57",
+      "team_name": "Team BCA-57",
+      "team_number": 57,
+      "program": "BCA",
+      "guide_name": "Mr. Kriti Bansal",
+      "supervisor_email": "kriti.bansal@gla.ac.in",
+      "supervisor_emp_id": "GLA125203"
+    },
+    {
+      "team_code": "BCA-58",
+      "team_name": "Team BCA-58",
+      "team_number": 58,
+      "program": "BCA",
+      "guide_name": "Mr. Santosh Kumar Swarnkar",
+      "supervisor_email": "santosh.swarnkar@gla.ac.in",
+      "supervisor_emp_id": "GLA123263"
+    },
+    {
+      "team_code": "BCA-59",
+      "team_name": "Team BCA-59",
+      "team_number": 59,
+      "program": "BCA",
+      "guide_name": "Ms. Cheshta Bharadwaj",
+      "supervisor_email": "cheshtaa.bhardwaj@gla.ac.in",
+      "supervisor_emp_id": "GLA123288"
+    },
+    {
+      "team_code": "BCA-60",
+      "team_name": "Team BCA-60",
+      "team_number": 60,
+      "program": "BCA",
+      "guide_name": "Mr. Jayati Krishna Goswami",
+      "supervisor_email": "jayati.goswami@gla.ac.in",
+      "supervisor_emp_id": "GLA123053"
+    },
+    {
+      "team_code": "BCA-61",
+      "team_name": "Team BCA-61",
+      "team_number": 61,
+      "program": "BCA",
+      "guide_name": "Mr. Satish Kumar Maurya",
+      "supervisor_email": "satish.maurya@gla.ac.in",
+      "supervisor_emp_id": "GLA124174"
+    },
+    {
+      "team_code": "BCA-62",
+      "team_name": "Team BCA-62",
+      "team_number": 62,
+      "program": "BCA",
+      "guide_name": "Mr. Aman Deep Singh",
+      "supervisor_email": "Aman.deep@gla.ac.in",
+      "supervisor_emp_id": "GLA124175"
+    },
+    {
+      "team_code": "BCA-63",
+      "team_name": "Team BCA-63",
+      "team_number": 63,
+      "program": "BCA",
+      "guide_name": "Mr. Koushik Choudhury",
+      "supervisor_email": "koushik.choudhury@gla.ac.in",
+      "supervisor_emp_id": "GLA124196"
+    },
+    {
+      "team_code": "BCA-64",
+      "team_name": "Team BCA-64",
+      "team_number": 64,
+      "program": "BCA",
+      "guide_name": "Dr. Puneet Sharma",
+      "supervisor_email": "puneet.sharma@gla.ac.in",
+      "supervisor_emp_id": "GLA123063"
+    },
+    {
+      "team_code": "BCA-65",
+      "team_name": "Team BCA-65",
+      "team_number": 65,
+      "program": "BCA",
+      "guide_name": "Dr Arun Singh yadav",
+      "supervisor_email": "arunsingh.yadav@gla.ac.in",
+      "supervisor_emp_id": "GLA125222"
+    },
+    {
+      "team_code": "BCA-66",
+      "team_name": "Team BCA-66",
+      "team_number": 66,
+      "program": "BCA",
+      "guide_name": "Mr Ashish kumar",
+      "supervisor_email": "kumar.ashish@gla.ac.in",
+      "supervisor_emp_id": "GLA124204"
+    },
+    {
+      "team_code": "BCA-67",
+      "team_name": "Team BCA-67",
+      "team_number": 67,
+      "program": "BCA",
+      "guide_name": "Ms ROSHNI PATOA",
+      "supervisor_email": "roshni.patoa@gla.ac.in",
+      "supervisor_emp_id": "GLA124207"
+    },
+    {
+      "team_code": "BCA-68",
+      "team_name": "Team BCA-68",
+      "team_number": 68,
+      "program": "BCA",
+      "guide_name": "Mr Shivam kumar maurya",
+      "supervisor_email": "shivamk.maurya@gla.ac.in",
+      "supervisor_emp_id": "GLA125219"
+    },
+    {
+      "team_code": "BCA-69",
+      "team_name": "Team BCA-69",
+      "team_number": 69,
+      "program": "BCA",
+      "guide_name": "Dr Arun Singh yadav",
+      "supervisor_email": "arunsingh.yadav@gla.ac.in",
+      "supervisor_emp_id": "GLA125222"
+    },
+    {
+      "team_code": "BCA-70",
+      "team_name": "Team BCA-70",
+      "team_number": 70,
+      "program": "BCA",
+      "guide_name": "Mr. Narendra Mohan",
+      "supervisor_email": "narendra.mohan@gla.ac.in",
+      "supervisor_emp_id": "GLA107250"
+    },
+    {
+      "team_code": "BCA-71",
+      "team_name": "Team BCA-71",
+      "team_number": 71,
+      "program": "BCA",
+      "guide_name": "Mr. Sachin Sharma",
+      "supervisor_email": "sachin.sharma@gla.ac.in",
+      "supervisor_emp_id": "GLA106248"
+    },
+    {
+      "team_code": "BCA-72",
+      "team_name": "Team BCA-72",
+      "team_number": 72,
+      "program": "BCA",
+      "guide_name": "Dr. Anuj Mangal",
+      "supervisor_email": "anuj.mangal@gla.ac.in",
+      "supervisor_emp_id": "GLA108254"
+    },
+    {
+      "team_code": "BCA-73",
+      "team_name": "Team BCA-73",
+      "team_number": 73,
+      "program": "BCA",
+      "guide_name": "Dr. Dhirendra Prasad Yadav",
+      "supervisor_email": "dhirendra.yadav@gla.ac.in",
+      "supervisor_emp_id": "GLA115127"
+    },
+    {
+      "team_code": "BCA-74",
+      "team_name": "Team BCA-74",
+      "team_number": 74,
+      "program": "BCA",
+      "guide_name": "Mr.Shivank chauhan",
+      "supervisor_email": "shivank.chauhan@gla.ac.in",
+      "supervisor_emp_id": "GLA121233"
+    },
+    {
+      "team_code": "BCA-75",
+      "team_name": "Team BCA-75",
+      "team_number": 75,
+      "program": "BCA",
+      "guide_name": "Dr. Anuj Kumar",
+      "supervisor_email": "anuj.kumar@gla.ac.in",
+      "supervisor_emp_id": "GLA119314"
+    },
+    {
+      "team_code": "BCA-76",
+      "team_name": "Team BCA-76",
+      "team_number": 76,
+      "program": "BCA",
+      "guide_name": "Dr. Vinod Jain",
+      "supervisor_email": "vinod.jain@gla.ac.in",
+      "supervisor_emp_id": "GLA119315"
+    },
+    {
+      "team_code": "BCA-77",
+      "team_name": "Team BCA-77",
+      "team_number": 77,
+      "program": "BCA",
+      "guide_name": "Mr. Navin Kumar Agrawal",
+      "supervisor_email": "navin.agrawal@gla.ac.in",
+      "supervisor_emp_id": "GLA119316"
+    },
+    {
+      "team_code": "BCA-78",
+      "team_name": "Team BCA-78",
+      "team_number": 78,
+      "program": "BCA",
+      "guide_name": "Mr. Sanjeev Agrawal",
+      "supervisor_email": "sanjiv.agrawal@gla.ac.in",
+      "supervisor_emp_id": "GLA123254"
+    },
+    {
+      "team_code": "BCA-79",
+      "team_name": "Team BCA-79",
+      "team_number": 79,
+      "program": "BCA",
+      "guide_name": "Mr. Kriti Bansal",
+      "supervisor_email": "kriti.bansal@gla.ac.in",
+      "supervisor_emp_id": "GLA125203"
+    },
+    {
+      "team_code": "BCA-80",
+      "team_name": "Team BCA-80",
+      "team_number": 80,
+      "program": "BCA",
+      "guide_name": "Mr. Santosh Kumar Swarnkar",
+      "supervisor_email": "santosh.swarnkar@gla.ac.in",
+      "supervisor_emp_id": "GLA123263"
+    },
+    {
+      "team_code": "BCA-81",
+      "team_name": "Team BCA-81",
+      "team_number": 81,
+      "program": "BCA",
+      "guide_name": "Ms. Cheshta Bharadwaj",
+      "supervisor_email": "cheshtaa.bhardwaj@gla.ac.in",
+      "supervisor_emp_id": "GLA123288"
+    },
+    {
+      "team_code": "BCA-82",
+      "team_name": "Team BCA-82",
+      "team_number": 82,
+      "program": "BCA",
+      "guide_name": "Mr. Jayati Krishna Goswami",
+      "supervisor_email": "jayati.goswami@gla.ac.in",
+      "supervisor_emp_id": "GLA123053"
+    },
+    {
+      "team_code": "BCA-83",
+      "team_name": "Team BCA-83",
+      "team_number": 83,
+      "program": "BCA",
+      "guide_name": "Mr. Satish Kumar Maurya",
+      "supervisor_email": "satish.maurya@gla.ac.in",
+      "supervisor_emp_id": "GLA124174"
+    },
+    {
+      "team_code": "BCA-84",
+      "team_name": "Team BCA-84",
+      "team_number": 84,
+      "program": "BCA",
+      "guide_name": "Mr. Aman Deep Singh",
+      "supervisor_email": "Aman.deep@gla.ac.in",
+      "supervisor_emp_id": "GLA124175"
+    },
+    {
+      "team_code": "BCA-85",
+      "team_name": "Team BCA-85",
+      "team_number": 85,
+      "program": "BCA",
+      "guide_name": "Mr. Koushik Choudhury",
+      "supervisor_email": "koushik.choudhury@gla.ac.in",
+      "supervisor_emp_id": "GLA124196"
+    },
+    {
+      "team_code": "BCA-86",
+      "team_name": "Team BCA-86",
+      "team_number": 86,
+      "program": "BCA",
+      "guide_name": "Dr. Puneet Sharma",
+      "supervisor_email": "puneet.sharma@gla.ac.in",
+      "supervisor_emp_id": "GLA123063"
+    },
+    {
+      "team_code": "BCA-87",
+      "team_name": "Team BCA-87",
+      "team_number": 87,
+      "program": "BCA",
+      "guide_name": "Mr Shivam kumar maurya",
+      "supervisor_email": "shivamk.maurya@gla.ac.in",
+      "supervisor_emp_id": "GLA125219"
+    },
+    {
+      "team_code": "BCA-88",
+      "team_name": "Team BCA-88",
+      "team_number": 88,
+      "program": "BCA",
+      "guide_name": "Mr Ashish kumar",
+      "supervisor_email": "kumar.ashish@gla.ac.in",
+      "supervisor_emp_id": "GLA124204"
+    },
+    {
+      "team_code": "BCA-89",
+      "team_name": "Team BCA-89",
+      "team_number": 89,
+      "program": "BCA",
+      "guide_name": "Ms ROSHNI PATOA",
+      "supervisor_email": "roshni.patoa@gla.ac.in",
+      "supervisor_emp_id": "GLA124207"
+    },
+    {
+      "team_code": "BCA-90",
+      "team_name": "Team BCA-90",
+      "team_number": 90,
+      "program": "BCA",
+      "guide_name": "Dr Arun Singh yadav",
+      "supervisor_email": "arunsingh.yadav@gla.ac.in",
+      "supervisor_emp_id": "GLA125222"
+    },
+    {
+      "team_code": "BCA-91",
+      "team_name": "Team BCA-91",
+      "team_number": 91,
+      "program": "BCA",
+      "guide_name": "Dr. Mayank Agrawal",
+      "supervisor_email": "mayank.agrawal@gla.ac.in",
+      "supervisor_emp_id": "GLA114099"
+    },
+    {
+      "team_code": "BCA-92",
+      "team_name": "Team BCA-92",
+      "team_number": 92,
+      "program": "BCA",
+      "guide_name": "Mr. Narendra Mohan",
+      "supervisor_email": "narendra.mohan@gla.ac.in",
+      "supervisor_emp_id": "GLA107250"
+    },
+    {
+      "team_code": "BCA-93",
+      "team_name": "Team BCA-93",
+      "team_number": 93,
+      "program": "BCA",
+      "guide_name": "Mr. Sachin Sharma",
+      "supervisor_email": "sachin.sharma@gla.ac.in",
+      "supervisor_emp_id": "GLA106248"
+    },
+    {
+      "team_code": "DS-1",
+      "team_name": "Team DS-1",
+      "team_number": 1,
+      "program": "BCA - DS",
+      "guide_name": "Dr. Anuj Mangal",
+      "supervisor_email": "anuj.mangal@gla.ac.in",
+      "supervisor_emp_id": "GLA108254"
+    },
+    {
+      "team_code": "DS-2",
+      "team_name": "Team DS-2",
+      "team_number": 2,
+      "program": "BCA - DS",
+      "guide_name": "Dr. D.P. Yadav",
+      "supervisor_email": "dhirendra.yadav@gla.ac.in",
+      "supervisor_emp_id": "GLA115127"
+    },
+    {
+      "team_code": "DS-3",
+      "team_name": "Team DS-3",
+      "team_number": 3,
+      "program": "BCA - DS",
+      "guide_name": "Dr. Mayank Agrawal",
+      "supervisor_email": "mayank.agrawal@gla.ac.in",
+      "supervisor_emp_id": "GLA114099"
+    },
+    {
+      "team_code": "DS-4",
+      "team_name": "Team DS-4",
+      "team_number": 4,
+      "program": "BCA - DS",
+      "guide_name": "Dr. Anuj Kumar",
+      "supervisor_email": "anuj.kumar@gla.ac.in",
+      "supervisor_emp_id": "GLA119314"
+    },
+    {
+      "team_code": "DS-5",
+      "team_name": "Team DS-5",
+      "team_number": 5,
+      "program": "BCA - DS",
+      "guide_name": "Dr. Vinod Jain",
+      "supervisor_email": "vinod.jain@gla.ac.in",
+      "supervisor_emp_id": "GLA119315"
+    },
+    {
+      "team_code": "DS-6",
+      "team_name": "Team DS-6",
+      "team_number": 6,
+      "program": "BCA - DS",
+      "guide_name": "Mr. Navin Kumar Agrawal",
+      "supervisor_email": "navin.agrawal@gla.ac.in",
+      "supervisor_emp_id": "GLA119316"
+    },
+    {
+      "team_code": "DS-7",
+      "team_name": "Team DS-7",
+      "team_number": 7,
+      "program": "BCA - DS",
+      "guide_name": "Mr. Sanjeev Agrawal",
+      "supervisor_email": "sanjiv.agrawal@gla.ac.in",
+      "supervisor_emp_id": "GLA123254"
+    },
+    {
+      "team_code": "DS-8",
+      "team_name": "Team DS-8",
+      "team_number": 8,
+      "program": "BCA - DS",
+      "guide_name": "Dr. Anil Kumar",
+      "supervisor_email": "anil.chanchal@gla.ac.in",
+      "supervisor_emp_id": "GLA123290"
+    },
+    {
+      "team_code": "DS-9",
+      "team_name": "Team DS-9",
+      "team_number": 9,
+      "program": "BCA - DS",
+      "guide_name": "Dr. Puneet Sharma",
+      "supervisor_email": "puneet.sharma@gla.ac.in",
+      "supervisor_emp_id": "GLA123063"
+    }
+  ],
+  "students": [
+    {
+      "roll_no": "2442010018",
+      "full_name": "ADEESH AGRAWAL",
+      "email": "adeesh.agrawal_bca24@gla.ac.in",
+      "mobile": "8171136968",
+      "cpi": 8.34,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-1"
+    },
+    {
+      "roll_no": "2442010019",
+      "full_name": "ADISHRI AWASTHI",
+      "email": "adishri.awasthi_bca24@gla.ac.in",
+      "mobile": "9044790720",
+      "cpi": 7.96,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-1"
+    },
+    {
+      "roll_no": "2442010020",
+      "full_name": "ADITI BHADAURIA",
+      "email": "aditi.bhadauria_bca24@gla.ac.in",
+      "mobile": "9520928565",
+      "cpi": 8.7,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-1"
+    },
+    {
+      "roll_no": "2442010040",
+      "full_name": "AKHIL PRATAP SINGH",
+      "email": "akhil.singh_bca24@gla.ac.in",
+      "mobile": "6396775752",
+      "cpi": 8.18,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-1"
+    },
+    {
+      "roll_no": "2442010044",
+      "full_name": "AMAN JAIN",
+      "email": "aman.jain_bca24@gla.ac.in",
+      "mobile": "9058627761",
+      "cpi": 8.2,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-1"
+    },
+    {
+      "roll_no": "2442010058",
+      "full_name": "ANJALI SINGH",
+      "email": "anjali.singh_bca24@gla.ac.in",
+      "mobile": "6396237735",
+      "cpi": 8.88,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-1"
+    },
+    {
+      "roll_no": "2442010069",
+      "full_name": "ANSH BHADORIA",
+      "email": "ansh.bhadoria_bca24@gla.ac.in",
+      "mobile": "9149046428",
+      "cpi": 8.41,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-2"
+    },
+    {
+      "roll_no": "2442010073",
+      "full_name": "ANSHIKA VERMA",
+      "email": "anshika.verma_bca24@gla.ac.in",
+      "mobile": "9058716700",
+      "cpi": 8.48,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-2"
+    },
+    {
+      "roll_no": "2442010081",
+      "full_name": "ANTRA SHRIVASTAVA",
+      "email": "antra.shrivastava_bca24@gla.ac.in",
+      "mobile": "9557774594",
+      "cpi": 8.22,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-2"
+    },
+    {
+      "roll_no": "2442010082",
+      "full_name": "ANUBHAV GUPTA",
+      "email": "anubhav.gupta_bca24@gla.ac.in",
+      "mobile": "7668399365",
+      "cpi": 8.23,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-2"
+    },
+    {
+      "roll_no": "2442010085",
+      "full_name": "ANUJ SINGH",
+      "email": "anuj.singh2_bca24@gla.ac.in",
+      "mobile": "7906879607",
+      "cpi": 7.98,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-2"
+    },
+    {
+      "roll_no": "2442010095",
+      "full_name": "ANUSHK KUMAR SINGH",
+      "email": "anushk.singh_bca24@gla.ac.in",
+      "mobile": "8173072684",
+      "cpi": 8.01,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-2"
+    },
+    {
+      "roll_no": "2442010109",
+      "full_name": "ARYAN RATHORE",
+      "email": "aryan.rathore_bca24@gla.ac.in",
+      "mobile": "7668265344",
+      "cpi": 8.13,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-3"
+    },
+    {
+      "roll_no": "2442010114",
+      "full_name": "ASHMIT DIXIT",
+      "email": "ashmit.dixit_bca24@gla.ac.in",
+      "mobile": "7017048074",
+      "cpi": 8.71,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-3"
+    },
+    {
+      "roll_no": "2442010124",
+      "full_name": "AYUSH SINGH",
+      "email": "ayush.singh2_bca24@gla.ac.in",
+      "mobile": "9897600313",
+      "cpi": 8.11,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-3"
+    },
+    {
+      "roll_no": "2442010128",
+      "full_name": "BABLI SINGH",
+      "email": "babli.singh_bca24@gla.ac.in",
+      "mobile": "9548295872",
+      "cpi": 7.92,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-3"
+    },
+    {
+      "roll_no": "2442010145",
+      "full_name": "BHUPENDRA KUMAR UPADHYAY",
+      "email": "bhupendra.upadhyay_bca24@gla.ac.in",
+      "mobile": "6395732366",
+      "cpi": 8.36,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-3"
+    },
+    {
+      "roll_no": "2442010152",
+      "full_name": "CHANCHAL KAMEWAL",
+      "email": "chanchal.kamewal_bca24@gla.ac.in",
+      "mobile": "9389710635",
+      "cpi": 8.54,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-3"
+    },
+    {
+      "roll_no": "2442010161",
+      "full_name": "CHIRAG GOYAL",
+      "email": "chirag.goyal_bca24@gla.ac.in",
+      "mobile": "9119756246",
+      "cpi": 8.11,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-4"
+    },
+    {
+      "roll_no": "2442010164",
+      "full_name": "DAKSH VERMA",
+      "email": "daksh.verma_bca24@gla.ac.in",
+      "mobile": "8433401492",
+      "cpi": 8.09,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-4"
+    },
+    {
+      "roll_no": "2442010167",
+      "full_name": "DEEKSHA BAGHEL",
+      "email": "deeksha.baghel_bca24@gla.ac.in",
+      "mobile": "9084265907",
+      "cpi": 8.49,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-4"
+    },
+    {
+      "roll_no": "2442010178",
+      "full_name": "DEV CHAUDHARY",
+      "email": "dev.chaudhary_bca24@gla.ac.in",
+      "mobile": "9690881336",
+      "cpi": 8.0,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-4"
+    },
+    {
+      "roll_no": "2442010188",
+      "full_name": "DEVESH KUMAR RAGHUVANSHI",
+      "email": "devesh.raghuvanshi_bca24@gla.ac.in",
+      "mobile": "9758178172",
+      "cpi": 8.2,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-4"
+    },
+    {
+      "roll_no": "2442010192",
+      "full_name": "DHRUVI",
+      "email": "dhruvi.gla_bca24@gla.ac.in",
+      "mobile": "8979918105",
+      "cpi": 8.31,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-4"
+    },
+    {
+      "roll_no": "2442010194",
+      "full_name": "DIKSHA SHARMA",
+      "email": "diksha.sharma_bca24@gla.ac.in",
+      "mobile": "8949226185",
+      "cpi": 8.09,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-5"
+    },
+    {
+      "roll_no": "2442010206",
+      "full_name": "GARGI JAIN",
+      "email": "gargi.jain_bca24@gla.ac.in",
+      "mobile": "7310507795",
+      "cpi": 8.62,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-5"
+    },
+    {
+      "roll_no": "2442010207",
+      "full_name": "GARIMA MISHRA",
+      "email": "garima.mishra_bca24@gla.ac.in",
+      "mobile": "8595245166",
+      "cpi": 8.65,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-5"
+    },
+    {
+      "roll_no": "2442010209",
+      "full_name": "GAURANSHI MAHESHWARI",
+      "email": "gauranshi.maheshwari_bca24@gla.ac.in",
+      "mobile": "7310724121",
+      "cpi": 7.88,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-5"
+    },
+    {
+      "roll_no": "2442010218",
+      "full_name": "GAURI SINGH",
+      "email": "gauri.singh_bca24@gla.ac.in",
+      "mobile": "6396811344",
+      "cpi": 8.8,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-5"
+    },
+    {
+      "roll_no": "2442010224",
+      "full_name": "GUNGUN PATHAK",
+      "email": "gungun.pathak_bca24@gla.ac.in",
+      "mobile": "9066772001",
+      "cpi": 7.96,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-5"
+    },
+    {
+      "roll_no": "2442010226",
+      "full_name": "GURSAHIB SINGH WALIA",
+      "email": "gursahib.walia_bca24@gla.ac.in",
+      "mobile": "8791006099",
+      "cpi": 8.17,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-6"
+    },
+    {
+      "roll_no": "2442010234",
+      "full_name": "HARSH BHARDWAJ",
+      "email": "harsh.bhardwaj_bca24@gla.ac.in",
+      "mobile": "6395601843",
+      "cpi": 8.1,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-6"
+    },
+    {
+      "roll_no": "2442010240",
+      "full_name": "HIMANSHI",
+      "email": "himanshi.gla_bca.ds24@gla.ac.in",
+      "mobile": "9897563486",
+      "cpi": 8.01,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-6"
+    },
+    {
+      "roll_no": "2442010242",
+      "full_name": "HIMANSHU MOULEKHI",
+      "email": "himanshu.moulekhi_bca24@gla.ac.in",
+      "mobile": "9557595427",
+      "cpi": 8.2,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-6"
+    },
+    {
+      "roll_no": "2442010252",
+      "full_name": "KANAK SINGHAL",
+      "email": "kanak.singhal_bca24@gla.ac.in",
+      "mobile": "7877171402",
+      "cpi": 8.47,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-6"
+    },
+    {
+      "roll_no": "2442010264",
+      "full_name": "KARTIKAY DUBEY",
+      "email": "kartikay.dubey_bca24@gla.ac.in",
+      "mobile": "7465051114",
+      "cpi": 8.16,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-6"
+    },
+    {
+      "roll_no": "2442010267",
+      "full_name": "KAUSHIKI PATHAK",
+      "email": "kaushiki.pathak_bca24@gla.ac.in",
+      "mobile": "9084552127",
+      "cpi": 9.09,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-7"
+    },
+    {
+      "roll_no": "2442010268",
+      "full_name": "KAVYANSH GUPTA",
+      "email": "kavyansh.gupta_bca24@gla.ac.in",
+      "mobile": "7983857407",
+      "cpi": 7.92,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-7"
+    },
+    {
+      "roll_no": "2442010285",
+      "full_name": "KRISHNA PATEL",
+      "email": "krishna.patel_bca24@gla.ac.in",
+      "mobile": "7017810174",
+      "cpi": 8.59,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-7"
+    },
+    {
+      "roll_no": "2442010295",
+      "full_name": "KUMARI ANJALI",
+      "email": "kumari.anjali_bca24@gla.ac.in",
+      "mobile": "8439940433",
+      "cpi": 8.06,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-7"
+    },
+    {
+      "roll_no": "2442010317",
+      "full_name": "MANJEET SINGH SODHI",
+      "email": "manjeet.sodhi_bca24@gla.ac.in",
+      "mobile": "9917625101",
+      "cpi": 8.31,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-7"
+    },
+    {
+      "roll_no": "2442010329",
+      "full_name": "MAYANK SINGH RAUTELA",
+      "email": "mayank.rautela_bca24@gla.ac.in",
+      "mobile": "7060227216",
+      "cpi": 7.88,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-7"
+    },
+    {
+      "roll_no": "2442010332",
+      "full_name": "MITANSH KATIYAR",
+      "email": "mitansh.katiyar_bca24@gla.ac.in",
+      "mobile": "8218654468",
+      "cpi": 9.11,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-8"
+    },
+    {
+      "roll_no": "2442010337",
+      "full_name": "MOHD MEEZAN ALAM",
+      "email": "mohd.alam_bca24@gla.ac.in",
+      "mobile": "9506302245",
+      "cpi": 8.04,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-8"
+    },
+    {
+      "roll_no": "2442010344",
+      "full_name": "MUKUND BANSAL",
+      "email": "mukund.bansal_bca24@gla.ac.in",
+      "mobile": "9001706928",
+      "cpi": 8.1,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-8"
+    },
+    {
+      "roll_no": "2442010350",
+      "full_name": "NAMAN MAHESHWARI",
+      "email": "naman.maheshwari_bca24@gla.ac.in",
+      "mobile": "7452925077",
+      "cpi": 8.5,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-8"
+    },
+    {
+      "roll_no": "2442010357",
+      "full_name": "NENCY CHANDIRAMANI",
+      "email": "nency.chandiramani_bca24@gla.ac.in",
+      "mobile": "8433436549",
+      "cpi": 8.26,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-8"
+    },
+    {
+      "roll_no": "2442010391",
+      "full_name": "PIYUSH SHARMA",
+      "email": "piyush.sharma2_bca24@gla.ac.in",
+      "mobile": "8570926932",
+      "cpi": 7.88,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-8"
+    },
+    {
+      "roll_no": "2442010427",
+      "full_name": "PRIYANSHI KULSHRESTHA",
+      "email": "priyanshi.kulshrestha_bca24@gla.ac.in",
+      "mobile": "7500688888",
+      "cpi": 8.17,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-9"
+    },
+    {
+      "roll_no": "2442010449",
+      "full_name": "RAKHI",
+      "email": "rakhi.gla_bca24@gla.ac.in",
+      "mobile": "7217400450",
+      "cpi": 7.95,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-9"
+    },
+    {
+      "roll_no": "2442010454",
+      "full_name": "RASHI GUPTA",
+      "email": "rashi.gupta_bca24@gla.ac.in",
+      "mobile": "9084597372",
+      "cpi": 8.11,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-9"
+    },
+    {
+      "roll_no": "2442010483",
+      "full_name": "SAHIL YADAV",
+      "email": "sahil.yadav_bca24@gla.ac.in",
+      "mobile": "7409421481",
+      "cpi": 8.09,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-9"
+    },
+    {
+      "roll_no": "2442010488",
+      "full_name": "SANDEEP",
+      "email": "sandeep.gla_bca24@gla.ac.in",
+      "mobile": "7027615253",
+      "cpi": 7.95,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-9"
+    },
+    {
+      "roll_no": "2442010494",
+      "full_name": "SARANSH NIROULA",
+      "email": "saransh.niroula_bca24@gla.ac.in",
+      "mobile": "9027603754",
+      "cpi": 7.95,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-9"
+    },
+    {
+      "roll_no": "2442010519",
+      "full_name": "SHRESHTHA",
+      "email": "shreshtha.gla_bca24@gla.ac.in",
+      "mobile": "8979986636",
+      "cpi": 8.08,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-10"
+    },
+    {
+      "roll_no": "2442010521",
+      "full_name": "SHREYA SETH",
+      "email": "shreya.seth_bca24@gla.ac.in",
+      "mobile": "9557630741",
+      "cpi": 8.71,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-10"
+    },
+    {
+      "roll_no": "2442010525",
+      "full_name": "SHRUTI PORWAL",
+      "email": "shruti.porwal_bca24@gla.ac.in",
+      "mobile": "6395616856",
+      "cpi": 8.17,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-10"
+    },
+    {
+      "roll_no": "2442010538",
+      "full_name": "STUTI AGARWAL",
+      "email": "stuti.agarwal_bca24@gla.ac.in",
+      "mobile": "9258670824",
+      "cpi": 8.7,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-10"
+    },
+    {
+      "roll_no": "2442010540",
+      "full_name": "SUHANI GARG",
+      "email": "suhani.garg_bca24@gla.ac.in",
+      "mobile": "9837603206",
+      "cpi": 8.19,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-10"
+    },
+    {
+      "roll_no": "2442010550",
+      "full_name": "SUPRIYA",
+      "email": "supriya.gla_bca24@gla.ac.in",
+      "mobile": "8534903091",
+      "cpi": 7.89,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-10"
+    },
+    {
+      "roll_no": "2442010557",
+      "full_name": "TANISHA SHARMA",
+      "email": "tanisha.sharma_bca24@gla.ac.in",
+      "mobile": "7302140429",
+      "cpi": 8.14,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-11"
+    },
+    {
+      "roll_no": "2442010560",
+      "full_name": "TANYA VARSHNEY",
+      "email": "tanya.varshney_bca24@gla.ac.in",
+      "mobile": "9761899157",
+      "cpi": 8.3,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-11"
+    },
+    {
+      "roll_no": "2442010583",
+      "full_name": "VAISHNAVI SINGH",
+      "email": "vaishnavi.singh_bca24@gla.ac.in",
+      "mobile": "9368748775",
+      "cpi": 8.03,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-11"
+    },
+    {
+      "roll_no": "2442010586",
+      "full_name": "VANSH RAJVANSHI",
+      "email": "vansh.raji_bca24@gla.ac.in",
+      "mobile": "7850008886",
+      "cpi": 7.89,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-11"
+    },
+    {
+      "roll_no": "2442010591",
+      "full_name": "VANSHIKA VERMA",
+      "email": "vanshika.verma_bca24@gla.ac.in",
+      "mobile": "8118838645",
+      "cpi": 8.92,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-11"
+    },
+    {
+      "roll_no": "2442010592",
+      "full_name": "VARSHA",
+      "email": "varsha.gla_bca24@gla.ac.in",
+      "mobile": "7983248965",
+      "cpi": 8.07,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-12"
+    },
+    {
+      "roll_no": "2442010594",
+      "full_name": "VARUN TIWARI",
+      "email": "varun.tiwari_bca24@gla.ac.in",
+      "mobile": "6398810969",
+      "cpi": 8.16,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-12"
+    },
+    {
+      "roll_no": "2442010599",
+      "full_name": "VIGNESH GUPTA",
+      "email": "vignesh.gupta_bca24@gla.ac.in",
+      "mobile": "7023917172",
+      "cpi": 8.18,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-12"
+    },
+    {
+      "roll_no": "2442010603",
+      "full_name": "VIKAS SINGH",
+      "email": "vikas.singh_bca24@gla.ac.in",
+      "mobile": "7535800854",
+      "cpi": 7.93,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-12"
+    },
+    {
+      "roll_no": "2442010619",
+      "full_name": "VIVEK SHARMA",
+      "email": "vivek.sharma_bca24@gla.ac.in",
+      "mobile": "7060664761",
+      "cpi": 8.11,
+      "course": "BCA",
+      "section": "A",
+      "team_code": "BCA-12"
+    },
+    {
+      "roll_no": "2442010004",
+      "full_name": "ABHIMANYU PRATAP SINGH",
+      "email": "abhimanyu.singh_bca24@gla.ac.in",
+      "mobile": "7392913324",
+      "cpi": 7.61,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-13"
+    },
+    {
+      "roll_no": "2442010005",
+      "full_name": "ABHINANDAN SINGH",
+      "email": "abhinandan.singh_bca24@gla.ac.in",
+      "mobile": "7667634797",
+      "cpi": 7.57,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-13"
+    },
+    {
+      "roll_no": "2442010045",
+      "full_name": "AMAN KUSHWAHA",
+      "email": "aman.kushwaha_bca24@gla.ac.in",
+      "mobile": "9528209267",
+      "cpi": 7.53,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-13"
+    },
+    {
+      "roll_no": "2442010050",
+      "full_name": "AMIT CHAUDHARY",
+      "email": "amit.chaudhary2_bca24@gla.ac.in",
+      "mobile": "8171209093",
+      "cpi": 7.48,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-13"
+    },
+    {
+      "roll_no": "2442010051",
+      "full_name": "AMIT CHAUDHARY",
+      "email": "amit.chaudhary_bca24@gla.ac.in",
+      "mobile": "8859421040",
+      "cpi": 7.51,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-13"
+    },
+    {
+      "roll_no": "2442010053",
+      "full_name": "AMIT KUSHWAH",
+      "email": "amit.kushwah_bca24@gla.ac.in",
+      "mobile": "8273292177",
+      "cpi": 7.76,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-13"
+    },
+    {
+      "roll_no": "2442010055",
+      "full_name": "AMRITA SHARMA",
+      "email": "amrita.sharma_bca24@gla.ac.in",
+      "mobile": "6396934416",
+      "cpi": 7.78,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-14"
+    },
+    {
+      "roll_no": "2442010071",
+      "full_name": "ANSHIKA SINGH",
+      "email": "anshika.singh_bca24@gla.ac.in",
+      "mobile": "9335369872",
+      "cpi": 7.56,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-14"
+    },
+    {
+      "roll_no": "2442010074",
+      "full_name": "ANSHIKA YADAV",
+      "email": "anshika.yadav_bca24@gla.ac.in",
+      "mobile": "9528079710",
+      "cpi": 7.63,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-14"
+    },
+    {
+      "roll_no": "2442010077",
+      "full_name": "ANSHU SONI",
+      "email": "anshu.soni_bca24@gla.ac.in",
+      "mobile": "7505572714",
+      "cpi": 7.64,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-14"
+    },
+    {
+      "roll_no": "2442010087",
+      "full_name": "ANUJ SISODIYA",
+      "email": "anuj.sisodiya_bca24@gla.ac.in",
+      "mobile": "8445042736",
+      "cpi": 7.49,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-14"
+    },
+    {
+      "roll_no": "2442010090",
+      "full_name": "ANUPAM KUMAR UPADHYAY",
+      "email": "anupam.upadhyay_bca24@gla.ac.in",
+      "mobile": "8279820574",
+      "cpi": 7.76,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-14"
+    },
+    {
+      "roll_no": "2442010098",
+      "full_name": "APALA",
+      "email": "apala.gla_bca24@gla.ac.in",
+      "mobile": "7310520995",
+      "cpi": 7.63,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-15"
+    },
+    {
+      "roll_no": "2442010113",
+      "full_name": "ASHISH PRATAP SINGH",
+      "email": "ashish.singh_bca24@gla.ac.in",
+      "mobile": "9068440394",
+      "cpi": 7.71,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-15"
+    },
+    {
+      "roll_no": "2442010123",
+      "full_name": "AVINASH CHAUDHARY",
+      "email": "avinash.chaudhary_bca24@gla.ac.in",
+      "mobile": "9389705277",
+      "cpi": 7.5,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-15"
+    },
+    {
+      "roll_no": "2442010137",
+      "full_name": "BHARAT KUNTAL",
+      "email": "bharat.kuntal_bca24@gla.ac.in",
+      "mobile": "9068172663",
+      "cpi": 7.55,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-15"
+    },
+    {
+      "roll_no": "2442010149",
+      "full_name": "BULBUL BANSAL",
+      "email": "bulbul.bansal_bca24@gla.ac.in",
+      "mobile": "9557098719",
+      "cpi": 7.81,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-15"
+    },
+    {
+      "roll_no": "2442010153",
+      "full_name": "CHANDAN DUBEY",
+      "email": "chandan.dubey_bca24@gla.ac.in",
+      "mobile": "8126862960",
+      "cpi": 7.84,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-15"
+    },
+    {
+      "roll_no": "2442010154",
+      "full_name": "CHANDRA PRAKASH RAI",
+      "email": "chandra.rai_bca24@gla.ac.in",
+      "mobile": "9305806729",
+      "cpi": 7.56,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-16"
+    },
+    {
+      "roll_no": "2442010158",
+      "full_name": "CHHAYANK BAGHEL",
+      "email": "chhayank.baghel_bca24@gla.ac.in",
+      "mobile": "9950249856",
+      "cpi": 7.55,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-16"
+    },
+    {
+      "roll_no": "2442010160",
+      "full_name": "CHIRAG",
+      "email": "chirag.gla_bca24@gla.ac.in",
+      "mobile": "7017795887",
+      "cpi": 7.78,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-16"
+    },
+    {
+      "roll_no": "2442010165",
+      "full_name": "DARSHIKA SHARMA",
+      "email": "darshika.sharma_bca24@gla.ac.in",
+      "mobile": "8445169235",
+      "cpi": 7.81,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-16"
+    },
+    {
+      "roll_no": "2442010166",
+      "full_name": "DAYAL HARI",
+      "email": "dayal.hari_bca24@gla.ac.in",
+      "mobile": "9720154865",
+      "cpi": 7.85,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-16"
+    },
+    {
+      "roll_no": "2442010173",
+      "full_name": "DEEPANSHU SINGH",
+      "email": "deepanshu.singh_bca24@gla.ac.in",
+      "mobile": "6393027668",
+      "cpi": 7.56,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-16"
+    },
+    {
+      "roll_no": "2442010180",
+      "full_name": "DEVANG BANSAL",
+      "email": "devang.bansal_bca24@gla.ac.in",
+      "mobile": "9259463870",
+      "cpi": 7.53,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-17"
+    },
+    {
+      "roll_no": "2442010198",
+      "full_name": "DIVYANSHI",
+      "email": "divyanshi.gla_bca24@gla.ac.in",
+      "mobile": "7300609598",
+      "cpi": 7.73,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-17"
+    },
+    {
+      "roll_no": "2442010214",
+      "full_name": "GAURAV KUMAR",
+      "email": "gaurav.kumar_bca24@gla.ac.in",
+      "mobile": "9006954299",
+      "cpi": 7.64,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-17"
+    },
+    {
+      "roll_no": "2442010227",
+      "full_name": "GYAN PRAKASH SINGH",
+      "email": "gyan.singh_bca24@gla.ac.in",
+      "mobile": "8081308015",
+      "cpi": 7.66,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-17"
+    },
+    {
+      "roll_no": "2442010238",
+      "full_name": "HARSHITA GUPTA",
+      "email": "harshita.gupta_bca24@gla.ac.in",
+      "mobile": "8077913202",
+      "cpi": 7.76,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-17"
+    },
+    {
+      "roll_no": "2442010239",
+      "full_name": "HIMANSHI",
+      "email": "himanshi.gla_bca24@gla.ac.in",
+      "mobile": "8708306294",
+      "cpi": 7.81,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-17"
+    },
+    {
+      "roll_no": "2442010241",
+      "full_name": "HIMANSHU GUPTA",
+      "email": "himanshu.gupta_bca24@gla.ac.in",
+      "mobile": "7037432646",
+      "cpi": 7.59,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-18"
+    },
+    {
+      "roll_no": "2442010243",
+      "full_name": "HIMANSHU SHARMA",
+      "email": "himanshu.sharma_bca24@gla.ac.in",
+      "mobile": "9027504465",
+      "cpi": 7.85,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-18"
+    },
+    {
+      "roll_no": "2442010261",
+      "full_name": "KARTIK PARASAR",
+      "email": "kartik.parasar_bca24@gla.ac.in",
+      "mobile": "7505376134",
+      "cpi": 7.51,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-18"
+    },
+    {
+      "roll_no": "2442010262",
+      "full_name": "KARTIK SHARMA",
+      "email": "kartik.sharma_bca24@gla.ac.in",
+      "mobile": "8534023292",
+      "cpi": 7.59,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-18"
+    },
+    {
+      "roll_no": "2442010272",
+      "full_name": "KHUSHBOO",
+      "email": "khushboo.gla_bca24@gla.ac.in",
+      "mobile": "8859103108",
+      "cpi": 7.49,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-18"
+    },
+    {
+      "roll_no": "2442010278",
+      "full_name": "KRISHAN KUMAR",
+      "email": "krishan.kumar_bca24@gla.ac.in",
+      "mobile": "8865837105",
+      "cpi": 7.61,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-18"
+    },
+    {
+      "roll_no": "2442010284",
+      "full_name": "KRISHNA KUMAR",
+      "email": "krishna.kumar_bca24@gla.ac.in",
+      "mobile": "8707379682",
+      "cpi": 7.82,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-19"
+    },
+    {
+      "roll_no": "2442010286",
+      "full_name": "KRISHNA SHARMA",
+      "email": "krishna.sharma_bca24@gla.ac.in",
+      "mobile": "8909038801",
+      "cpi": 7.74,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-19"
+    },
+    {
+      "roll_no": "2442010290",
+      "full_name": "KRISHNA UPADHYAY",
+      "email": "krishna.upadhyay_bca24@gla.ac.in",
+      "mobile": "9997245300",
+      "cpi": 7.48,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-19"
+    },
+    {
+      "roll_no": "2442010300",
+      "full_name": "LAVESH GUPTA",
+      "email": "lavesh.gupta_bca24@gla.ac.in",
+      "mobile": "9351248990",
+      "cpi": 7.87,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-19"
+    },
+    {
+      "roll_no": "2442010308",
+      "full_name": "LUCKY CHAUDHARY",
+      "email": "lucky.chaudhary_bca24@gla.ac.in",
+      "mobile": "8395846454",
+      "cpi": 7.81,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-19"
+    },
+    {
+      "roll_no": "2442010323",
+      "full_name": "MANSI GUPTA",
+      "email": "mansi.gupta_bca24@gla.ac.in",
+      "mobile": "9368879788",
+      "cpi": 7.82,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-19"
+    },
+    {
+      "roll_no": "2442010347",
+      "full_name": "NAITIK GARG",
+      "email": "naitik.garg_bca24@gla.ac.in",
+      "mobile": "7599966668",
+      "cpi": 7.69,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-20"
+    },
+    {
+      "roll_no": "2442010364",
+      "full_name": "NIKHIL KUSHWAHA",
+      "email": "nikhil.kushwaha_bca24@gla.ac.in",
+      "mobile": "9335606776",
+      "cpi": 7.5,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-20"
+    },
+    {
+      "roll_no": "2442010374",
+      "full_name": "NITIN SINGH",
+      "email": "nitin.singh_bca24@gla.ac.in",
+      "mobile": "9520794219",
+      "cpi": 7.76,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-20"
+    },
+    {
+      "roll_no": "2442010381",
+      "full_name": "PANKAJ CHAUHAN",
+      "email": "pankaj.chauhan_bca24@gla.ac.in",
+      "mobile": "8279820270",
+      "cpi": 7.48,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-20"
+    },
+    {
+      "roll_no": "2442010415",
+      "full_name": "PRATISTHA MISHRA",
+      "email": "pratistha.mishra_bca24@gla.ac.in",
+      "mobile": "8439503892",
+      "cpi": 7.61,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-20"
+    },
+    {
+      "roll_no": "2442010425",
+      "full_name": "PRIYANKA",
+      "email": "priyanka.gla_bca24@gla.ac.in",
+      "mobile": "7817940634",
+      "cpi": 7.88,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-20"
+    },
+    {
+      "roll_no": "2442010433",
+      "full_name": "PURUSOTTAM KAUSHIK",
+      "email": "purusottam.kaushik_bca24@gla.ac.in",
+      "mobile": "6397421569",
+      "cpi": 7.52,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-21"
+    },
+    {
+      "roll_no": "2442010439",
+      "full_name": "RAHUL",
+      "email": "rahul.gla_bca24@gla.ac.in",
+      "mobile": "9528597615",
+      "cpi": 7.69,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-21"
+    },
+    {
+      "roll_no": "2442010458",
+      "full_name": "RINI CHAUDHARY",
+      "email": "rini.chaudhary_bca24@gla.ac.in",
+      "mobile": "7088671128",
+      "cpi": 7.51,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-21"
+    },
+    {
+      "roll_no": "2442010462",
+      "full_name": "RITIK KUMAR",
+      "email": "ritik.kumar_bca24@gla.ac.in",
+      "mobile": "8533094816",
+      "cpi": 7.69,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-21"
+    },
+    {
+      "roll_no": "2442010465",
+      "full_name": "RITU SHARMA",
+      "email": "ritu.sharma_bca24@gla.ac.in",
+      "mobile": "7017673078",
+      "cpi": 7.13,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-21"
+    },
+    {
+      "roll_no": "2442010634",
+      "full_name": "ROHIT KUMAR",
+      "email": "rohit.kumar2_bca24@gla.ac.in",
+      "mobile": "7817928825",
+      "cpi": 7.66,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-21"
+    },
+    {
+      "roll_no": "2442010471",
+      "full_name": "ROHITASH",
+      "email": "rohitash.gla_bca24@gla.ac.in",
+      "mobile": "8445604949",
+      "cpi": 7.86,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-22"
+    },
+    {
+      "roll_no": "2442010492",
+      "full_name": "SANJEET",
+      "email": "sanjeet.gla_bca24@gla.ac.in",
+      "mobile": "7837568235",
+      "cpi": 7.7,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-22"
+    },
+    {
+      "roll_no": "2442010497",
+      "full_name": "SATYA PRAKASH SINGH",
+      "email": "satya.singh_bca24@gla.ac.in",
+      "mobile": "9155391444",
+      "cpi": 7.69,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-22"
+    },
+    {
+      "roll_no": "2442010502",
+      "full_name": "SAURAV",
+      "email": "saurav.gla2_bca24@gla.ac.in",
+      "mobile": "9873115591",
+      "cpi": 7.62,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-22"
+    },
+    {
+      "roll_no": "2442010541",
+      "full_name": "SUJAL SOLANKI",
+      "email": "sujal.solanki_bca24@gla.ac.in",
+      "mobile": "7983524608",
+      "cpi": 7.88,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-22"
+    },
+    {
+      "roll_no": "2442010544",
+      "full_name": "SUMIT CHAUHAN",
+      "email": "sumit.chauhan_bca24@gla.ac.in",
+      "mobile": "6397905408",
+      "cpi": 7.63,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-22"
+    },
+    {
+      "roll_no": "2442010548",
+      "full_name": "SUNNY GUPTA",
+      "email": "sunny.gupta_bca24@gla.ac.in",
+      "mobile": "9548674609",
+      "cpi": 7.81,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-23"
+    },
+    {
+      "roll_no": "2442010554",
+      "full_name": "SWARNIM PRAYISHI",
+      "email": "swarnim.prayishi_bca24@gla.ac.in",
+      "mobile": "9142998705",
+      "cpi": 7.81,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-23"
+    },
+    {
+      "roll_no": "2442010556",
+      "full_name": "TAMISH CHAUDHARY",
+      "email": "tamish.chaudhary_bca24@gla.ac.in",
+      "mobile": "8791585524",
+      "cpi": 7.63,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-23"
+    },
+    {
+      "roll_no": "2442010558",
+      "full_name": "TANMAY GULATI",
+      "email": "tanmay.gulati_bca24@gla.ac.in",
+      "mobile": "7060374484",
+      "cpi": 7.71,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-23"
+    },
+    {
+      "roll_no": "2442010577",
+      "full_name": "UTKARSH KUMAR",
+      "email": "utkarsh.kumar_bca24@gla.ac.in",
+      "mobile": "9557067330",
+      "cpi": 7.62,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-23"
+    },
+    {
+      "roll_no": "2442010606",
+      "full_name": "VINAYAK KAUSHIK",
+      "email": "vinayak.kaushik_bca24@gla.ac.in",
+      "mobile": "8439272209",
+      "cpi": 7.53,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-24"
+    },
+    {
+      "roll_no": "2442010608",
+      "full_name": "VINITA CHAUDHARY",
+      "email": "vinita.chaudhary_bca24@gla.ac.in",
+      "mobile": "8279984335",
+      "cpi": 7.65,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-24"
+    },
+    {
+      "roll_no": "2442010621",
+      "full_name": "VYOM VARSHNEY",
+      "email": "vyom.varshney_bca24@gla.ac.in",
+      "mobile": "9058260454",
+      "cpi": 7.84,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-24"
+    },
+    {
+      "roll_no": "2442010627",
+      "full_name": "YASHASVI SAXENA",
+      "email": "yashasvi.saxena_bca24@gla.ac.in",
+      "mobile": "9557362998",
+      "cpi": 7.52,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-24"
+    },
+    {
+      "roll_no": "2442010630",
+      "full_name": "YUG SHARMA",
+      "email": "yug.sharma_bca24@gla.ac.in",
+      "mobile": "8445495201",
+      "cpi": 7.76,
+      "course": "BCA",
+      "section": "B",
+      "team_code": "BCA-24"
+    },
+    {
+      "roll_no": "2442010002",
+      "full_name": "ABHAY RAJPUT",
+      "email": "abhay.rajput_bca24@gla.ac.in",
+      "mobile": "7983750591",
+      "cpi": 7.26,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-25"
+    },
+    {
+      "roll_no": "2442010024",
+      "full_name": "ADITYA KATROLIYA",
+      "email": "aditya.katroliya_bca24@gla.ac.in",
+      "mobile": "9084891602",
+      "cpi": 7.41,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-25"
+    },
+    {
+      "roll_no": "2442010029",
+      "full_name": "ADITYA VERMA",
+      "email": "aditya.verma_bca24@gla.ac.in",
+      "mobile": "8791558764",
+      "cpi": 7.41,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-25"
+    },
+    {
+      "roll_no": "2442010042",
+      "full_name": "ALOK MISHRA",
+      "email": "alok.mishra_bca24@gla.ac.in",
+      "mobile": "9457284606",
+      "cpi": 7.29,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-25"
+    },
+    {
+      "roll_no": "2442010067",
+      "full_name": "ANMOL SHARMA",
+      "email": "anmol.sharma_bca24@gla.ac.in",
+      "mobile": "8445706887",
+      "cpi": 7.36,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-25"
+    },
+    {
+      "roll_no": "2442010076",
+      "full_name": "ANSHU LODHI",
+      "email": "anshu.lodhi_bca24@gla.ac.in",
+      "mobile": "7217465961",
+      "cpi": 7.43,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-25"
+    },
+    {
+      "roll_no": "2442010080",
+      "full_name": "ANTRA SAXENA",
+      "email": "antra.saxena_bca24@gla.ac.in",
+      "mobile": "7078520610",
+      "cpi": 7.2,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-26"
+    },
+    {
+      "roll_no": "2442010084",
+      "full_name": "ANUJ RAJPUT",
+      "email": "anuj.rajput_bca24@gla.ac.in",
+      "mobile": "8532994488",
+      "cpi": 7.4,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-26"
+    },
+    {
+      "roll_no": "2442010093",
+      "full_name": "ANURAG YADAV",
+      "email": "anurag.yadav_bca24@gla.ac.in",
+      "mobile": "7455916232",
+      "cpi": 7.47,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-26"
+    },
+    {
+      "roll_no": "2442010100",
+      "full_name": "ARPIT BENDIL",
+      "email": "arpit.bendil_bca24@gla.ac.in",
+      "mobile": "9457597239",
+      "cpi": 7.31,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-26"
+    },
+    {
+      "roll_no": "2442010117",
+      "full_name": "ASHUTOSH SHARMA",
+      "email": "ashutosh.sharma_bca24@gla.ac.in",
+      "mobile": "9368611262",
+      "cpi": 7.19,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-26"
+    },
+    {
+      "roll_no": "2442010118",
+      "full_name": "ASTHA PARUA",
+      "email": "astha.parua_bca24@gla.ac.in",
+      "mobile": "9259419760",
+      "cpi": 7.38,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-26"
+    },
+    {
+      "roll_no": "2442010129",
+      "full_name": "BADAL",
+      "email": "badal.gla_bca24@gla.ac.in",
+      "mobile": "9639119583",
+      "cpi": 7.43,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-27"
+    },
+    {
+      "roll_no": "2442010130",
+      "full_name": "BALRAM NOHWAR",
+      "email": "balram.nohwar_bca24@gla.ac.in",
+      "mobile": "9411907798",
+      "cpi": 7.29,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-27"
+    },
+    {
+      "roll_no": "2442010139",
+      "full_name": "BHAWANA SINGH",
+      "email": "bhawana.singh_bca24@gla.ac.in",
+      "mobile": "9675169329",
+      "cpi": 7.47,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-27"
+    },
+    {
+      "roll_no": "2442010142",
+      "full_name": "BHUMI SHARMA",
+      "email": "bhumi.sharma_bca24@gla.ac.in",
+      "mobile": "7465051889",
+      "cpi": 7.19,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-27"
+    },
+    {
+      "roll_no": "2442010163",
+      "full_name": "CHIRANJEEV BHATIA",
+      "email": "chiranjeev.bhatia_bca24@gla.ac.in",
+      "mobile": "8864816027",
+      "cpi": 7.34,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-27"
+    },
+    {
+      "roll_no": "2442010170",
+      "full_name": "DEEPAK KASHYAP",
+      "email": "deepak.kashyap_bca24@gla.ac.in",
+      "mobile": "7599502606",
+      "cpi": 7.43,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-27"
+    },
+    {
+      "roll_no": "2442010175",
+      "full_name": "DEEPIKA RAJ KOHLI",
+      "email": "deepika.kohli_bca24@gla.ac.in",
+      "mobile": "9286421362",
+      "cpi": 7.24,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-28"
+    },
+    {
+      "roll_no": "2442010183",
+      "full_name": "DEVANSH KUSHWAH",
+      "email": "devansh.kushwah_bca24@gla.ac.in",
+      "mobile": "8077860953",
+      "cpi": 7.17,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-28"
+    },
+    {
+      "roll_no": "2442010187",
+      "full_name": "DEVESH CHAUHAN",
+      "email": "devesh.chauhan_bca24@gla.ac.in",
+      "mobile": "9119097535",
+      "cpi": 7.33,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-28"
+    },
+    {
+      "roll_no": "2442010193",
+      "full_name": "DIKSHA RAJPUT",
+      "email": "diksha.rajput_bca24@gla.ac.in",
+      "mobile": "7906963189",
+      "cpi": 7.14,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-28"
+    },
+    {
+      "roll_no": "2442010199",
+      "full_name": "DIVYANSHU BHARDWAJ",
+      "email": "divyanshu.bhardwaj_bca24@gla.ac.in",
+      "mobile": "8445550925",
+      "cpi": 7.4,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-28"
+    },
+    {
+      "roll_no": "2442010204",
+      "full_name": "FIROJ KHAN",
+      "email": "firoj.khan_bca24@gla.ac.in",
+      "mobile": "7060621852",
+      "cpi": 7.37,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-28"
+    },
+    {
+      "roll_no": "2442010205",
+      "full_name": "GAGAN",
+      "email": "gagan.gla_bca24@gla.ac.in",
+      "mobile": "6398456553",
+      "cpi": 7.22,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-29"
+    },
+    {
+      "roll_no": "2442010210",
+      "full_name": "GAURAV",
+      "email": "gaurav.gla4_bca24@gla.ac.in",
+      "mobile": "9084841737",
+      "cpi": 7.35,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-29"
+    },
+    {
+      "roll_no": "2442010217",
+      "full_name": "GAURI AGRAWAL",
+      "email": "gauri.agrawal_bca24@gla.ac.in",
+      "mobile": "8171053505",
+      "cpi": 7.3,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-29"
+    },
+    {
+      "roll_no": "2442010225",
+      "full_name": "GUNJAN",
+      "email": "gunjan.gla_bca24@gla.ac.in",
+      "mobile": "8868955618",
+      "cpi": 7.18,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-29"
+    },
+    {
+      "roll_no": "2442010249",
+      "full_name": "JAYA RAI",
+      "email": "jaya.rai_bca24@gla.ac.in",
+      "mobile": "7355443065",
+      "cpi": 7.45,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-29"
+    },
+    {
+      "roll_no": "2442010251",
+      "full_name": "KAJAL",
+      "email": "kajal.gla_bca24@gla.ac.in",
+      "mobile": "9084028585",
+      "cpi": 7.22,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-29"
+    },
+    {
+      "roll_no": "2442010273",
+      "full_name": "KHUSHBOO RAJPUT",
+      "email": "khushboo.rajput_bca24@gla.ac.in",
+      "mobile": "9870688195",
+      "cpi": 7.39,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-30"
+    },
+    {
+      "roll_no": "2442010274",
+      "full_name": "KOMAL SINGH",
+      "email": "komal.singh_bca24@gla.ac.in",
+      "mobile": "9520140512",
+      "cpi": 7.46,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-30"
+    },
+    {
+      "roll_no": "2442010275",
+      "full_name": "KRISH BHATI",
+      "email": "krish.bhati_bca24@gla.ac.in",
+      "mobile": "8800711648",
+      "cpi": 7.3,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-30"
+    },
+    {
+      "roll_no": "2442010276",
+      "full_name": "KRISH TIWARI",
+      "email": "krish.tiwari_bca24@gla.ac.in",
+      "mobile": "8595339192",
+      "cpi": 7.48,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-30"
+    },
+    {
+      "roll_no": "2442010282",
+      "full_name": "KRISHNA CHAUDHARY",
+      "email": "krishna.chaudhary2_bca24@gla.ac.in",
+      "mobile": "8077188251",
+      "cpi": 7.19,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-30"
+    },
+    {
+      "roll_no": "2442010296",
+      "full_name": "KUMARI SHIVANI",
+      "email": "kumari.shivani_bca24@gla.ac.in",
+      "mobile": "7302937052",
+      "cpi": 7.31,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-30"
+    },
+    {
+      "roll_no": "2442010302",
+      "full_name": "LAXMI KANT",
+      "email": "laxmi.kant_bca24@gla.ac.in",
+      "mobile": "6395113791",
+      "cpi": 7.41,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-31"
+    },
+    {
+      "roll_no": "2442010310",
+      "full_name": "MADHUSUDAN DAS",
+      "email": "madhusudan.das_bca24@gla.ac.in",
+      "mobile": "6395503702",
+      "cpi": 7.42,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-31"
+    },
+    {
+      "roll_no": "2442010315",
+      "full_name": "MANJEET BHARDWAJ",
+      "email": "manjeet.bhardwaj_bca24@gla.ac.in",
+      "mobile": "8191021038",
+      "cpi": 7.29,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-31"
+    },
+    {
+      "roll_no": "2442010330",
+      "full_name": "MAYANK YADAV",
+      "email": "mayank.yadav_bca24@gla.ac.in",
+      "mobile": "8265868190",
+      "cpi": 7.24,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-31"
+    },
+    {
+      "roll_no": "2442010342",
+      "full_name": "MONEY",
+      "email": "money.solanki_bca24@gla.ac.in",
+      "mobile": "8171704629",
+      "cpi": 7.47,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-31"
+    },
+    {
+      "roll_no": "2442010343",
+      "full_name": "MRIDUL PATHAK",
+      "email": "mridul.pathak_bca24@gla.ac.in",
+      "mobile": "7817917001",
+      "cpi": 7.35,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-31"
+    },
+    {
+      "roll_no": "2442010377",
+      "full_name": "OM SHUKLA",
+      "email": "om.shukla_bca24@gla.ac.in",
+      "mobile": "9761129216",
+      "cpi": 7.2,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-32"
+    },
+    {
+      "roll_no": "2442010386",
+      "full_name": "PAWANI MITTAL",
+      "email": "pawani.mittal_bca24@gla.ac.in",
+      "mobile": "7054483062",
+      "cpi": 7.18,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-32"
+    },
+    {
+      "roll_no": "2442010387",
+      "full_name": "PEARL PRIYA",
+      "email": "pearl.priya_bca24@gla.ac.in",
+      "mobile": "6205607144",
+      "cpi": 7.33,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-32"
+    },
+    {
+      "roll_no": "2442010392",
+      "full_name": "POONAM",
+      "email": "poonam.gla_bca24@gla.ac.in",
+      "mobile": "9259199852",
+      "cpi": 7.38,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-32"
+    },
+    {
+      "roll_no": "2442010395",
+      "full_name": "PRACHI GARG",
+      "email": "prachi.garg_bca24@gla.ac.in",
+      "mobile": "9389794960",
+      "cpi": 7.2,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-32"
+    },
+    {
+      "roll_no": "2442010421",
+      "full_name": "PRINCE RAJ VARDHAN",
+      "email": "prince.vardhan_bca24@gla.ac.in",
+      "mobile": "7217308451",
+      "cpi": 7.35,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-32"
+    },
+    {
+      "roll_no": "2442010426",
+      "full_name": "PRIYANSHI GUPTA",
+      "email": "priyanshi.gupta_bca24@gla.ac.in",
+      "mobile": "9410458274",
+      "cpi": 7.31,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-33"
+    },
+    {
+      "roll_no": "2442010428",
+      "full_name": "PRIYANSHI NAGAR",
+      "email": "priyanshi.nagar_bca24@gla.ac.in",
+      "mobile": "7060537332",
+      "cpi": 7.28,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-33"
+    },
+    {
+      "roll_no": "2442010438",
+      "full_name": "RAHUL",
+      "email": "rahul.gla2_bca24@gla.ac.in",
+      "mobile": "9259093584",
+      "cpi": 7.19,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-33"
+    },
+    {
+      "roll_no": "2442010441",
+      "full_name": "RAHUL SHARMA",
+      "email": "rahul.sharma_bca24@gla.ac.in",
+      "mobile": "7617450950",
+      "cpi": 7.39,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-33"
+    },
+    {
+      "roll_no": "2442010447",
+      "full_name": "RAJA RAJPUT",
+      "email": "raja.rajput_bca24@gla.ac.in",
+      "mobile": "6395915887",
+      "cpi": 7.33,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-33"
+    },
+    {
+      "roll_no": "2442010448",
+      "full_name": "RAJESH",
+      "email": "rajesh.gla_bca24@gla.ac.in",
+      "mobile": "8307562085",
+      "cpi": 7.29,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-33"
+    },
+    {
+      "roll_no": "2442010450",
+      "full_name": "RAKSHITA SHARMA",
+      "email": "rakshita.sharma_bca24@gla.ac.in",
+      "mobile": "8899764700",
+      "cpi": 7.2,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-34"
+    },
+    {
+      "roll_no": "2442010461",
+      "full_name": "RISHI SHARMA",
+      "email": "rishi.sharma_bca24@gla.ac.in",
+      "mobile": "9548374968",
+      "cpi": 7.35,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-34"
+    },
+    {
+      "roll_no": "2442010480",
+      "full_name": "SAGAR PRATAP SINGH",
+      "email": "sagar.singh_bca24@gla.ac.in",
+      "mobile": "8700289471",
+      "cpi": 7.23,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-34"
+    },
+    {
+      "roll_no": "2442010486",
+      "full_name": "SAMRAT YADUVANSHI",
+      "email": "samrat.yaduvanshi_bca24@gla.ac.in",
+      "mobile": "8630684874",
+      "cpi": 7.4,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-34"
+    },
+    {
+      "roll_no": "2442010490",
+      "full_name": "SANDESH PANDEY",
+      "email": "sandesh.pandey_bca24@gla.ac.in",
+      "mobile": "8957634762",
+      "cpi": 7.43,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-34"
+    },
+    {
+      "roll_no": "2442010496",
+      "full_name": "SARTHAK TIWARI",
+      "email": "sarthak.tiwari_bca24@gla.ac.in",
+      "mobile": "9193616320",
+      "cpi": 7.15,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-34"
+    },
+    {
+      "roll_no": "2442010505",
+      "full_name": "SEJAL MAHESHWARI",
+      "email": "sejal.maheshwari_bca24@gla.ac.in",
+      "mobile": "7302834824",
+      "cpi": 7.41,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-35"
+    },
+    {
+      "roll_no": "2442010509",
+      "full_name": "SHEKHAR SISODIYA",
+      "email": "shekhar.sisodiya_bca24@gla.ac.in",
+      "mobile": "7351824713",
+      "cpi": 7.47,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-35"
+    },
+    {
+      "roll_no": "2442010514",
+      "full_name": "SHIVAM YADAV",
+      "email": "shivam.yadav_bca24@gla.ac.in",
+      "mobile": "8449424347",
+      "cpi": 7.42,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-35"
+    },
+    {
+      "roll_no": "2442010555",
+      "full_name": "SWATI",
+      "email": "swati.gla_bca24@gla.ac.in",
+      "mobile": "8168597731",
+      "cpi": 7.43,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-35"
+    },
+    {
+      "roll_no": "2442010562",
+      "full_name": "TARUN SHARMA",
+      "email": "tarun.sharma1_bca24@gla.ac.in",
+      "mobile": "7417007421",
+      "cpi": 7.46,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-35"
+    },
+    {
+      "roll_no": "2442010564",
+      "full_name": "TEJVEER SINGH",
+      "email": "tejveer.singh_bca24@gla.ac.in",
+      "mobile": "6396880484",
+      "cpi": 7.37,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-36"
+    },
+    {
+      "roll_no": "2442010568",
+      "full_name": "TUSHAR CHAUDHARY",
+      "email": "tushar.chaudhary_bca24@gla.ac.in",
+      "mobile": "9389449928",
+      "cpi": 7.33,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-36"
+    },
+    {
+      "roll_no": "2442010595",
+      "full_name": "VED PRAKASH",
+      "email": "ved.prakash_bca24@gla.ac.in",
+      "mobile": "7465042055",
+      "cpi": 7.41,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-36"
+    },
+    {
+      "roll_no": "2442010597",
+      "full_name": "VEDIKA SHARMA",
+      "email": "vedika.sharma_bca24@gla.ac.in",
+      "mobile": "9084251681",
+      "cpi": 7.55,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-36"
+    },
+    {
+      "roll_no": "2442010626",
+      "full_name": "YASHASVI PATHAK",
+      "email": "yashasvi.pathak_bca24@gla.ac.in",
+      "mobile": "8619055611",
+      "cpi": 7.29,
+      "course": "BCA",
+      "section": "C",
+      "team_code": "BCA-36"
+    },
+    {
+      "roll_no": "2442010003",
+      "full_name": "ABHI CHOUDHARY",
+      "email": "abhi.choudhary_bca24@gla.ac.in",
+      "mobile": "8218522386",
+      "cpi": 7.02,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-37"
+    },
+    {
+      "roll_no": "2442010010",
+      "full_name": "ABHISHEK MISHRA",
+      "email": "abhishek.mishra_bca24@gla.ac.in",
+      "mobile": "9336319894",
+      "cpi": 7.06,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-37"
+    },
+    {
+      "roll_no": "2442010027",
+      "full_name": "ADITYA KUMAR SHUKLA",
+      "email": "aditya.shukla_bca24@gla.ac.in",
+      "mobile": "7307419905",
+      "cpi": 6.92,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-37"
+    },
+    {
+      "roll_no": "2442010028",
+      "full_name": "ADITYA SINGH CHAUDHARY",
+      "email": "aditya.chaudhary_bca24@gla.ac.in",
+      "mobile": "7906115366",
+      "cpi": 7.05,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-37"
+    },
+    {
+      "roll_no": "2442010038",
+      "full_name": "AKASH RAGHAV",
+      "email": "akash.raghav_bca24@gla.ac.in",
+      "mobile": "7453854090",
+      "cpi": 7.08,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-37"
+    },
+    {
+      "roll_no": "2442010056",
+      "full_name": "ANAMIKA KUMARI",
+      "email": "anamika.kumari_bca24@gla.ac.in",
+      "mobile": "9508609413",
+      "cpi": 6.94,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-37"
+    },
+    {
+      "roll_no": "2442010059",
+      "full_name": "ANJLI",
+      "email": "anjli.gla_bca24@gla.ac.in",
+      "mobile": "9817603852",
+      "cpi": 7.09,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-38"
+    },
+    {
+      "roll_no": "2442010065",
+      "full_name": "ANKUSH CHAUHAN",
+      "email": "ankush.chauhan_bca24@gla.ac.in",
+      "mobile": "9467982627",
+      "cpi": 7.15,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-38"
+    },
+    {
+      "roll_no": "2442010079",
+      "full_name": "ANSHUMESH SAINI",
+      "email": "anshumesh.saini_bca24@gla.ac.in",
+      "mobile": "8173913693",
+      "cpi": 7.14,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-38"
+    },
+    {
+      "roll_no": "2442010086",
+      "full_name": "ANUJ SINGH",
+      "email": "anuj.singh_bca24@gla.ac.in",
+      "mobile": "8439609140",
+      "cpi": 6.99,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-38"
+    },
+    {
+      "roll_no": "2442010089",
+      "full_name": "ANUPAM PAUL",
+      "email": "anupam.paul_bca24@gla.ac.in",
+      "mobile": "7080029766",
+      "cpi": 7.05,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-38"
+    },
+    {
+      "roll_no": "2442010097",
+      "full_name": "ANUSHREE DUBEY",
+      "email": "anushree.dubey_bca24@gla.ac.in",
+      "mobile": "7505053351",
+      "cpi": 7.14,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-38"
+    },
+    {
+      "roll_no": "2442010122",
+      "full_name": "AVIKA SHARMA",
+      "email": "avika.sharma_bca24@gla.ac.in",
+      "mobile": "7088622200",
+      "cpi": 7.0,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-39"
+    },
+    {
+      "roll_no": "2442010125",
+      "full_name": "AYUSH UPADHYAY",
+      "email": "ayush.upadhyay_bca24@gla.ac.in",
+      "mobile": "7300708946",
+      "cpi": 7.03,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-39"
+    },
+    {
+      "roll_no": "2442010131",
+      "full_name": "BANKE BIHARI",
+      "email": "banke.bihari_bca24@gla.ac.in",
+      "mobile": "9389962464",
+      "cpi": 7.07,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-39"
+    },
+    {
+      "roll_no": "2442010136",
+      "full_name": "BHARAT AGRAWAL",
+      "email": "bharat.agrawal_bca24@gla.ac.in",
+      "mobile": "8273029543",
+      "cpi": 7.07,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-39"
+    },
+    {
+      "roll_no": "2442010138",
+      "full_name": "BHAVESH UPADHYAY",
+      "email": "bhavesh.upadhyay_bca24@gla.ac.in",
+      "mobile": "6395067521",
+      "cpi": 6.97,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-39"
+    },
+    {
+      "roll_no": "2442010493",
+      "full_name": "SANSKRITI BANSAL",
+      "email": "sanskriti.bansal_bca24@gla.ac.in",
+      "mobile": "8938053345",
+      "cpi": 6.96,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-39"
+    },
+    {
+      "roll_no": "2442010151",
+      "full_name": "CHAITANYA SONIYA",
+      "email": "chaitanya.soniya_bca24@gla.ac.in",
+      "mobile": "8445089459",
+      "cpi": 7.02,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-40"
+    },
+    {
+      "roll_no": "2442010157",
+      "full_name": "CHHAVI GAUTAM",
+      "email": "chhavi.gautam_bca24@gla.ac.in",
+      "mobile": "8869892543",
+      "cpi": 7.09,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-40"
+    },
+    {
+      "roll_no": "2442010162",
+      "full_name": "CHIRAG GUPTA",
+      "email": "chirag.gupta_bca24@gla.ac.in",
+      "mobile": "9084641782",
+      "cpi": 6.92,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-40"
+    },
+    {
+      "roll_no": "2442010174",
+      "full_name": "DEEPESH SINGH",
+      "email": "deepesh.singh_bca24@gla.ac.in",
+      "mobile": "9557062228",
+      "cpi": 7.09,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-40"
+    },
+    {
+      "roll_no": "2442010176",
+      "full_name": "DEEPIKA RAWAT",
+      "email": "deepika.rawat_bca24@gla.ac.in",
+      "mobile": "7078859186",
+      "cpi": 6.96,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-40"
+    },
+    {
+      "roll_no": "2442010219",
+      "full_name": "GAYATRI",
+      "email": "gayatri.gla_bca24@gla.ac.in",
+      "mobile": "8791633951",
+      "cpi": 7.14,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-40"
+    },
+    {
+      "roll_no": "2442010244",
+      "full_name": "HINA RAJPUT",
+      "email": "hina.rajput_bca24@gla.ac.in",
+      "mobile": "7302198628",
+      "cpi": 7.1,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-41"
+    },
+    {
+      "roll_no": "2442010247",
+      "full_name": "JATIN VERMA",
+      "email": "jatin.verma_bca24@gla.ac.in",
+      "mobile": "9808472640",
+      "cpi": 6.83,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-41"
+    },
+    {
+      "roll_no": "2442010306",
+      "full_name": "LOVE SHARMA",
+      "email": "love.sharma_bca24@gla.ac.in",
+      "mobile": "9119728730",
+      "cpi": 7.02,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-41"
+    },
+    {
+      "roll_no": "2342010366",
+      "full_name": "MANAN SHARMA",
+      "email": "manan.sharma_bca23@gla.ac.in",
+      "mobile": "7830471989",
+      "cpi": 6.78,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-41"
+    },
+    {
+      "roll_no": "2442010312",
+      "full_name": "MANAV YADAV",
+      "email": "manav.yadav_bca24@gla.ac.in",
+      "mobile": "7818868285",
+      "cpi": 7.14,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-41"
+    },
+    {
+      "roll_no": "2442010324",
+      "full_name": "MANVENDRA KUMAR",
+      "email": "manvendra.kumar_bca24@gla.ac.in",
+      "mobile": "8171866396",
+      "cpi": 7.08,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-41"
+    },
+    {
+      "roll_no": "2442010327",
+      "full_name": "MAYANK PRATAP SINGH",
+      "email": "mayank.singh_bca24@gla.ac.in",
+      "mobile": "9068756180",
+      "cpi": 6.97,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-42"
+    },
+    {
+      "roll_no": "2442010331",
+      "full_name": "MEGHA SHARMA",
+      "email": "megha.sharma_bca24@gla.ac.in",
+      "mobile": "9410042879",
+      "cpi": 7.12,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-42"
+    },
+    {
+      "roll_no": "2442010333",
+      "full_name": "MITANSHI JAIN",
+      "email": "mitanshi.jain_bca24@gla.ac.in",
+      "mobile": "8218705832",
+      "cpi": 7.0,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-42"
+    },
+    {
+      "roll_no": "2442010345",
+      "full_name": "MUSKAN CHAUDHARY",
+      "email": "muskan.chaudhary_bca24@gla.ac.in",
+      "mobile": "7505535287",
+      "cpi": 6.98,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-42"
+    },
+    {
+      "roll_no": "2442010355",
+      "full_name": "NEERAJ YADAV",
+      "email": "neeraj.yadav_bca24@gla.ac.in",
+      "mobile": "8070178080",
+      "cpi": 7.07,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-42"
+    },
+    {
+      "roll_no": "2442010359",
+      "full_name": "NIHARIKA",
+      "email": "niharika.gla_bca24@gla.ac.in",
+      "mobile": "6398508305",
+      "cpi": 7.02,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-42"
+    },
+    {
+      "roll_no": "2442010361",
+      "full_name": "NIKHIL",
+      "email": "nikhil.gla_bca24@gla.ac.in",
+      "mobile": "8708549247",
+      "cpi": 7.17,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-43"
+    },
+    {
+      "roll_no": "2442010366",
+      "full_name": "NIKHIL SHARMA",
+      "email": "nikhil.sharma_bca24@gla.ac.in",
+      "mobile": "9760136688",
+      "cpi": 6.94,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-43"
+    },
+    {
+      "roll_no": "2442010370",
+      "full_name": "NISHANT TYAGI",
+      "email": "nishant.tyagi_bca24@gla.ac.in",
+      "mobile": "9259404881",
+      "cpi": 6.92,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-43"
+    },
+    {
+      "roll_no": "2442010371",
+      "full_name": "NITESH PAYLA",
+      "email": "nitesh.payla_bca24@gla.ac.in",
+      "mobile": "9368192824",
+      "cpi": 7.0,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-43"
+    },
+    {
+      "roll_no": "2442010380",
+      "full_name": "PANKAJ CHAUDHARY",
+      "email": "pankaj.chaudhary_bca24@gla.ac.in",
+      "mobile": "7078772366",
+      "cpi": 6.98,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-43"
+    },
+    {
+      "roll_no": "2442010400",
+      "full_name": "PRAKHYAT MAURYA",
+      "email": "prakhyat.maurya_bca24@gla.ac.in",
+      "mobile": "9935164239",
+      "cpi": 7.09,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-43"
+    },
+    {
+      "roll_no": "2442010414",
+      "full_name": "PRATIBHA CHAUDHARY",
+      "email": "pratibha.gla_bca24@gla.ac.in",
+      "mobile": "8630606300",
+      "cpi": 6.86,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-44"
+    },
+    {
+      "roll_no": "2442010420",
+      "full_name": "PRINCE KUMAR",
+      "email": "prince.kumar_bca24@gla.ac.in",
+      "mobile": "7459081892",
+      "cpi": 7.07,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-44"
+    },
+    {
+      "roll_no": "2442010422",
+      "full_name": "PRINCE THAINUAN",
+      "email": "prince.thainuan_bca24@gla.ac.in",
+      "mobile": "7830855141",
+      "cpi": 7.17,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-44"
+    },
+    {
+      "roll_no": "2342010472",
+      "full_name": "PRIYANSHI BANSAL",
+      "email": "priyanshi.bansal_bca23@gla.ac.in",
+      "mobile": "9548196949",
+      "cpi": 7.33,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-44"
+    },
+    {
+      "roll_no": "2442010430",
+      "full_name": "PRIYANSHU DWIVEDI",
+      "email": "priyanshu.dwivedi_bca24@gla.ac.in",
+      "mobile": "9569406186",
+      "cpi": 7.08,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-44"
+    },
+    {
+      "roll_no": "2442010431",
+      "full_name": "PRIYANSHU PATHAK",
+      "email": "priyanshu.pathak_bca24@gla.ac.in",
+      "mobile": "7371942471",
+      "cpi": 7.11,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-44"
+    },
+    {
+      "roll_no": "2442010446",
+      "full_name": "RAJ SHRI",
+      "email": "raj.shri_bca24@gla.ac.in",
+      "mobile": "9771137700",
+      "cpi": 7.05,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-45"
+    },
+    {
+      "roll_no": "2442010452",
+      "full_name": "RAMJEET",
+      "email": "ramjeet.gla_bca24@gla.ac.in",
+      "mobile": "6399309487",
+      "cpi": 7.08,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-45"
+    },
+    {
+      "roll_no": "2442010464",
+      "full_name": "RITIK PRAJAPATI",
+      "email": "ritik.prajapati_bca24@gla.ac.in",
+      "mobile": "6396362248",
+      "cpi": 6.94,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-45"
+    },
+    {
+      "roll_no": "2442010485",
+      "full_name": "SAMEER CHAUDHARY",
+      "email": "sameer.chaudhary_bca24@gla.ac.in",
+      "mobile": "8532018566",
+      "cpi": 7.1,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-45"
+    },
+    {
+      "roll_no": "2442010487",
+      "full_name": "SAMRIDDHI SHARMA",
+      "email": "samriddhi.sharma_bca24@gla.ac.in",
+      "mobile": "9389493001",
+      "cpi": 6.9,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-45"
+    },
+    {
+      "roll_no": "2442010491",
+      "full_name": "SANGAM CHAUDHARY",
+      "email": "sangam.gla_bca24@gla.ac.in",
+      "mobile": "7409596959",
+      "cpi": 7.08,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-45"
+    },
+    {
+      "roll_no": "2442010150",
+      "full_name": "BULBUL SONI",
+      "email": "bulbul.soni_bca24@gla.ac.in",
+      "mobile": "9258408075",
+      "cpi": 7.17,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-46"
+    },
+    {
+      "roll_no": "2442010520",
+      "full_name": "SHREYA",
+      "email": "shreya.gla_bca24@gla.ac.in",
+      "mobile": "7500376042",
+      "cpi": 7.1,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-46"
+    },
+    {
+      "roll_no": "2442010533",
+      "full_name": "SIDDHIKA RATHORE",
+      "email": "siddhika.rathore_bca24@gla.ac.in",
+      "mobile": "9389111690",
+      "cpi": 7.16,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-46"
+    },
+    {
+      "roll_no": "2442010535",
+      "full_name": "SONAM",
+      "email": "sonam.gla_bca24@gla.ac.in",
+      "mobile": "9350146527",
+      "cpi": 7.03,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-46"
+    },
+    {
+      "roll_no": "2442010545",
+      "full_name": "SUMIT SHIVHARE",
+      "email": "sumit.shivhare_bca24@gla.ac.in",
+      "mobile": "9219431128",
+      "cpi": 6.98,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-46"
+    },
+    {
+      "roll_no": "2442010549",
+      "full_name": "SUNNY TEVATIA",
+      "email": "sunny.tevatia_bca24@gla.ac.in",
+      "mobile": "7900804016",
+      "cpi": 7.11,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-46"
+    },
+    {
+      "roll_no": "2442010563",
+      "full_name": "TARUN SHARMA",
+      "email": "tarun.sharma_bca24@gla.ac.in",
+      "mobile": "9258506218",
+      "cpi": 6.99,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-47"
+    },
+    {
+      "roll_no": "2442010566",
+      "full_name": "TRAPTI SIKARWAR",
+      "email": "trapti.sikarwar_bca24@gla.ac.in",
+      "mobile": "7983696927",
+      "cpi": 6.99,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-47"
+    },
+    {
+      "roll_no": "2442010573",
+      "full_name": "UMANG KUMAR SHARMA",
+      "email": "umang.sharma_bca24@gla.ac.in",
+      "mobile": "9536798169",
+      "cpi": 7.01,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-47"
+    },
+    {
+      "roll_no": "2442010580",
+      "full_name": "VAIBHAV SINGH",
+      "email": "vaibhav.singh_bca24@gla.ac.in",
+      "mobile": "9005967820",
+      "cpi": 6.98,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-47"
+    },
+    {
+      "roll_no": "2442010585",
+      "full_name": "VANSH RAJ YADAV",
+      "email": "vansh.yadav2_bca24@gla.ac.in",
+      "mobile": "8126470424",
+      "cpi": 7.1,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-47"
+    },
+    {
+      "roll_no": "2442010587",
+      "full_name": "VANSH RAWAT",
+      "email": "vansh.rawat_bca24@gla.ac.in",
+      "mobile": "9368792371",
+      "cpi": 6.99,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-48"
+    },
+    {
+      "roll_no": "2442010593",
+      "full_name": "VARUN KUMAR",
+      "email": "varun.kumar_bca24@gla.ac.in",
+      "mobile": "9119035870",
+      "cpi": 7.1,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-48"
+    },
+    {
+      "roll_no": "2442010601",
+      "full_name": "VIJAY",
+      "email": "vijay.gla2_bca24@gla.ac.in",
+      "mobile": "9084619156",
+      "cpi": 7.0,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-48"
+    },
+    {
+      "roll_no": "2442010602",
+      "full_name": "VIKAS",
+      "email": "vikas.gla_bca24@gla.ac.in",
+      "mobile": "7017602993",
+      "cpi": 7.17,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-48"
+    },
+    {
+      "roll_no": "2442010604",
+      "full_name": "VIKASH CHAUDHARY",
+      "email": "vikash.chaudhary_bca24@gla.ac.in",
+      "mobile": "7248725140",
+      "cpi": 7.08,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-48"
+    },
+    {
+      "roll_no": "2442010632",
+      "full_name": "YUVRAJ UPADHYAY",
+      "email": "yuvraj.upadhyay_bca24@gla.ac.in",
+      "mobile": "8923256151",
+      "cpi": 7.02,
+      "course": "BCA",
+      "section": "D",
+      "team_code": "BCA-48"
+    },
+    {
+      "roll_no": "2442010006",
+      "full_name": "ABHINAV PUNDHIR",
+      "email": "abhinav.pundhir_bca24@gla.ac.in",
+      "mobile": "8882884409",
+      "cpi": 6.79,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-49"
+    },
+    {
+      "roll_no": "2442010012",
+      "full_name": "ABHISHEK PRATAP",
+      "email": "abhishek.pratap_bca24@gla.ac.in",
+      "mobile": "6398880272",
+      "cpi": 7.44,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-49"
+    },
+    {
+      "roll_no": "2442010022",
+      "full_name": "ADITYA",
+      "email": "aditya.gla_bca24@gla.ac.in",
+      "mobile": "7906998848",
+      "cpi": 6.86,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-49"
+    },
+    {
+      "roll_no": "2442010026",
+      "full_name": "ADITYA KUMAR",
+      "email": "aditya.kumar_bca24@gla.ac.in",
+      "mobile": "9528392072",
+      "cpi": 6.71,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-49"
+    },
+    {
+      "roll_no": "2442010034",
+      "full_name": "AJAY SINGH",
+      "email": "ajay.singh3_bca24@gla.ac.in",
+      "mobile": "8445895102",
+      "cpi": 6.87,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-49"
+    },
+    {
+      "roll_no": "2442010039",
+      "full_name": "AKHIL CHAUHAN",
+      "email": "akhil.chauhan_bca24@gla.ac.in",
+      "mobile": "8630633563",
+      "cpi": 6.7,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-49"
+    },
+    {
+      "roll_no": "2442010047",
+      "full_name": "AMAN VASHISTHA",
+      "email": "aman.vashistha_bca24@gla.ac.in",
+      "mobile": "7505720811",
+      "cpi": 6.77,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-50"
+    },
+    {
+      "roll_no": "2442010052",
+      "full_name": "AMIT KUMAR",
+      "email": "amit.kumar_bca24@gla.ac.in",
+      "mobile": "9690635991",
+      "cpi": 6.72,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-50"
+    },
+    {
+      "roll_no": "2442010062",
+      "full_name": "ANKIT CHAUDHARY",
+      "email": "ankit.chaudhary_bca24@gla.ac.in",
+      "mobile": "7310633538",
+      "cpi": 6.73,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-50"
+    },
+    {
+      "roll_no": "2442010068",
+      "full_name": "ANMOL SINGH",
+      "email": "anmol.singh_bca24@gla.ac.in",
+      "mobile": "7668471096",
+      "cpi": 6.82,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-50"
+    },
+    {
+      "roll_no": "2442010070",
+      "full_name": "ANSHIKA SHARMA",
+      "email": "anshika.sharma_bca24@gla.ac.in",
+      "mobile": "8279432280",
+      "cpi": 6.76,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-50"
+    },
+    {
+      "roll_no": "2442010072",
+      "full_name": "ANSHIKA TIWARI",
+      "email": "anshika.tiwari_bca24@gla.ac.in",
+      "mobile": "6398060424",
+      "cpi": 6.7,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-50"
+    },
+    {
+      "roll_no": "2442010092",
+      "full_name": "ANURAG RAJ PANDEY",
+      "email": "anurag.pandey_bca24@gla.ac.in",
+      "mobile": "7079447517",
+      "cpi": 6.87,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-51"
+    },
+    {
+      "roll_no": "2442010103",
+      "full_name": "ARSHAD",
+      "email": "arshad.gla_bca24@gla.ac.in",
+      "mobile": "9027433438",
+      "cpi": 6.79,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-51"
+    },
+    {
+      "roll_no": "2442010126",
+      "full_name": "AYUSHI AGRAWAL",
+      "email": "ayushi.agrawal_bca24@gla.ac.in",
+      "mobile": "9219152618",
+      "cpi": 6.72,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-51"
+    },
+    {
+      "roll_no": "2442010127",
+      "full_name": "AYUSHI SHARMA",
+      "email": "ayushi.sharma_bca24@gla.ac.in",
+      "mobile": "9511172655",
+      "cpi": 6.91,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-51"
+    },
+    {
+      "roll_no": "2442010134",
+      "full_name": "BHANASH KUMAR NAGRAJ",
+      "email": "bhanash.nagraj_bca24@gla.ac.in",
+      "mobile": "9982716696",
+      "cpi": 6.71,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-51"
+    },
+    {
+      "roll_no": "2442010171",
+      "full_name": "DEEPAK PANDEY",
+      "email": "deepak.pandey_bca24@gla.ac.in",
+      "mobile": "6398709220",
+      "cpi": 6.79,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-51"
+    },
+    {
+      "roll_no": "2442010184",
+      "full_name": "DEVANSH SINGH",
+      "email": "devansh.singh_bca24@gla.ac.in",
+      "mobile": "8081224723",
+      "cpi": 6.91,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-52"
+    },
+    {
+      "roll_no": "2442010186",
+      "full_name": "DEVENDRA",
+      "email": "devendra.gla_bca24@gla.ac.in",
+      "mobile": "8445047538",
+      "cpi": 6.88,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-52"
+    },
+    {
+      "roll_no": "2442010208",
+      "full_name": "GARIMA PORWAL",
+      "email": "garima.porwal_bca24@gla.ac.in",
+      "mobile": "8630766091",
+      "cpi": 6.84,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-52"
+    },
+    {
+      "roll_no": "2442010223",
+      "full_name": "GULSHAN KUMAR",
+      "email": "gulshan.kumar_bca24@gla.ac.in",
+      "mobile": "6397633060",
+      "cpi": 6.76,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-52"
+    },
+    {
+      "roll_no": "2442010228",
+      "full_name": "HARDIK CHAUDHARY",
+      "email": "hardik.chaudhary_bca24@gla.ac.in",
+      "mobile": "7017271237",
+      "cpi": 6.71,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-52"
+    },
+    {
+      "roll_no": "2442010237",
+      "full_name": "HARSH SONI",
+      "email": "harsh.soni_bca24@gla.ac.in",
+      "mobile": "7830090097",
+      "cpi": 6.68,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-52"
+    },
+    {
+      "roll_no": "2442010259",
+      "full_name": "KARAN CHAUHAN",
+      "email": "karan.chauhan_bca24@gla.ac.in",
+      "mobile": "8394096272",
+      "cpi": 6.73,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-53"
+    },
+    {
+      "roll_no": "2442010301",
+      "full_name": "LAVI AGRAWAL",
+      "email": "lavi.agrawal_bca24@gla.ac.in",
+      "mobile": "8534067129",
+      "cpi": 6.88,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-53"
+    },
+    {
+      "roll_no": "2442010311",
+      "full_name": "MAHESH PANDEY",
+      "email": "mahesh.pandey_bca24@gla.ac.in",
+      "mobile": "9193164245",
+      "cpi": 6.67,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-53"
+    },
+    {
+      "roll_no": "2442010319",
+      "full_name": "MANOJ BAGHEL",
+      "email": "manoj.baghel_bca24@gla.ac.in",
+      "mobile": "7417130494",
+      "cpi": 6.86,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-53"
+    },
+    {
+      "roll_no": "2442010325",
+      "full_name": "MAYANK AGRAWAL",
+      "email": "mayank.agrawal_bca24@gla.ac.in",
+      "mobile": "9045109433",
+      "cpi": 6.78,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-53"
+    },
+    {
+      "roll_no": "2442010348",
+      "full_name": "NAKUL JADAUN",
+      "email": "nakul.jadaun_bca24@gla.ac.in",
+      "mobile": "7055007808",
+      "cpi": 6.79,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-53"
+    },
+    {
+      "roll_no": "2442010349",
+      "full_name": "NAMAN GUPTA",
+      "email": "naman.gupta_bca24@gla.ac.in",
+      "mobile": "7668467537",
+      "cpi": 6.77,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-54"
+    },
+    {
+      "roll_no": "2442010352",
+      "full_name": "NATASHA YADAV",
+      "email": "natasha.yadav_bca24@gla.ac.in",
+      "mobile": "7409191342",
+      "cpi": 6.7,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-54"
+    },
+    {
+      "roll_no": "2442010353",
+      "full_name": "NAVEEN KUMAR",
+      "email": "naveen.kumar_bca24@gla.ac.in",
+      "mobile": "7505906776",
+      "cpi": 6.72,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-54"
+    },
+    {
+      "roll_no": "2442010360",
+      "full_name": "NIKET SINGH",
+      "email": "niket.singh_bca24@gla.ac.in",
+      "mobile": "7818841817",
+      "cpi": 6.76,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-54"
+    },
+    {
+      "roll_no": "2442010369",
+      "full_name": "NISHANT SHARMA",
+      "email": "nishant.sharma_bca24@gla.ac.in",
+      "mobile": "7657979389",
+      "cpi": 6.77,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-54"
+    },
+    {
+      "roll_no": "2442010379",
+      "full_name": "PALAK AGRAWAL",
+      "email": "palak.agrawal_bca24@gla.ac.in",
+      "mobile": "9837308373",
+      "cpi": 6.58,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-54"
+    },
+    {
+      "roll_no": "2442010382",
+      "full_name": "PANKHUDI AGRAWAL",
+      "email": "pankhudi.agrawal_bca24@gla.ac.in",
+      "mobile": "8532952300",
+      "cpi": 6.85,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-55"
+    },
+    {
+      "roll_no": "2442010394",
+      "full_name": "PRABHAT UPADHYAY",
+      "email": "prabhat.upadhyay_bca24@gla.ac.in",
+      "mobile": "8445035376",
+      "cpi": 6.69,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-55"
+    },
+    {
+      "roll_no": "2442010397",
+      "full_name": "PRAGATI DIXIT",
+      "email": "pragati.dixit_bca24@gla.ac.in",
+      "mobile": "9258903708",
+      "cpi": 6.86,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-55"
+    },
+    {
+      "roll_no": "2442010402",
+      "full_name": "PRANKUR KUMAR",
+      "email": "prankur.kumar_bca24@gla.ac.in",
+      "mobile": "7983594990",
+      "cpi": 6.71,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-55"
+    },
+    {
+      "roll_no": "2442010404",
+      "full_name": "PRASANT",
+      "email": "prasant.gla_bca24@gla.ac.in",
+      "mobile": "7060770820",
+      "cpi": 6.76,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-55"
+    },
+    {
+      "roll_no": "2442010409",
+      "full_name": "PRASHANT SHARMA",
+      "email": "prashant.sharma1_bca24@gla.ac.in",
+      "mobile": "8433419451",
+      "cpi": 6.72,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-55"
+    },
+    {
+      "roll_no": "2442010416",
+      "full_name": "PRAVEEN KUMAR DHANGAR",
+      "email": "praveen.dhangar_bca24@gla.ac.in",
+      "mobile": "8077189161",
+      "cpi": 6.9,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-56"
+    },
+    {
+      "roll_no": "2442010418",
+      "full_name": "PRINCE",
+      "email": "prince.gla_bca24@gla.ac.in",
+      "mobile": "8923886662",
+      "cpi": 6.89,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-56"
+    },
+    {
+      "roll_no": "2442010423",
+      "full_name": "PRITHVI",
+      "email": "prithvi.gla_bca24@gla.ac.in",
+      "mobile": "7015262679",
+      "cpi": 6.86,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-56"
+    },
+    {
+      "roll_no": "2442010432",
+      "full_name": "PUNEET TYAGI",
+      "email": "puneet.tyagi_bca24@gla.ac.in",
+      "mobile": "8273961618",
+      "cpi": 6.74,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-56"
+    },
+    {
+      "roll_no": "2442010437",
+      "full_name": "RAGHAV CHAUDHARY",
+      "email": "raghav.chaudhary_bca24@gla.ac.in",
+      "mobile": "8273585726",
+      "cpi": 6.69,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-56"
+    },
+    {
+      "roll_no": "2442010442",
+      "full_name": "RAHUL SHARMA",
+      "email": "rahul.sharma2_bca24@gla.ac.in",
+      "mobile": "9193230539",
+      "cpi": 6.54,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-56"
+    },
+    {
+      "roll_no": "2442010444",
+      "full_name": "RAJ KUMAR",
+      "email": "raj.kumar_bca24@gla.ac.in",
+      "mobile": "8755411057",
+      "cpi": 6.87,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-57"
+    },
+    {
+      "roll_no": "2442010453",
+      "full_name": "RANVEER SINGH CHAUHAN",
+      "email": "ranveer.chauhan_bca24@gla.ac.in",
+      "mobile": "8532862589",
+      "cpi": 6.91,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-57"
+    },
+    {
+      "roll_no": "2442010460",
+      "full_name": "RISHABH SINGH",
+      "email": "rishabh.singh_bca24@gla.ac.in",
+      "mobile": "8534048239",
+      "cpi": 6.86,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-57"
+    },
+    {
+      "roll_no": "2442010466",
+      "full_name": "ROHIT FAUJDAR",
+      "email": "rohit.faujdar_bca24@gla.ac.in",
+      "mobile": "8854981183",
+      "cpi": 6.74,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-57"
+    },
+    {
+      "roll_no": "2442010469",
+      "full_name": "ROHIT QURESHI",
+      "email": "rohit.qureshi_bca24@gla.ac.in",
+      "mobile": "6398228833",
+      "cpi": 6.75,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-57"
+    },
+    {
+      "roll_no": "2442010472",
+      "full_name": "RUDRANSH ATYENDRA",
+      "email": "rudransh.atyendra_bca24@gla.ac.in",
+      "mobile": "9193515175",
+      "cpi": 6.51,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-57"
+    },
+    {
+      "roll_no": "2442010473",
+      "full_name": "RUDRANSH SINGH",
+      "email": "rudransh.singh_bca24@gla.ac.in",
+      "mobile": "9027986050",
+      "cpi": 6.68,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-58"
+    },
+    {
+      "roll_no": "2442010475",
+      "full_name": "SACHIN KUMAR",
+      "email": "sachin.kumar_bca24@gla.ac.in",
+      "mobile": "9006389527",
+      "cpi": 6.65,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-58"
+    },
+    {
+      "roll_no": "2442010478",
+      "full_name": "SAGAR CHAUDHARY",
+      "email": "sagar.chaudhary_bca24@gla.ac.in",
+      "mobile": "8630945003",
+      "cpi": 6.72,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-58"
+    },
+    {
+      "roll_no": "2442010495",
+      "full_name": "SARTHAK BANSAL",
+      "email": "sarthak.bansal_bca24@gla.ac.in",
+      "mobile": "8218810772",
+      "cpi": 6.78,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-58"
+    },
+    {
+      "roll_no": "2442010501",
+      "full_name": "SAURABH SHARMA",
+      "email": "saurabh.sharma_bca24@gla.ac.in",
+      "mobile": "9084385638",
+      "cpi": 6.76,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-58"
+    },
+    {
+      "roll_no": "2442010503",
+      "full_name": "SAURAV CHAUDHARY",
+      "email": "saurav.gla_bca24@gla.ac.in",
+      "mobile": "9258276327",
+      "cpi": 6.92,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-58"
+    },
+    {
+      "roll_no": "2442010517",
+      "full_name": "SHLOK VERMA",
+      "email": "shlok.verma_bca24@gla.ac.in",
+      "mobile": "7417470472",
+      "cpi": 6.74,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-59"
+    },
+    {
+      "roll_no": "2442010553",
+      "full_name": "SURYANSH NIRANJAN",
+      "email": "suryansh.niranjan_bca24@gla.ac.in",
+      "mobile": "8171630731",
+      "cpi": 6.72,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-59"
+    },
+    {
+      "roll_no": "2442010578",
+      "full_name": "UTKARSH SINGH",
+      "email": "utkarsh.singh_bca24@gla.ac.in",
+      "mobile": "8869818788",
+      "cpi": 6.72,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-59"
+    },
+    {
+      "roll_no": "2442010579",
+      "full_name": "UTKARSH TOMAR",
+      "email": "utkarsh.tomar_bca24@gla.ac.in",
+      "mobile": "8954363571",
+      "cpi": 6.72,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-59"
+    },
+    {
+      "roll_no": "2442010582",
+      "full_name": "VAISHNAVI SHUKLA",
+      "email": "vaishnavi.shukla_bca24@gla.ac.in",
+      "mobile": "9235867297",
+      "cpi": 6.86,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-59"
+    },
+    {
+      "roll_no": "2442010596",
+      "full_name": "VEDANT PAREEK",
+      "email": "vedant.pareek_bca24@gla.ac.in",
+      "mobile": "9456258606",
+      "cpi": 6.74,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-60"
+    },
+    {
+      "roll_no": "2442010600",
+      "full_name": "VIJAY",
+      "email": "vijay.gla_bca24@gla.ac.in",
+      "mobile": "7668175919",
+      "cpi": 6.74,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-60"
+    },
+    {
+      "roll_no": "2442010605",
+      "full_name": "VINAY TIWARI",
+      "email": "vinay.tiwari_bca24@gla.ac.in",
+      "mobile": "9675456424",
+      "cpi": 6.74,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-60"
+    },
+    {
+      "roll_no": "2442010607",
+      "full_name": "VINEET PATHAK",
+      "email": "vineet.pathak_bca24@gla.ac.in",
+      "mobile": "8954565012",
+      "cpi": 6.7,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-60"
+    },
+    {
+      "roll_no": "2442010629",
+      "full_name": "YETENDRA KUMAR SHARMA",
+      "email": "yetendra.sharma_bca24@gla.ac.in",
+      "mobile": "9411979131",
+      "cpi": 6.76,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-60"
+    },
+    {
+      "roll_no": "2442010631",
+      "full_name": "YUVRAJ SINGH",
+      "email": "yuvraj.singh_bca24@gla.ac.in",
+      "mobile": "8923539473",
+      "cpi": 6.72,
+      "course": "BCA",
+      "section": "E",
+      "team_code": "BCA-60"
+    },
+    {
+      "roll_no": "2442010011",
+      "full_name": "ABHISHEK PANDEY",
+      "email": "abhishek.pandey_bca24@gla.ac.in",
+      "mobile": "7037709036",
+      "cpi": 6.46,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-61"
+    },
+    {
+      "roll_no": "2442010013",
+      "full_name": "ABHISHEK SHAHI",
+      "email": "abhishek.shahi_bca24@gla.ac.in",
+      "mobile": "8127670426",
+      "cpi": 6.59,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-61"
+    },
+    {
+      "roll_no": "2442010032",
+      "full_name": "AJAY KUMAR SINGH",
+      "email": "ajay.singh_bca24@gla.ac.in",
+      "mobile": "8958794054",
+      "cpi": 6.56,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-61"
+    },
+    {
+      "roll_no": "2442010036",
+      "full_name": "AKASH GOYAL",
+      "email": "akash.goyal_bca24@gla.ac.in",
+      "mobile": "8392885758",
+      "cpi": 6.61,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-61"
+    },
+    {
+      "roll_no": "2442010043",
+      "full_name": "AMAN CHAHAR",
+      "email": "aman.chahar_bca24@gla.ac.in",
+      "mobile": "8279547311",
+      "cpi": 6.46,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-61"
+    },
+    {
+      "roll_no": "2442010048",
+      "full_name": "AMAN YADAV",
+      "email": "aman.yadav_bca24@gla.ac.in",
+      "mobile": "7417775111",
+      "cpi": 6.53,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-61"
+    },
+    {
+      "roll_no": "2442010063",
+      "full_name": "ANKIT CHAUHAN",
+      "email": "ankit.chauhan_bca24@gla.ac.in",
+      "mobile": "9259353926",
+      "cpi": 6.51,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-62"
+    },
+    {
+      "roll_no": "2442010075",
+      "full_name": "ANSHU DUBEY",
+      "email": "anshu.dubey_bca24@gla.ac.in",
+      "mobile": "9760292978",
+      "cpi": 6.48,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-62"
+    },
+    {
+      "roll_no": "2442010102",
+      "full_name": "ARPIT PATHAK",
+      "email": "arpit.pathak_bca24@gla.ac.in",
+      "mobile": "8218303474",
+      "cpi": 6.51,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-62"
+    },
+    {
+      "roll_no": "2442010111",
+      "full_name": "ASHI PARUA",
+      "email": "ashi.parua_bca24@gla.ac.in",
+      "mobile": "9259411569",
+      "cpi": 6.6,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-62"
+    },
+    {
+      "roll_no": "2442010115",
+      "full_name": "ASHUTOSH KUMAR SINGH",
+      "email": "ashutosh.singh_bca24@gla.ac.in",
+      "mobile": "7739799170",
+      "cpi": 6.56,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-62"
+    },
+    {
+      "roll_no": "2442010120",
+      "full_name": "ATHARV VERMA",
+      "email": "atharv.verma_bca24@gla.ac.in",
+      "mobile": "8439451238",
+      "cpi": 6.52,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-62"
+    },
+    {
+      "roll_no": "2442010140",
+      "full_name": "BHEESHM DEV GAUTAM",
+      "email": "bheeshm.gautam_bca24@gla.ac.in",
+      "mobile": "8534002326",
+      "cpi": 6.6,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-63"
+    },
+    {
+      "roll_no": "2442010143",
+      "full_name": "BHUMIKA CHAUDHARY",
+      "email": "bhumika.chaudhary_bca24@gla.ac.in",
+      "mobile": "8923776692",
+      "cpi": 6.52,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-63"
+    },
+    {
+      "roll_no": "2442010144",
+      "full_name": "BHUMIKA PAL",
+      "email": "bhumika.pal_bca24@gla.ac.in",
+      "mobile": "7753051975",
+      "cpi": 6.55,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-63"
+    },
+    {
+      "roll_no": "2442010156",
+      "full_name": "CHETANYA KUMAR",
+      "email": "chetanya.kumar_bca24@gla.ac.in",
+      "mobile": "8273636942",
+      "cpi": 6.68,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-63"
+    },
+    {
+      "roll_no": "2442010159",
+      "full_name": "CHINTU",
+      "email": "chintu.gla_bca24@gla.ac.in",
+      "mobile": "9466159768",
+      "cpi": 6.58,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-63"
+    },
+    {
+      "roll_no": "2442010177",
+      "full_name": "DEEPU SINGH",
+      "email": "deepu.singh_bca24@gla.ac.in",
+      "mobile": "8859257350",
+      "cpi": 6.35,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-63"
+    },
+    {
+      "roll_no": "2442010182",
+      "full_name": "DEVANSH DIXIT",
+      "email": "devansh.dixit_bca24@gla.ac.in",
+      "mobile": "9719308645",
+      "cpi": 6.48,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-64"
+    },
+    {
+      "roll_no": "2442010197",
+      "full_name": "DIVYANSH",
+      "email": "divyansh.gla_bca24@gla.ac.in",
+      "mobile": "9518161110",
+      "cpi": 6.59,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-64"
+    },
+    {
+      "roll_no": "2442010201",
+      "full_name": "DIVYANSHU YADAV",
+      "email": "divyanshu.yadav2_bba24@gla.ac.in",
+      "mobile": "7310966915",
+      "cpi": 6.63,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-64"
+    },
+    {
+      "roll_no": "2442010215",
+      "full_name": "GAURAV SHARMA",
+      "email": "gaurav.sharma_bca24@gla.ac.in",
+      "mobile": "6396940098",
+      "cpi": 6.44,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-64"
+    },
+    {
+      "roll_no": "2442010633",
+      "full_name": "HARISH KUMAR",
+      "email": "harish.kumar_bca24@gla.ac.in",
+      "mobile": "8302969313",
+      "cpi": 6.65,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-64"
+    },
+    {
+      "roll_no": "2442010250",
+      "full_name": "JITENDRA KUMAR",
+      "email": "jitendra.kumar_bca24@gla.ac.in",
+      "mobile": "8533001841",
+      "cpi": 6.57,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-64"
+    },
+    {
+      "roll_no": "2442010253",
+      "full_name": "KANHA",
+      "email": "kanha.gla_bca24@gla.ac.in",
+      "mobile": "8449748784",
+      "cpi": 6.55,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-65"
+    },
+    {
+      "roll_no": "2442010256",
+      "full_name": "KANHA SINGH",
+      "email": "kanha.singh2_bca24@gla.ac.in",
+      "mobile": "8979266819",
+      "cpi": 6.5,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-65"
+    },
+    {
+      "roll_no": "2442010257",
+      "full_name": "KAPIL PACHAURI",
+      "email": "kapil.pachauri_bca24@gla.ac.in",
+      "mobile": "8218611269",
+      "cpi": 6.51,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-65"
+    },
+    {
+      "roll_no": "2442010271",
+      "full_name": "KESHAV SHARMA",
+      "email": "keshav.sharma_bca24@gla.ac.in",
+      "mobile": "7983253240",
+      "cpi": 6.45,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-65"
+    },
+    {
+      "roll_no": "2442010283",
+      "full_name": "KRISHNA CHAUDHARY",
+      "email": "krishna.chaudhary3_bca24@gla.ac.in",
+      "mobile": "8979713440",
+      "cpi": 6.58,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-65"
+    },
+    {
+      "roll_no": "2442010289",
+      "full_name": "KRISHNA TIWARI",
+      "email": "krishna.tiwari_bca24@gla.ac.in",
+      "mobile": "7088525719",
+      "cpi": 6.44,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-65"
+    },
+    {
+      "roll_no": "2442010292",
+      "full_name": "KRITIKA CHAUDHARY",
+      "email": "kritika.chaudhary_bca24@gla.ac.in",
+      "mobile": "8210273257",
+      "cpi": 6.47,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-66"
+    },
+    {
+      "roll_no": "2442010299",
+      "full_name": "LALIT CHAUDHARY",
+      "email": "lalit.chaudhary_bca24@gla.ac.in",
+      "mobile": "8979703142",
+      "cpi": 6.53,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-66"
+    },
+    {
+      "roll_no": "2442010303",
+      "full_name": "LAXMI KUMARI",
+      "email": "laxmi.kumari_bca24@gla.ac.in",
+      "mobile": "8266978328",
+      "cpi": 6.64,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-66"
+    },
+    {
+      "roll_no": "2442010304",
+      "full_name": "LOKESH KUMAR PANDEY",
+      "email": "lokesh.pandey_bca24@gla.ac.in",
+      "mobile": "9568668937",
+      "cpi": 6.48,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-66"
+    },
+    {
+      "roll_no": "2442010314",
+      "full_name": "MANISH KUMAR",
+      "email": "manish.kumar2_bca24@gla.ac.in",
+      "mobile": "9536323305",
+      "cpi": 6.6,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-66"
+    },
+    {
+      "roll_no": "2442010318",
+      "full_name": "MANMOHAN",
+      "email": "manmohan.gla_bca24@gla.ac.in",
+      "mobile": "9810834072",
+      "cpi": 6.61,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-66"
+    },
+    {
+      "roll_no": "2442010346",
+      "full_name": "MUSKAN SHARMA",
+      "email": "muskan.sharma_bca24@gla.ac.in",
+      "mobile": "9414902702",
+      "cpi": 6.52,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-67"
+    },
+    {
+      "roll_no": "2442010367",
+      "full_name": "NIKHIL",
+      "email": "nikhil.shukla_bca24@gla.ac.in",
+      "mobile": "9568701943",
+      "cpi": 6.5,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-67"
+    },
+    {
+      "roll_no": "2442010368",
+      "full_name": "NIKKEE KUMARI",
+      "email": "nikkee.kumari_bca24@gla.ac.in",
+      "mobile": "9759923493",
+      "cpi": 6.54,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-67"
+    },
+    {
+      "roll_no": "2442010375",
+      "full_name": "OM GARG",
+      "email": "om.garg_bca24@gla.ac.in",
+      "mobile": "7060473497",
+      "cpi": 6.42,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-67"
+    },
+    {
+      "roll_no": "2442010396",
+      "full_name": "PRACHI MADAAN",
+      "email": "prachi.madaan_bca24@gla.ac.in",
+      "mobile": "9358439962",
+      "cpi": 6.43,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-67"
+    },
+    {
+      "roll_no": "2442010412",
+      "full_name": "PRATEEK YADAV",
+      "email": "prateek.yadav_bca24@gla.ac.in",
+      "mobile": "8273733560",
+      "cpi": 6.52,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-67"
+    },
+    {
+      "roll_no": "2442010413",
+      "full_name": "PRATHAM DUBEY",
+      "email": "pratham.dubey_bca24@gla.ac.in",
+      "mobile": "8979928667",
+      "cpi": 6.67,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-68"
+    },
+    {
+      "roll_no": "2442010424",
+      "full_name": "PRIYAM SHARMA",
+      "email": "priyam.sharma_bca24@gla.ac.in",
+      "mobile": "7618123982",
+      "cpi": 6.45,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-68"
+    },
+    {
+      "roll_no": "2442010436",
+      "full_name": "RADHIKA DIXIT",
+      "email": "radhika.dixit_bca24@gla.ac.in",
+      "mobile": "8218863960",
+      "cpi": 6.67,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-68"
+    },
+    {
+      "roll_no": "2442010445",
+      "full_name": "RAJ SHARMA",
+      "email": "raj.sharma_bca24@gla.ac.in",
+      "mobile": "8859671125",
+      "cpi": 6.67,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-68"
+    },
+    {
+      "roll_no": "2442010451",
+      "full_name": "RAM CHANDRA SAINI",
+      "email": "ram.saini_bca24@gla.ac.in",
+      "mobile": "9548887183",
+      "cpi": 6.64,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-68"
+    },
+    {
+      "roll_no": "2442010463",
+      "full_name": "RITIK KUMAR GUPTA",
+      "email": "ritik.gupta_bca24@gla.ac.in",
+      "mobile": "9026180310",
+      "cpi": 6.34,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-68"
+    },
+    {
+      "roll_no": "2442010467",
+      "full_name": "ROHIT KUMAR",
+      "email": "rohit.kumar_bca24@gla.ac.in",
+      "mobile": "9536852370",
+      "cpi": 6.64,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-69"
+    },
+    {
+      "roll_no": "2442010470",
+      "full_name": "ROHIT SAINI",
+      "email": "rohit.saini_bca24@gla.ac.in",
+      "mobile": "8923086934",
+      "cpi": 6.6,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-69"
+    },
+    {
+      "roll_no": "2442010479",
+      "full_name": "SAGAR LOHKNA",
+      "email": "sagar.lohkna_bca24@gla.ac.in",
+      "mobile": "8979581360",
+      "cpi": 6.58,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-69"
+    },
+    {
+      "roll_no": "2442010484",
+      "full_name": "SAILENDER KUMAR",
+      "email": "sailender.kumar_bca24@gla.ac.in",
+      "mobile": "9548722997",
+      "cpi": 6.63,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-69"
+    },
+    {
+      "roll_no": "2442010498",
+      "full_name": "SATYAM CHOUDHARY",
+      "email": "satyam.chaudhary_bca24@gla.ac.in",
+      "mobile": "9068509621",
+      "cpi": 6.49,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-69"
+    },
+    {
+      "roll_no": "2442010516",
+      "full_name": "SHIVKUMAR",
+      "email": "shivkumar.gla_bca24@gla.ac.in",
+      "mobile": "7500870450",
+      "cpi": 6.59,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-69"
+    },
+    {
+      "roll_no": "2442010522",
+      "full_name": "SHREYA SHARMA",
+      "email": "shreya.sharma_bca24@gla.ac.in",
+      "mobile": "9758215848",
+      "cpi": 6.46,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-70"
+    },
+    {
+      "roll_no": "2442010523",
+      "full_name": "SHREYA SHUKLA",
+      "email": "shreya.shukla_bca24@gla.ac.in",
+      "mobile": "9837427632",
+      "cpi": 6.59,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-70"
+    },
+    {
+      "roll_no": "2442010528",
+      "full_name": "SHUBHAM SAINI",
+      "email": "shubham.saini_bca24@gla.ac.in",
+      "mobile": "9027843577",
+      "cpi": 6.49,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-70"
+    },
+    {
+      "roll_no": "2442010529",
+      "full_name": "SHUBHAM SARASWAT",
+      "email": "shubham.saraswat_bca24@gla.ac.in",
+      "mobile": "8650257344",
+      "cpi": 6.6,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-70"
+    },
+    {
+      "roll_no": "2442010530",
+      "full_name": "SHUBHAM TYAGI",
+      "email": "shubham.tyagi_bca24@gla.ac.in",
+      "mobile": "6396350342",
+      "cpi": 6.54,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-70"
+    },
+    {
+      "roll_no": "2442010532",
+      "full_name": "SHYAM SUNDAR",
+      "email": "shyam.sunder2_bca24@gla.ac.in",
+      "mobile": "8979771913",
+      "cpi": 6.48,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-70"
+    },
+    {
+      "roll_no": "2442010536",
+      "full_name": "SONU SINGH",
+      "email": "sonu.singh_bca24@gla.ac.in",
+      "mobile": "7819828645",
+      "cpi": 6.51,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-71"
+    },
+    {
+      "roll_no": "2442010539",
+      "full_name": "SUDHANSHU MADHUR",
+      "email": "sudhanshu.madhur_bca24@gla.ac.in",
+      "mobile": "9027336337",
+      "cpi": 6.63,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-71"
+    },
+    {
+      "roll_no": "2442010542",
+      "full_name": "SUMIT",
+      "email": "sumit.gla_bca24@gla.ac.in",
+      "mobile": "8923021781",
+      "cpi": 6.45,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-71"
+    },
+    {
+      "roll_no": "2442010565",
+      "full_name": "TIYA MAHESHWARI",
+      "email": "tiya.maheshwari_bca24@gla.ac.in",
+      "mobile": "9311404660",
+      "cpi": 6.3,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-71"
+    },
+    {
+      "roll_no": "2442010572",
+      "full_name": "UDAY SONI",
+      "email": "uday.soni_bca24@gla.ac.in",
+      "mobile": "8868098394",
+      "cpi": 6.56,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-71"
+    },
+    {
+      "roll_no": "2442010590",
+      "full_name": "VANSH YADAV",
+      "email": "vansh.yadav_bca24@gla.ac.in",
+      "mobile": "9258775884",
+      "cpi": 6.48,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-72"
+    },
+    {
+      "roll_no": "2442010598",
+      "full_name": "VIDHI KUMARI",
+      "email": "vidhi.kumari_bca24@gla.ac.in",
+      "mobile": "8439867269",
+      "cpi": 6.66,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-72"
+    },
+    {
+      "roll_no": "2442010610",
+      "full_name": "VIRAT SISODIA",
+      "email": "virat.sisodia_bca24@gla.ac.in",
+      "mobile": "8126021878",
+      "cpi": 6.46,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-72"
+    },
+    {
+      "roll_no": "2442010611",
+      "full_name": "VISHAL AGRAWAL",
+      "email": "vishal.agrawal_bca24@gla.ac.in",
+      "mobile": "7078288921",
+      "cpi": 6.6,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-72"
+    },
+    {
+      "roll_no": "2442010618",
+      "full_name": "VIVEK KUMAR",
+      "email": "vivek.kumar_bca24@gla.ac.in",
+      "mobile": "6397703542",
+      "cpi": 6.6,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-72"
+    },
+    {
+      "roll_no": "2442010620",
+      "full_name": "VIVEK TYAGI",
+      "email": "vivek.tyagi_bca24@gla.ac.in",
+      "mobile": "8529636242",
+      "cpi": 6.42,
+      "course": "BCA",
+      "section": "F",
+      "team_code": "BCA-72"
+    },
+    {
+      "roll_no": "2442010023",
+      "full_name": "ADITYA GAUTAM",
+      "email": "aditya.gautam_bca24@gla.ac.in",
+      "mobile": "9012611415",
+      "cpi": 6.16,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-73"
+    },
+    {
+      "roll_no": "2442010037",
+      "full_name": "AKASH KUMAR SINGH",
+      "email": "akash.singh_bca24@gla.ac.in",
+      "mobile": "8445858572",
+      "cpi": 6.43,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-73"
+    },
+    {
+      "roll_no": "2442010057",
+      "full_name": "ANANDKUMAR",
+      "email": "anandkumar.gla_bca24@gla.ac.in",
+      "mobile": "7480093401",
+      "cpi": 6.18,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-73"
+    },
+    {
+      "roll_no": "2442010060",
+      "full_name": "ANKIT",
+      "email": "ankit.gla_bca24@gla.ac.in",
+      "mobile": "9350670308",
+      "cpi": 6.25,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-73"
+    },
+    {
+      "roll_no": "2442010061",
+      "full_name": "ANKIT CHAUDHARY",
+      "email": "ankit.chaudhary1_bca24@gla.ac.in",
+      "mobile": "8979301274",
+      "cpi": 6.28,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-73"
+    },
+    {
+      "roll_no": "2442010078",
+      "full_name": "ANSHUL TIWARI",
+      "email": "anshul.tiwari_bca24@gla.ac.in",
+      "mobile": "7078370135",
+      "cpi": 6.41,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-73"
+    },
+    {
+      "roll_no": "2442010398",
+      "full_name": "PRAGYA GUPTA",
+      "email": "pragya.gupta_bca24@gla.ac.in",
+      "mobile": "9580397525",
+      "cpi": 6.19,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-74"
+    },
+    {
+      "roll_no": "2442010107",
+      "full_name": "ARYA GUPTA",
+      "email": "arya.gupta_bca24@gla.ac.in",
+      "mobile": "7818904938",
+      "cpi": 6.32,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-74"
+    },
+    {
+      "roll_no": "2442010506",
+      "full_name": "SHAMBHAVI GUPTA",
+      "email": "shambhavi.gupta_bca24@gla.ac.in",
+      "mobile": "8273698307",
+      "cpi": 6.39,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-74"
+    },
+    {
+      "roll_no": "2442010269",
+      "full_name": "KESHAV GOSWAMI",
+      "email": "keshav.goswami_bca24@gla.ac.in",
+      "mobile": "6398280238",
+      "cpi": 6.16,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-74"
+    },
+    {
+      "roll_no": "2442010196",
+      "full_name": "DIVYAM KULSHRESHTHA",
+      "email": "divyam.kulshreshtha_bca24@gla.ac.in",
+      "mobile": "9411443245",
+      "cpi": 6.38,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-74"
+    },
+    {
+      "roll_no": "2442010132",
+      "full_name": "BARSHA",
+      "email": "barsha.gla_bca24@gla.ac.in",
+      "mobile": "9457807475",
+      "cpi": 6.35,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-74"
+    },
+    {
+      "roll_no": "2442010179",
+      "full_name": "DEV PRAKHAR",
+      "email": "dev.prakhar_bca24@gla.ac.in",
+      "mobile": "9793476189",
+      "cpi": 6.07,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-75"
+    },
+    {
+      "roll_no": "2442010105",
+      "full_name": "ARUN KUMAR",
+      "email": "arun.kumar_bca24@gla.ac.in",
+      "mobile": "8445814440",
+      "cpi": 6.22,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-75"
+    },
+    {
+      "roll_no": "2442010200",
+      "full_name": "DIVYANSHU KUMAR",
+      "email": "divyanshu.kumar_bca24@gla.ac.in",
+      "mobile": "8755309604",
+      "cpi": 6.29,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-75"
+    },
+    {
+      "roll_no": "2442010202",
+      "full_name": "DULESHWAR SAHU",
+      "email": "duleshwar.sahu_bca24@gla.ac.in",
+      "mobile": "7535024113",
+      "cpi": 6.29,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-75"
+    },
+    {
+      "roll_no": "2442010211",
+      "full_name": "GAURAV",
+      "email": "gaurav.gla_bca24@gla.ac.in",
+      "mobile": "9216140021",
+      "cpi": 6.33,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-75"
+    },
+    {
+      "roll_no": "2442010221",
+      "full_name": "GOPAL BHARDWAJ",
+      "email": "gopal.bhardwaj_bca24@gla.ac.in",
+      "mobile": "8273953524",
+      "cpi": 6.32,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-75"
+    },
+    {
+      "roll_no": "2442010229",
+      "full_name": "HARENDRA SINGH",
+      "email": "harendra.singh_bca24@gla.ac.in",
+      "mobile": "8218263652",
+      "cpi": 6.33,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-76"
+    },
+    {
+      "roll_no": "2442010230",
+      "full_name": "HARSH",
+      "email": "harsh.gla2_bca24@gla.ac.in",
+      "mobile": "7895831125",
+      "cpi": 6.33,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-76"
+    },
+    {
+      "roll_no": "2442010232",
+      "full_name": "HARSH",
+      "email": "harsh.gla_bca24@gla.ac.in",
+      "mobile": "9817078787",
+      "cpi": 6.14,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-76"
+    },
+    {
+      "roll_no": "2442010245",
+      "full_name": "HRITIK RANJAN",
+      "email": "hritik.ranjan_bca24@gla.ac.in",
+      "mobile": "7858979758",
+      "cpi": 6.37,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-76"
+    },
+    {
+      "roll_no": "2442010260",
+      "full_name": "KARAN KUSHWAH",
+      "email": "karan.kushwah_bca24@gla.ac.in",
+      "mobile": "8057585000",
+      "cpi": 6.2,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-76"
+    },
+    {
+      "roll_no": "2442010265",
+      "full_name": "KAUSHAL KUMAR",
+      "email": "kaushal.kumar_bca24@gla.ac.in",
+      "mobile": "7906808345",
+      "cpi": 6.29,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-76"
+    },
+    {
+      "roll_no": "2442010108",
+      "full_name": "ARYAN KUMAR",
+      "email": "aryan.kumar_bca24@gla.ac.in",
+      "mobile": "9142969698",
+      "cpi": 6.31,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-77"
+    },
+    {
+      "roll_no": "2442010280",
+      "full_name": "KRISHNA",
+      "email": "krishna.gla1_bca24@gla.ac.in",
+      "mobile": "9258094460",
+      "cpi": 6.43,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-77"
+    },
+    {
+      "roll_no": "2442010293",
+      "full_name": "KULDEEP",
+      "email": "kuldeep.gla_bca24@gla.ac.in",
+      "mobile": "9389356568",
+      "cpi": 6.38,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-77"
+    },
+    {
+      "roll_no": "2442010297",
+      "full_name": "KUSH GAUTAM",
+      "email": "kush.gautam_bca24@gla.ac.in",
+      "mobile": "6395748673",
+      "cpi": 6.38,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-77"
+    },
+    {
+      "roll_no": "2442010298",
+      "full_name": "KUSHAGRA TIWARI",
+      "email": "kushagra.tiwari_bca24@gla.ac.in",
+      "mobile": "9557920062",
+      "cpi": 6.21,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-77"
+    },
+    {
+      "roll_no": "2442010305",
+      "full_name": "LOVE GAUTAM",
+      "email": "love.gautam_bca24@gla.ac.in",
+      "mobile": "7310662832",
+      "cpi": 6.33,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-77"
+    },
+    {
+      "roll_no": "2442010309",
+      "full_name": "MADHAV GOSWAMI",
+      "email": "madhav.goswami_bca24@gla.ac.in",
+      "mobile": "8791758671",
+      "cpi": 6.28,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-78"
+    },
+    {
+      "roll_no": "2442010326",
+      "full_name": "MAYANK PACHAURI",
+      "email": "mayank.pachauri_bca24@gla.ac.in",
+      "mobile": "8755080852",
+      "cpi": 6.33,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-78"
+    },
+    {
+      "roll_no": "2442010335",
+      "full_name": "MOHAN SHYAM",
+      "email": "mohan.shyam_bca24@gla.ac.in",
+      "mobile": "8057956774",
+      "cpi": 6.29,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-78"
+    },
+    {
+      "roll_no": "2442010336",
+      "full_name": "MOHAN SHYAM SISODIA",
+      "email": "mohan.sisodia_bca24@gla.ac.in",
+      "mobile": "8057307456",
+      "cpi": 6.47,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-78"
+    },
+    {
+      "roll_no": "2442010341",
+      "full_name": "MOHIT KUMAR",
+      "email": "mohit.kumar_bca24@gla.ac.in",
+      "mobile": "7310575708",
+      "cpi": 6.4,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-78"
+    },
+    {
+      "roll_no": "2442010363",
+      "full_name": "NIKHIL GOSWAMI",
+      "email": "nikhil.goswami_bca24@gla.ac.in",
+      "mobile": "6398446939",
+      "cpi": 6.36,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-78"
+    },
+    {
+      "roll_no": "2442010365",
+      "full_name": "NIKHIL RAWAT",
+      "email": "nikhil.rawat_bca24@gla.ac.in",
+      "mobile": "7451066685",
+      "cpi": 6.47,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-79"
+    },
+    {
+      "roll_no": "2442010376",
+      "full_name": "OM PRAKASH DIXIT",
+      "email": "om.dixit_bca24@gla.ac.in",
+      "mobile": "9548678822",
+      "cpi": 6.42,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-79"
+    },
+    {
+      "roll_no": "2442010378",
+      "full_name": "PAARTH BHARDWAJ",
+      "email": "paarth.bhardwaj_bca24@gla.ac.in",
+      "mobile": "8791500870",
+      "cpi": 6.31,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-79"
+    },
+    {
+      "roll_no": "2442010384",
+      "full_name": "PAWAN JOSHI",
+      "email": "pawan.joshi_bca24@gla.ac.in",
+      "mobile": "7302692840",
+      "cpi": 6.09,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-79"
+    },
+    {
+      "roll_no": "2442010388",
+      "full_name": "PIYUSH",
+      "email": "piyush.gla_bca24@gla.ac.in",
+      "mobile": "9992178457",
+      "cpi": 6.26,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-79"
+    },
+    {
+      "roll_no": "2442010390",
+      "full_name": "PIYUSH SHARMA",
+      "email": "piyush.sharma_bca24@gla.ac.in",
+      "mobile": "7217231252",
+      "cpi": 6.37,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-79"
+    },
+    {
+      "roll_no": "2442010146",
+      "full_name": "BISHU SINGH",
+      "email": "bishu.singh_bca24@gla.ac.in",
+      "mobile": "8935909260",
+      "cpi": 6.4,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-80"
+    },
+    {
+      "roll_no": "2442010399",
+      "full_name": "PRAKHAR SHARMA",
+      "email": "prakhar.sharma_bca24@gla.ac.in",
+      "mobile": "9555245828",
+      "cpi": 6.21,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-80"
+    },
+    {
+      "roll_no": "2442010406",
+      "full_name": "PRASHANT",
+      "email": "prashant.gla_bca24@gla.ac.in",
+      "mobile": "9149265813",
+      "cpi": 6.29,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-80"
+    },
+    {
+      "roll_no": "2442010410",
+      "full_name": "PRASHANT SHARMA",
+      "email": "prashant.sharma_bca24@gla.ac.in",
+      "mobile": "6398669945",
+      "cpi": 6.32,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-80"
+    },
+    {
+      "roll_no": "2442010411",
+      "full_name": "PRASHANT UPADHYAY",
+      "email": "prashant.upadhyay_bca24@gla.ac.in",
+      "mobile": "7457805125",
+      "cpi": 6.29,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-80"
+    },
+    {
+      "roll_no": "2442010417",
+      "full_name": "PRAVESH",
+      "email": "pravesh.gla_bca24@gla.ac.in",
+      "mobile": "7818828743",
+      "cpi": 6.19,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-80"
+    },
+    {
+      "roll_no": "2442010419",
+      "full_name": "PRINCE BENIWAL",
+      "email": "prince.beniwal_bca24@gla.ac.in",
+      "mobile": "7017445787",
+      "cpi": 6.16,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-81"
+    },
+    {
+      "roll_no": "2442010429",
+      "full_name": "PRIYANSHU",
+      "email": "priyanshu.dubey_bca24@gla.ac.in",
+      "mobile": "9058820827",
+      "cpi": 6.45,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-81"
+    },
+    {
+      "roll_no": "2442010443",
+      "full_name": "RAHUL SINGH",
+      "email": "rahul.singh_bca24@gla.ac.in",
+      "mobile": "8193944187",
+      "cpi": 6.36,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-81"
+    },
+    {
+      "roll_no": "2442010456",
+      "full_name": "RAVIKANT",
+      "email": "ravikant.gla_bca24@gla.ac.in",
+      "mobile": "8534818557",
+      "cpi": 6.14,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-81"
+    },
+    {
+      "roll_no": "2442010457",
+      "full_name": "RAVIRANJAN KUMAR SINGH",
+      "email": "raviranjan.singh_bca24@gla.ac.in",
+      "mobile": "8271986996",
+      "cpi": 6.4,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-81"
+    },
+    {
+      "roll_no": "2442010468",
+      "full_name": "ROHIT MALAN",
+      "email": "rohit.malan_bca24@gla.ac.in",
+      "mobile": "8191047739",
+      "cpi": 6.35,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-81"
+    },
+    {
+      "roll_no": "2442010474",
+      "full_name": "SACHIN",
+      "email": "sachin.gla_bca24@gla.ac.in",
+      "mobile": "9808377637",
+      "cpi": 6.22,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-82"
+    },
+    {
+      "roll_no": "2442010476",
+      "full_name": "SAGAR",
+      "email": "sagar.gla_bca24@gla.ac.in",
+      "mobile": "8630404825",
+      "cpi": 6.25,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-82"
+    },
+    {
+      "roll_no": "2442010482",
+      "full_name": "SAHIL",
+      "email": "sahil.gla2_bca24@gla.ac.in",
+      "mobile": "7424984922",
+      "cpi": 6.39,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-82"
+    },
+    {
+      "roll_no": "2442010489",
+      "full_name": "SANDEEP DIXIT",
+      "email": "sandeep.dixit_bca24@gla.ac.in",
+      "mobile": "7505891659",
+      "cpi": 6.17,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-82"
+    },
+    {
+      "roll_no": "2442010147",
+      "full_name": "BRAJESH KUMAR",
+      "email": "brajesh.kumar_bca24@gla.ac.in",
+      "mobile": "8273477983",
+      "cpi": 6.34,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-82"
+    },
+    {
+      "roll_no": "2442010508",
+      "full_name": "SHASHANK KUMAR JHA",
+      "email": "shashank.jha_bca24@gla.ac.in",
+      "mobile": "9334614215",
+      "cpi": 6.32,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-82"
+    },
+    {
+      "roll_no": "2442010510",
+      "full_name": "SHIVAM KUMAR",
+      "email": "shivam.kumar1_bca24@gla.ac.in",
+      "mobile": "8445341131",
+      "cpi": 6.38,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-83"
+    },
+    {
+      "roll_no": "2442010534",
+      "full_name": "SIKANDAR RATHORE",
+      "email": "sikandar.rathore_bca24@gla.ac.in",
+      "mobile": "8923015843",
+      "cpi": 6.27,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-83"
+    },
+    {
+      "roll_no": "2442010569",
+      "full_name": "TUSHAR GAUTAM",
+      "email": "tushar.gautam_bca24@gla.ac.in",
+      "mobile": "7505860335",
+      "cpi": 6.35,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-83"
+    },
+    {
+      "roll_no": "2442010570",
+      "full_name": "TUSHAR GUPTA",
+      "email": "tushar.gupta_bca24@gla.ac.in",
+      "mobile": "7452036956",
+      "cpi": 6.34,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-83"
+    },
+    {
+      "roll_no": "2442010571",
+      "full_name": "UDAY SHARMA",
+      "email": "uday.sharma_bca24@gla.ac.in",
+      "mobile": "7906458486",
+      "cpi": 6.24,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-83"
+    },
+    {
+      "roll_no": "2442010609",
+      "full_name": "VIPIN SINGH",
+      "email": "vipin.singh_bca24@gla.ac.in",
+      "mobile": "7453023454",
+      "cpi": 6.32,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-84"
+    },
+    {
+      "roll_no": "2442010616",
+      "full_name": "VISHAL THAKUR",
+      "email": "vishal.thakur_bca24@gla.ac.in",
+      "mobile": "7302914156",
+      "cpi": 6.19,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-84"
+    },
+    {
+      "roll_no": "2442010622",
+      "full_name": "YASH CHAUDHARY",
+      "email": "yash.chaudhary_bca24@gla.ac.in",
+      "mobile": "7302488829",
+      "cpi": 6.34,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-84"
+    },
+    {
+      "roll_no": "2442010625",
+      "full_name": "YASH VERMA",
+      "email": "yash.verma_bca24@gla.ac.in",
+      "mobile": "8126138903",
+      "cpi": 6.19,
+      "course": "BCA",
+      "section": "G",
+      "team_code": "BCA-84"
+    },
+    {
+      "roll_no": "2442010001",
+      "full_name": "ABHAY PRATAP SINGH",
+      "email": "abhay.singh_bca24@gla.ac.in",
+      "mobile": "7317067009",
+      "cpi": 6.17,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-85"
+    },
+    {
+      "roll_no": "2442010008",
+      "full_name": "ABHISHEK",
+      "email": "abhishek.singh1_bca24@gla.ac.in",
+      "mobile": "6396376795",
+      "cpi": 6.05,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-85"
+    },
+    {
+      "roll_no": "2442010015",
+      "full_name": "ABHISHEK TYAGI",
+      "email": "abhishek.tyagi_bca24@gla.ac.in",
+      "mobile": "6396844576",
+      "cpi": 5.95,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-85"
+    },
+    {
+      "roll_no": "2442010030",
+      "full_name": "AGRANSH PANDEY",
+      "email": "agransh.pandey_bca24@gla.ac.in",
+      "mobile": "7017046562",
+      "cpi": 6.05,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-85"
+    },
+    {
+      "roll_no": "2442010031",
+      "full_name": "AJAY KUMAR",
+      "email": "ajay.kumar_bca24@gla.ac.in",
+      "mobile": "9027153771",
+      "cpi": 5.95,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-85"
+    },
+    {
+      "roll_no": "2442010035",
+      "full_name": "AKASH",
+      "email": "akash.gla_bca24@gla.ac.in",
+      "mobile": "9068502599",
+      "cpi": 6.09,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-85"
+    },
+    {
+      "roll_no": "2442010046",
+      "full_name": "AMAN SINGH",
+      "email": "aman.singh_bca24@gla.ac.in",
+      "mobile": "7895805759",
+      "cpi": 6.22,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-86"
+    },
+    {
+      "roll_no": "2442010049",
+      "full_name": "AMANDEEP",
+      "email": "amandeep.gla_bca24@gla.ac.in",
+      "mobile": "6397236030",
+      "cpi": 6.27,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-86"
+    },
+    {
+      "roll_no": "2442010054",
+      "full_name": "AMITESH ANAND",
+      "email": "amitesh.anand_bca24@gla.ac.in",
+      "mobile": "9709636300",
+      "cpi": 6.2,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-86"
+    },
+    {
+      "roll_no": "2442010064",
+      "full_name": "ANKIT PANDEY",
+      "email": "ankit.pandey_bca24@gla.ac.in",
+      "mobile": "8586972287",
+      "cpi": 6.0,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-86"
+    },
+    {
+      "roll_no": "2442010096",
+      "full_name": "ANUSHKA DIXIT",
+      "email": "anushka.dixit_bca24@gla.ac.in",
+      "mobile": "6395029789",
+      "cpi": 6.48,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-86"
+    },
+    {
+      "roll_no": "2442010112",
+      "full_name": "ASHISH KUMAR",
+      "email": "ashish.kumar_bca24@gla.ac.in",
+      "mobile": "7985515852",
+      "cpi": 6.08,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-86"
+    },
+    {
+      "roll_no": "2442010119",
+      "full_name": "ATHARV KHANNA",
+      "email": "atharv.khanna_bca24@gla.ac.in",
+      "mobile": "8299229630",
+      "cpi": 6.11,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-87"
+    },
+    {
+      "roll_no": "2442010135",
+      "full_name": "BHARAT",
+      "email": "bharat.gla_bca24@gla.ac.in",
+      "mobile": "8445839339",
+      "cpi": 6.26,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-87"
+    },
+    {
+      "roll_no": "2442010141",
+      "full_name": "BHUDEV",
+      "email": "bhudev.gla_bca24@gla.ac.in",
+      "mobile": "9149018965",
+      "cpi": 6.31,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-87"
+    },
+    {
+      "roll_no": "2342010157",
+      "full_name": "CHANDRA MOHAN NARAYAN",
+      "email": "chandra.narayan_bca23@gla.ac.in",
+      "mobile": "6395220978",
+      "cpi": 6.58,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-87"
+    },
+    {
+      "roll_no": "2442010155",
+      "full_name": "CHETAN",
+      "email": "chetan.gla_bca24@gla.ac.in",
+      "mobile": "7417990859",
+      "cpi": 6.12,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-87"
+    },
+    {
+      "roll_no": "2342010169",
+      "full_name": "DEEPAK KUMAR YADAV",
+      "email": "deepak.yadav_bca23@gla.ac.in",
+      "mobile": "8982135405",
+      "cpi": 5.86,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-87"
+    },
+    {
+      "roll_no": "2442010185",
+      "full_name": "DEVANSHU PAL",
+      "email": "devanshu.pal_bca24@gla.ac.in",
+      "mobile": "9654868779",
+      "cpi": 5.99,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-88"
+    },
+    {
+      "roll_no": "2342010754",
+      "full_name": "DHANUSH JAISWAL",
+      "email": "dhanush.jaiswal_bca23@gla.ac.in",
+      "mobile": "8433176781",
+      "cpi": 6.56,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-88"
+    },
+    {
+      "roll_no": "2442010195",
+      "full_name": "DINESH KUMAR",
+      "email": "dinesh.kumar_bca24@gla.ac.in",
+      "mobile": "9897740051",
+      "cpi": 5.84,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-88"
+    },
+    {
+      "roll_no": "2442010233",
+      "full_name": "HARSH ATTRI",
+      "email": "harsh.attri_bca24@gla.ac.in",
+      "mobile": "8938902791",
+      "cpi": 6.09,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-88"
+    },
+    {
+      "roll_no": "2442010266",
+      "full_name": "KAUSHAL LAVANIA",
+      "email": "kaushal.lavania_bca24@gla.ac.in",
+      "mobile": "9528973109",
+      "cpi": 6.09,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-88"
+    },
+    {
+      "roll_no": "2442010279",
+      "full_name": "KRISHDHA MUDGAL",
+      "email": "krishdha.mudgal_bca24@gla.ac.in",
+      "mobile": "8755553325",
+      "cpi": 5.94,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-88"
+    },
+    {
+      "roll_no": "2442010287",
+      "full_name": "KRISHNA SINGH",
+      "email": "krishna.singh_bca24@gla.ac.in",
+      "mobile": "9520331166",
+      "cpi": 6.24,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-89"
+    },
+    {
+      "roll_no": "2442010291",
+      "full_name": "KRISHNAKANT YADAV",
+      "email": "krishnakant.yadav_bca24@gla.ac.in",
+      "mobile": "9368523474",
+      "cpi": 5.92,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-89"
+    },
+    {
+      "roll_no": "2442010294",
+      "full_name": "KULDEEP PANDEY",
+      "email": "kuldeep.pandey_bca24@gla.ac.in",
+      "mobile": "8266937387",
+      "cpi": 5.96,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-89"
+    },
+    {
+      "roll_no": "2442010307",
+      "full_name": "LOVEIS KUMAR",
+      "email": "loveis.kumar_bca24@gla.ac.in",
+      "mobile": "9528521897",
+      "cpi": 6.1,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-89"
+    },
+    {
+      "roll_no": "2442010316",
+      "full_name": "MANJEET SINGH",
+      "email": "manjeet.singh_bca24@gla.ac.in",
+      "mobile": "7467035673",
+      "cpi": 6.12,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-89"
+    },
+    {
+      "roll_no": "2442010321",
+      "full_name": "MANOJ RAJPUT",
+      "email": "manoj.rajput_bca24@gla.ac.in",
+      "mobile": "7906049701",
+      "cpi": 6.1,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-89"
+    },
+    {
+      "roll_no": "2442010322",
+      "full_name": "MANPAL SINGH",
+      "email": "manpal.singh_bca24@gla.ac.in",
+      "mobile": "7248733284",
+      "cpi": 5.94,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-90"
+    },
+    {
+      "roll_no": "2342010393",
+      "full_name": "MILAN GAUTAM",
+      "email": "milan.gautam_bca23@gla.ac.in",
+      "mobile": "7906023345",
+      "cpi": 6.15,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-90"
+    },
+    {
+      "roll_no": "2442010338",
+      "full_name": "MOHIT",
+      "email": "mohit.gla2_bca24@gla.ac.in",
+      "mobile": "7668862553",
+      "cpi": 6.02,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-90"
+    },
+    {
+      "roll_no": "2442010340",
+      "full_name": "MOHIT DAGAR",
+      "email": "mohit.dagar_bca24@gla.ac.in",
+      "mobile": "8126832651",
+      "cpi": 5.88,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-90"
+    },
+    {
+      "roll_no": "2342010401",
+      "full_name": "MOHMMAD AMIR",
+      "email": "mohmmad.amir_bca23@gla.ac.in",
+      "mobile": "8273314114",
+      "cpi": 5.99,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-90"
+    },
+    {
+      "roll_no": "2342010402",
+      "full_name": "MOHMMAD JUNAID",
+      "email": "mohmmad.junaid_bca23@gla.ac.in",
+      "mobile": "7037986412",
+      "cpi": 6.15,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-90"
+    },
+    {
+      "roll_no": "2342010403",
+      "full_name": "MRADUL UPADHYAY",
+      "email": "mradul.upadhyay_bca23@gla.ac.in",
+      "mobile": "9557632682",
+      "cpi": 6.65,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-91"
+    },
+    {
+      "roll_no": "2442010356",
+      "full_name": "NEHA GAUR",
+      "email": "neha.gaur_bca24@gla.ac.in",
+      "mobile": "9258729164",
+      "cpi": 6.03,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-91"
+    },
+    {
+      "roll_no": "2442010358",
+      "full_name": "NIDHI",
+      "email": "nidhi.gla_bca24@gla.ac.in",
+      "mobile": "8477968727",
+      "cpi": 6.02,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-91"
+    },
+    {
+      "roll_no": "2442010401",
+      "full_name": "PRANJAL SINGH",
+      "email": "pranjal.singh_bca24@gla.ac.in",
+      "mobile": "7388415149",
+      "cpi": 6.1,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-91"
+    },
+    {
+      "roll_no": "2442010403",
+      "full_name": "PRANSHI SHUKLA",
+      "email": "pranshi.shukla_bca24@gla.ac.in",
+      "mobile": "7668418031",
+      "cpi": 5.96,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-91"
+    },
+    {
+      "roll_no": "2442010434",
+      "full_name": "PUSHKAR SINGHAL",
+      "email": "pushkar.singhal_bca24@gla.ac.in",
+      "mobile": "9457233614",
+      "cpi": 6.35,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-91"
+    },
+    {
+      "roll_no": "2342010493",
+      "full_name": "RAJ SINGH",
+      "email": "raj.singh_bca23@gla.ac.in",
+      "mobile": "9634291705",
+      "cpi": 6.09,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-92"
+    },
+    {
+      "roll_no": "2442010459",
+      "full_name": "RISHABH",
+      "email": "rishabh.gla_bca24@gla.ac.in",
+      "mobile": "9627200624",
+      "cpi": 6.02,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-92"
+    },
+    {
+      "roll_no": "2342010525",
+      "full_name": "RITIK KUMAR",
+      "email": "ritik.kumar2_bca23@gla.ac.in",
+      "mobile": "9058984854",
+      "cpi": 5.93,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-92"
+    },
+    {
+      "roll_no": "2342010526",
+      "full_name": "RITIK PRATAP SINGH",
+      "email": "ritik.singh_bca23@gla.ac.in",
+      "mobile": "8433458652",
+      "cpi": 6.18,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-92"
+    },
+    {
+      "roll_no": "2442010504",
+      "full_name": "SAURAV",
+      "email": "saurav.gla3_bca24@gla.ac.in",
+      "mobile": "8077276714",
+      "cpi": 5.95,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-92"
+    },
+    {
+      "roll_no": "2442010524",
+      "full_name": "SHRI KANT",
+      "email": "shrikant.gla_bca24@gla.ac.in",
+      "mobile": "9058709608",
+      "cpi": 6.15,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-92"
+    },
+    {
+      "roll_no": "2342010621",
+      "full_name": "SNEHA SHARMA",
+      "email": "sneha.sharma_bca23@gla.ac.in",
+      "mobile": "6352756983",
+      "cpi": 6.09,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-93"
+    },
+    {
+      "roll_no": "2442010543",
+      "full_name": "SUMIT CHAUDHARY",
+      "email": "sumit.chaudhary_bca24@gla.ac.in",
+      "mobile": "9389888262",
+      "cpi": 6.1,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-93"
+    },
+    {
+      "roll_no": "2442010559",
+      "full_name": "TANUJ RAGHAV",
+      "email": "tanuj.raghav_bca24@gla.ac.in",
+      "mobile": "6396708201",
+      "cpi": 6.07,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-93"
+    },
+    {
+      "roll_no": "2442010561",
+      "full_name": "TARUN BHARDWAJ",
+      "email": "tarun.bhardwaj_bca24@gla.ac.in",
+      "mobile": "8126770082",
+      "cpi": 6.06,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-93"
+    },
+    {
+      "roll_no": "2442010581",
+      "full_name": "VAISHNAVI SHARMA",
+      "email": "vaishnavi.sharma_bca24@gla.ac.in",
+      "mobile": "9520943528",
+      "cpi": 6.19,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-93"
+    },
+    {
+      "roll_no": "2442010628",
+      "full_name": "YATENDRA KUMAR",
+      "email": "yatendra.kumar_bca24@gla.ac.in",
+      "mobile": "9634228684",
+      "cpi": 6.09,
+      "course": "BCA",
+      "section": "H",
+      "team_code": "BCA-93"
+    },
+    {
+      "roll_no": "2442110001",
+      "full_name": "ABHAY PRATAP SINGH",
+      "email": "abhay.pratap_bca.ds24@gla.ac.in",
+      "mobile": "9694110090",
+      "cpi": 7.31,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-1"
+    },
+    {
+      "roll_no": "2442110002",
+      "full_name": "ADARSH PRATAP SINGH",
+      "email": "adarsh.singh_bca.ds24@gla.ac.in",
+      "mobile": "9555362706",
+      "cpi": 7.86,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-1"
+    },
+    {
+      "roll_no": "2442110003",
+      "full_name": "AKASH BABU",
+      "email": "akash.babu_bca.ds24@gla.ac.in",
+      "mobile": "7088570911",
+      "cpi": 6.91,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-1"
+    },
+    {
+      "roll_no": "2442110004",
+      "full_name": "AKSHAT SHARMA",
+      "email": "akshat.gla_bca.ds24@gla.ac.in",
+      "mobile": "7017476016",
+      "cpi": 8.17,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-1"
+    },
+    {
+      "roll_no": "2442110005",
+      "full_name": "AMISHA",
+      "email": "amisha.gla_bca.ds24@gla.ac.in",
+      "mobile": "9456536967",
+      "cpi": 7.74,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-1"
+    },
+    {
+      "roll_no": "2442110006",
+      "full_name": "ANKIT LOHKANA",
+      "email": "ankit.lohkana_bca.ds24@gla.ac.in",
+      "mobile": "9012511316",
+      "cpi": 6.38,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-1"
+    },
+    {
+      "roll_no": "2442110021",
+      "full_name": "HARSH SHARMA",
+      "email": "harsh.sharma_bca.ds24@gla.ac.in",
+      "mobile": "7060312122",
+      "cpi": 7.37,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-2"
+    },
+    {
+      "roll_no": "2442110035",
+      "full_name": "NANDINI GUPTA",
+      "email": "nandini.gupta_bca.ds24@gla.ac.in",
+      "mobile": "6398644481",
+      "cpi": 9.15,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-2"
+    },
+    {
+      "roll_no": "2442110009",
+      "full_name": "ARPIT PANDEY",
+      "email": "arpit.pandey_bca.ds24@gla.ac.in",
+      "mobile": "8395036720",
+      "cpi": 9.04,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-2"
+    },
+    {
+      "roll_no": "2442110010",
+      "full_name": "ASHUTOSH SINGH",
+      "email": "ashutosh.singh_bca.ds24@gla.ac.in",
+      "mobile": "9118730763",
+      "cpi": 7.35,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-2"
+    },
+    {
+      "roll_no": "2442110044",
+      "full_name": "RISHABH MISHRA",
+      "email": "rishabh.mishra_bca.ds24@gla.ac.in",
+      "mobile": "9105280131",
+      "cpi": 8.17,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-2"
+    },
+    {
+      "roll_no": "2442110012",
+      "full_name": "AYUSH VISHWAKARMA",
+      "email": "ayush.vishwakarma_bca.ds24@gla.ac.in",
+      "mobile": "9335711176",
+      "cpi": 8.05,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-2"
+    },
+    {
+      "roll_no": "2442110013",
+      "full_name": "BHANU PRATAP SINGH",
+      "email": "bhanu.singh_bca.ds24@gla.ac.in",
+      "mobile": "7302230131",
+      "cpi": 6.15,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-3"
+    },
+    {
+      "roll_no": "2442110014",
+      "full_name": "CHANDER PAL",
+      "email": "chander.pal_bca.ds24@gla.ac.in",
+      "mobile": "8278225584",
+      "cpi": 6.42,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-3"
+    },
+    {
+      "roll_no": "2442110015",
+      "full_name": "DAKSHITA ARORA",
+      "email": "dakshita.arora_bca.ds24@gla.ac.in",
+      "mobile": "7599618350",
+      "cpi": 7.55,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-3"
+    },
+    {
+      "roll_no": "2442110016",
+      "full_name": "DEEPAK VASHISTH",
+      "email": "deepak.vashisth_bca.ds24@gla.ac.in",
+      "mobile": "8699960308",
+      "cpi": 7.37,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-3"
+    },
+    {
+      "roll_no": "2442110017",
+      "full_name": "DEVESH KUMAR",
+      "email": "devesh.kumar_bca.ds24@gla.ac.in",
+      "mobile": "7037382409",
+      "cpi": 6.51,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-3"
+    },
+    {
+      "roll_no": "2442110018",
+      "full_name": "HARDIKA AGRAWAL",
+      "email": "hardika.agrawal_bca.ds24@gla.ac.in",
+      "mobile": "7505786369",
+      "cpi": 7.84,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-3"
+    },
+    {
+      "roll_no": "2442110019",
+      "full_name": "HARIOM",
+      "email": "hariom.gla_bca.ds24@gla.ac.in",
+      "mobile": "8474903633",
+      "cpi": 6.42,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-4"
+    },
+    {
+      "roll_no": "2442110020",
+      "full_name": "HARSH AGRAWAL",
+      "email": "harsh.agrawal_bca.ds24@gla.ac.in",
+      "mobile": "7668418353",
+      "cpi": 8.61,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-4"
+    },
+    {
+      "roll_no": "2442110008",
+      "full_name": "ANSH SINGH",
+      "email": "ansh.singh_bca.ds24@gla.ac.in",
+      "mobile": "9451678401",
+      "cpi": 7.53,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-4"
+    },
+    {
+      "roll_no": "2442110022",
+      "full_name": "HARSHIT VERMA",
+      "email": "harshit.verma_bca.ds24@gla.ac.in",
+      "mobile": "7310572897",
+      "cpi": 6.74,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-4"
+    },
+    {
+      "roll_no": "2442110023",
+      "full_name": "HEMANT KUMAR",
+      "email": "hemant.kumar_bca.ds24@gla.ac.in",
+      "mobile": "9026020469",
+      "cpi": 7.9,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-4"
+    },
+    {
+      "roll_no": "2442110024",
+      "full_name": "HEMRAJ",
+      "email": "hemraj.gla_bca.ds24@gla.ac.in",
+      "mobile": "7819958100",
+      "cpi": 6.55,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-4"
+    },
+    {
+      "roll_no": "2442110025",
+      "full_name": "KAJAL",
+      "email": "kajal.gla_bca.ds24@gla.ac.in",
+      "mobile": "9105320394",
+      "cpi": 7.21,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-5"
+    },
+    {
+      "roll_no": "2442110027",
+      "full_name": "KHUSHBOO AGRAWAL",
+      "email": "khushboo.agrawal_bca.ds24@gla.ac.in",
+      "mobile": "8279826279",
+      "cpi": 8.22,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-5"
+    },
+    {
+      "roll_no": "2442110028",
+      "full_name": "KRISHAN CHAUHAN",
+      "email": "krishan.chauhan_bca.ds24@gla.ac.in",
+      "mobile": "9812883125",
+      "cpi": 7.25,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-5"
+    },
+    {
+      "roll_no": "2442110030",
+      "full_name": "LUCKY VARSHNEY",
+      "email": "lucky.varshney_bca.ds24@gla.ac.in",
+      "mobile": "7017304700",
+      "cpi": 7.26,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-5"
+    },
+    {
+      "roll_no": "2442110032",
+      "full_name": "MAHAK RAJPUT",
+      "email": "mahak.rajput_bca.ds24@gla.ac.in",
+      "mobile": "9259490265",
+      "cpi": 7.59,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-5"
+    },
+    {
+      "roll_no": "2442110033",
+      "full_name": "MANISH KUMAR",
+      "email": "manish.kumar_bca.ds24@gla.ac.in",
+      "mobile": "7505964800",
+      "cpi": 7.41,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-5"
+    },
+    {
+      "roll_no": "2442110034",
+      "full_name": "MOHINI",
+      "email": "mohini.gla_bca.ds24@gla.ac.in",
+      "mobile": "7818020349",
+      "cpi": 8.77,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-6"
+    },
+    {
+      "roll_no": "2442110007",
+      "full_name": "ANSH DWIVEDI",
+      "email": "ansh.dwivedi_bca.ds24@gla.ac.in",
+      "mobile": "7376089975",
+      "cpi": 7.42,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-6"
+    },
+    {
+      "roll_no": "2442110036",
+      "full_name": "NISHA",
+      "email": "nisha.gla_bca.ds24@gla.ac.in",
+      "mobile": "6006069816",
+      "cpi": 8.52,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-6"
+    },
+    {
+      "roll_no": "2442110037",
+      "full_name": "NITIN SHUKLA",
+      "email": "nitin.shukla_bca.ds24@gla.ac.in",
+      "mobile": "8081030871",
+      "cpi": 6.24,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-6"
+    },
+    {
+      "roll_no": "2442110038",
+      "full_name": "PARAS DIXIT",
+      "email": "paras.dixit_bca.ds24@gla.ac.in",
+      "mobile": "6395313035",
+      "cpi": 6.92,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-6"
+    },
+    {
+      "roll_no": "2442110039",
+      "full_name": "PIYUSH",
+      "email": "piyush.gla_bca.ds24@gla.ac.in",
+      "mobile": "7088659675",
+      "cpi": 7.08,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-6"
+    },
+    {
+      "roll_no": "2442110040",
+      "full_name": "PIYUSH SOLANKI",
+      "email": "piyush.solanki_bca.ds24@gla.ac.in",
+      "mobile": "8433219208",
+      "cpi": 6.78,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-7"
+    },
+    {
+      "roll_no": "2342110041",
+      "full_name": "PRAKHAR MISHRA",
+      "email": "prakhar.mishra_bca.ds23@gla.ac.in",
+      "mobile": "7992279011",
+      "cpi": 6.57,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-7"
+    },
+    {
+      "roll_no": "2442110041",
+      "full_name": "PRATYAKSH SHARMA",
+      "email": "pratyaksh.sharma_bca.ds24@gla.ac.in",
+      "mobile": "6397631801",
+      "cpi": 7.0,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-7"
+    },
+    {
+      "roll_no": "2442110042",
+      "full_name": "PUNIT KHANDELWAL",
+      "email": "punit.khandelwal_bca.ds24@gla.ac.in",
+      "mobile": "7976364625",
+      "cpi": 6.75,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-7"
+    },
+    {
+      "roll_no": "2442110043",
+      "full_name": "RASHI SHARMA",
+      "email": "rashi.sharma_bca.ds24@gla.ac.in",
+      "mobile": "9871909849",
+      "cpi": 7.82,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-7"
+    },
+    {
+      "roll_no": "2442110011",
+      "full_name": "ATUL UPADHYAY",
+      "email": "atul.upadhyay_bca.ds24@gla.ac.in",
+      "mobile": "9258800308",
+      "cpi": 6.59,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-7"
+    },
+    {
+      "roll_no": "2442110045",
+      "full_name": "ROHAN GUPTA",
+      "email": "rohan.gupta_bca.ds24@gla.ac.in",
+      "mobile": "9536281416",
+      "cpi": 7.92,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-8"
+    },
+    {
+      "roll_no": "2442110046",
+      "full_name": "RUDRAKSH GOYAL",
+      "email": "rudraksh.goyal_bca.ds24@gla.ac.in",
+      "mobile": "7302869987",
+      "cpi": 7.3,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-8"
+    },
+    {
+      "roll_no": "2442110047",
+      "full_name": "SAHDEV",
+      "email": "sahdev.gla_bca.ds24@gla.ac.in",
+      "mobile": "9027649760",
+      "cpi": 7.18,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-8"
+    },
+    {
+      "roll_no": "2442110049",
+      "full_name": "SANCHIT SINGH",
+      "email": "sanchit.singh_bca.ds24@gla.ac.in",
+      "mobile": "7607309986",
+      "cpi": 6.64,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-8"
+    },
+    {
+      "roll_no": "2442110050",
+      "full_name": "SHIVAM SHARMA",
+      "email": "shivam.sharma_bca.ds24@gla.ac.in",
+      "mobile": "8755827406",
+      "cpi": 7.11,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-8"
+    },
+    {
+      "roll_no": "2442110051",
+      "full_name": "SHIVEN RAJ",
+      "email": "shiven.raj_bca.ds24@gla.ac.in",
+      "mobile": "7465830383",
+      "cpi": 7.8,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-8"
+    },
+    {
+      "roll_no": "2442110052",
+      "full_name": "SHUBHAM SHARMA",
+      "email": "shubham.sharma_bca.ds24@gla.ac.in",
+      "mobile": "7055491021",
+      "cpi": 7.17,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-9"
+    },
+    {
+      "roll_no": "2442110053",
+      "full_name": "SONU THAKUR",
+      "email": "sonu.thakur_bca.ds24@gla.ac.in",
+      "mobile": "7302629814",
+      "cpi": 7.22,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-9"
+    },
+    {
+      "roll_no": "2442110054",
+      "full_name": "SUBHAM SHARMA",
+      "email": "subham.sharma_bca.ds24@gla.ac.in",
+      "mobile": "9520939400",
+      "cpi": 6.92,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-9"
+    },
+    {
+      "roll_no": "2442110056",
+      "full_name": "UJJAWAL UPADHYAY",
+      "email": "ujjawal.upadhyay_bca.ds24@gla.ac.in",
+      "mobile": "9368756252",
+      "cpi": 7.31,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-9"
+    },
+    {
+      "roll_no": "2442110057",
+      "full_name": "UTKARSH TRIPATHI",
+      "email": "utkarsh.tripathi_bca.ds24@gla.ac.in",
+      "mobile": "7599530385",
+      "cpi": 7.46,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-9"
+    },
+    {
+      "roll_no": "2442110058",
+      "full_name": "YASH",
+      "email": "yash.gla_bca.ds24@gla.ac.in",
+      "mobile": "9013961250",
+      "cpi": 6.4,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-9"
+    },
+    {
+      "roll_no": "2442110059",
+      "full_name": "YASH AGRAWAL",
+      "email": "yash.agrawal_bca.ds24@gla.ac.in",
+      "mobile": "6398925569",
+      "cpi": 7.42,
+      "course": "BCA - DS",
+      "section": "A",
+      "team_code": "DS-9"
+    }
+  ],
+  "admin": {
+    "email": "admin@codeshastra.edu",
+    "full_name": "Dr. Project Incharge (Head Administrator)",
+    "phone": "9999988888",
+    "role": "admin"
+  }
+}
