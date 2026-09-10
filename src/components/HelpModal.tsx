@@ -515,7 +515,30 @@ export default function HelpModal({ isOpen, onClose, userRole }: HelpModalProps)
             backgroundColor: '#FFFFFF',
           }}
         >
-          {sections.map((section) => (
+          {searchQuery.trim() && totalMatches === 0 ? (
+            <div style={{ textAlign: 'center', padding: '36px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <img
+                src="/images/undraw/searching-themed.svg"
+                alt="No documentation matches found"
+                style={{ width: '190px', height: 'auto', opacity: 0.9, marginBottom: '6px' }}
+              />
+              <h4 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-ink)', margin: 0 }}>
+                No documentation matches for &ldquo;{searchQuery}&rdquo;
+              </h4>
+              <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', maxWidth: '380px', margin: 0 }}>
+                Try searching for keywords like <em>milestone</em>, <em>clearance</em>, <em>attendance</em>, <em>panel</em>, or <em>upload</em>.
+              </p>
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{ marginTop: '6px', fontSize: '12px', padding: '6px 14px' }}
+                onClick={() => setSearchQuery('')}
+              >
+                Clear Search
+              </button>
+            </div>
+          ) : (
+            sections.map((section) => (
             <div
               key={section.id}
               style={{
@@ -583,7 +606,7 @@ export default function HelpModal({ isOpen, onClose, userRole }: HelpModalProps)
                 </div>
               )}
             </div>
-          ))}
+          )))}
         </div>
 
         {/* Footer */}

@@ -409,6 +409,51 @@ export default function HomePage() {
       </section>
 
       {/* ========================================================================= */}
+      {/* 5.6 EDITORIAL STORY 4: ROLE ARCHITECTURE & PERSONA GOVERNANCE             */}
+      {/* ========================================================================= */}
+      <section className="cohere-story-section alt">
+        <div className="cohere-section-container">
+          <div className="cohere-story-grid reverse">
+            {/* Content on Left */}
+            <div className="cohere-story-content">
+              <div className="cohere-section-tag mono">PERSONA ARCHITECTURE</div>
+              <h2 className="cohere-story-title">
+                Three Distinct Roles. <br />
+                Tailored for every stakeholder.
+              </h2>
+              <p className="cohere-story-desc">
+                From student team leaders managing submissions and meeting logs, to faculty supervisors issuing phase clearances, and department admins configuring conflict-free panels.
+              </p>
+
+              <div className="cohere-story-features mono">
+                <div className="cohere-story-item">
+                  <Check size={14} strokeWidth={2.5} color="#344D41" />
+                  <span>Team Leader: Milestone deliverables, meeting requests & token auth</span>
+                </div>
+                <div className="cohere-story-item">
+                  <Check size={14} strokeWidth={2.5} color="#344D41" />
+                  <span>Faculty Mentor: Attendance rosters, problem lock & phase approvals</span>
+                </div>
+                <div className="cohere-story-item">
+                  <Check size={14} strokeWidth={2.5} color="#344D41" />
+                  <span>Department Admin: Roster allocation, judge assignment & grade audit</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Visual on Right */}
+            <div className="cohere-story-visual">
+              <img
+                src="/images/undraw/select-character-themed.svg"
+                alt="Role-based access and persona governance"
+                className="cohere-story-vector-img"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
       {/* 6. THREE MILESTONE COMPARTMENTS                                           */}
       {/* ========================================================================= */}
       <section className="cohere-milestones-section">
@@ -550,8 +595,8 @@ export default function HomePage() {
         </div>
 
         <div className="cohere-footer-right">
-          <span className="cohere-curated-text">powered by</span>
-          <span className="cohere-curated-brand">ProjectHub 2026</span>
+          <span className="cohere-curated-text">Partnership with</span>
+          <span className="cohere-curated-brand">Vrindopnishad</span>
         </div>
       </footer>
 
@@ -607,12 +652,34 @@ export default function HomePage() {
         .cohere-top-link {
           font-size: 13.5px;
           font-weight: 500;
-          color: #374151;
+          color: #1e293b;
           text-decoration: none;
-          transition: opacity 0.15s ease;
+          position: relative;
+          display: inline-block;
+          padding: 2px 0;
+          transition: color 0.2s ease;
         }
+
+        .cohere-top-link::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          width: 100%;
+          height: 1.5px;
+          background-color: #1e293b;
+          transform: scaleX(0);
+          transform-origin: bottom right;
+          transition: transform 0.28s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
         .cohere-top-link:hover {
-          color: #111827;
+          color: #0f172a;
+        }
+
+        .cohere-top-link:hover::after {
+          transform: scaleX(1);
+          transform-origin: bottom left;
         }
 
         .cohere-top-login-pill {

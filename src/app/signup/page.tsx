@@ -237,7 +237,7 @@ function SignUpForm() {
 
       setTimeout(() => {
         window.location.href = '/dashboard/leader';
-      }, 700);
+      }, 1800);
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
       setSubmitting(false);
@@ -263,20 +263,12 @@ function SignUpForm() {
 
       {/* Main Container */}
       <main className="cohere-main-container">
-        {/* Ambient Decorative Background Graphics */}
-        <div className="cohere-bg-graphic left" aria-hidden="true">
+        {/* Themed Single Botanical Growth Background Graphic */}
+        <div className="cohere-bg-hero-graphic" aria-hidden="true">
           <img
-            src="/images/absurd/phase1.webp"
-            alt=""
-            className="cohere-bg-doodle"
-          />
-        </div>
-
-        <div className="cohere-bg-graphic right" aria-hidden="true">
-          <img
-            src="/images/undraw/transactions-themed.svg"
-            alt=""
-            className="cohere-bg-vector"
+            src="/images/undraw/plants-themed.svg"
+            alt="Nurturing & Cultivating Projects"
+            className="cohere-bg-plants-img"
           />
         </div>
 
@@ -292,11 +284,29 @@ function SignUpForm() {
             </div>
           )}
 
-          {/* Success Message Banner */}
+          {/* Congratulations Success Bar with Themed Join Illustration */}
           {successMessage && (
-            <div className="cohere-success-box" style={{ marginBottom: '18px' }}>
-              <CheckCircle2 size={15} style={{ flexShrink: 0 }} />
-              <span>{successMessage}</span>
+            <div className="cohere-congrats-bar" role="status" aria-live="polite">
+              <div className="cohere-congrats-art">
+                <img
+                  src="/images/undraw/join-themed.svg"
+                  alt="Team designated successfully - Congratulations!"
+                  className="cohere-congrats-img"
+                />
+              </div>
+              <div className="cohere-congrats-content">
+                <div className="cohere-congrats-pill mono">
+                  <CheckCircle2 size={12} strokeWidth={2.5} />
+                  <span>LEADERSHIP CONFIRMED</span>
+                </div>
+                <h3 className="cohere-congrats-heading">Congratulations!</h3>
+                <p className="cohere-congrats-sub">
+                  Your team leader account has been activated. Directing you to your workspace.
+                </p>
+                <div className="cohere-congrats-progress-track">
+                  <div className="cohere-congrats-progress-fill" />
+                </div>
+              </div>
             </div>
           )}
 
@@ -370,21 +380,34 @@ function SignUpForm() {
             {selectedMemberObj && (
               <div className="cohere-member-preview">
                 <div className="cohere-preview-header">
-                  <ShieldCheck size={14} color="#344D41" />
-                  <span>Verified Roster Record</span>
+                  <div className="cohere-preview-header-left">
+                    <ShieldCheck size={14} color="#344D41" strokeWidth={2.5} />
+                    <span>Verified Roster Record</span>
+                  </div>
+                  <span className="cohere-preview-status-tag mono">ELIGIBLE LEADER</span>
                 </div>
-                <div className="cohere-preview-grid mono">
-                  <div>
-                    <span className="cohere-preview-label">Name:</span> {selectedMemberObj.full_name}
+
+                <div className="cohere-preview-details mono">
+                  <div className="cohere-preview-row">
+                    <div className="cohere-preview-field">
+                      <span className="cohere-preview-label">NAME</span>
+                      <span className="cohere-preview-val">{selectedMemberObj.full_name}</span>
+                    </div>
+                    <div className="cohere-preview-field">
+                      <span className="cohere-preview-label">ROLL NO</span>
+                      <span className="cohere-preview-val">{selectedMemberObj.roll_no}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="cohere-preview-label">Roll:</span> {selectedMemberObj.roll_no}
-                  </div>
-                  <div>
-                    <span className="cohere-preview-label">Course:</span> {selectedMemberObj.course}
-                  </div>
-                  <div>
-                    <span className="cohere-preview-label">Phone:</span> {selectedMemberObj.mobile}
+
+                  <div className="cohere-preview-row">
+                    <div className="cohere-preview-field">
+                      <span className="cohere-preview-label">COURSE</span>
+                      <span className="cohere-preview-val">{selectedMemberObj.course}</span>
+                    </div>
+                    <div className="cohere-preview-field">
+                      <span className="cohere-preview-label">PHONE</span>
+                      <span className="cohere-preview-val">{selectedMemberObj.mobile || '—'}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -471,8 +494,8 @@ function SignUpForm() {
         </div>
 
         <div className="cohere-footer-right">
-          <span className="cohere-curated-text">powered by</span>
-          <span className="cohere-curated-brand">ProjectHub 2026</span>
+          <span className="cohere-curated-text">Partnership with</span>
+          <span className="cohere-curated-brand">Vrindopnishad</span>
         </div>
       </footer>
 
@@ -524,10 +547,32 @@ function SignUpForm() {
           font-weight: 500;
           color: #1e293b;
           text-decoration: none;
-          transition: opacity 0.15s ease;
+          position: relative;
+          display: inline-block;
+          padding: 2px 0;
+          transition: color 0.2s ease;
         }
+
+        .cohere-top-signup-btn::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          width: 100%;
+          height: 1.5px;
+          background-color: #1e293b;
+          transform: scaleX(0);
+          transform-origin: bottom right;
+          transition: transform 0.28s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
         .cohere-top-signup-btn:hover {
-          opacity: 0.75;
+          color: #0f172a;
+        }
+
+        .cohere-top-signup-btn:hover::after {
+          transform: scaleX(1);
+          transform-origin: bottom left;
         }
 
         /* Main Container */
@@ -542,42 +587,40 @@ function SignUpForm() {
           overflow: hidden;
         }
 
-        .cohere-bg-graphic {
+        /* Single Professional Botanical Background Graphic */
+        .cohere-bg-hero-graphic {
           position: absolute;
+          right: 3%;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 370px;
+          max-width: 26vw;
           pointer-events: none;
           z-index: 0;
           user-select: none;
+          opacity: 0.85;
+          transition: opacity 0.3s ease;
         }
 
-        .cohere-bg-graphic.left {
-          left: 4%;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 250px;
-          max-width: 20vw;
-        }
-
-        .cohere-bg-graphic.right {
-          right: 4%;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 260px;
-          max-width: 21vw;
-        }
-
-        .cohere-bg-doodle {
+        .cohere-bg-plants-img {
           width: 100%;
           height: auto;
-          mix-blend-mode: multiply;
-          opacity: 0.6;
-          filter: contrast(110%);
+          display: block;
+          filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.04));
         }
 
-        .cohere-bg-vector {
-          width: 100%;
-          height: auto;
-          opacity: 0.7;
-          filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.04));
+        @media (max-width: 1100px) {
+          .cohere-bg-hero-graphic {
+            right: -10px;
+            opacity: 0.35;
+            width: 290px;
+          }
+        }
+
+        @media (max-width: 880px) {
+          .cohere-bg-hero-graphic {
+            display: none;
+          }
         }
 
         /* Centered Spacious White Card */
@@ -688,37 +731,86 @@ function SignUpForm() {
         /* Member Preview Badge */
         .cohere-member-preview {
           margin-top: 14px;
-          padding: 12px 16px;
-          background-color: #f9fafb;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
+          padding: 14px 18px;
+          background-color: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
           font-size: 12.5px;
         }
 
         .cohere-preview-header {
           display: flex;
           align-items: center;
+          justify-content: space-between;
+          margin-bottom: 12px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid #edf2f7;
+        }
+
+        .cohere-preview-header-left {
+          display: flex;
+          align-items: center;
           gap: 6px;
+          font-size: 12.5px;
           font-weight: 600;
           color: #1e293b;
-          margin-bottom: 8px;
         }
 
-        .cohere-preview-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-          gap: 8px;
-          font-size: 12px;
-          color: #374151;
+        .cohere-preview-status-tag {
+          font-size: 9.5px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          color: #166534;
+          background: #dcfce7;
+          border: 1px solid #bbf7d0;
+          padding: 2px 7px;
+          border-radius: 4px;
         }
 
-        .cohere-preview-grid.mono {
+        .cohere-preview-details {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .cohere-preview-details.mono {
           font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, Menlo, monospace;
         }
 
+        .cohere-preview-row {
+          display: grid;
+          grid-template-columns: 1.2fr 1fr;
+          gap: 14px;
+        }
+
+        .cohere-preview-field {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 0;
+        }
+
         .cohere-preview-label {
-          color: #6b7280;
+          font-size: 10.5px;
           font-weight: 500;
+          letter-spacing: 0.05em;
+          color: #64748b;
+        }
+
+        .cohere-preview-val {
+          font-size: 13px;
+          font-weight: 400;
+          color: #1e293b;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        @media (max-width: 500px) {
+          .cohere-preview-row {
+            grid-template-columns: 1fr;
+            gap: 8px;
+          }
         }
 
         /* Signature Cohere Slanted Split Button */
@@ -986,6 +1078,111 @@ function SignUpForm() {
           color: #111827;
           font-size: 13.5px;
           letter-spacing: -0.02em;
+        }
+
+        /* High-End Congratulations Bar */
+        .cohere-congrats-bar {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          background: #f0fdf4;
+          border: 1px solid #bbf7d0;
+          border-radius: 12px;
+          padding: 20px 24px;
+          margin-bottom: 26px;
+          animation: cohereFadeScale 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .cohere-congrats-art {
+          flex-shrink: 0;
+          width: 90px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .cohere-congrats-img {
+          width: 100%;
+          height: auto;
+          display: block;
+          filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.05));
+        }
+
+        .cohere-congrats-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .cohere-congrats-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 10.5px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          color: #166534;
+          background: #dcfce7;
+          border: 1px solid #86efac;
+          padding: 2px 8px;
+          border-radius: 20px;
+          width: fit-content;
+        }
+
+        .cohere-congrats-heading {
+          font-size: 18px;
+          font-weight: 700;
+          color: #14532d;
+          letter-spacing: -0.02em;
+          margin: 2px 0 0 0;
+        }
+
+        .cohere-congrats-sub {
+          font-size: 13px;
+          color: #15803d;
+          line-height: 1.4;
+          margin: 0;
+        }
+
+        .cohere-congrats-progress-track {
+          width: 100%;
+          height: 4px;
+          background: #dcfce7;
+          border-radius: 2px;
+          overflow: hidden;
+          margin-top: 8px;
+        }
+
+        .cohere-congrats-progress-fill {
+          height: 100%;
+          background: #16a34a;
+          border-radius: 2px;
+          width: 0%;
+          animation: cohereFillProgress 1.8s ease-in-out forwards;
+        }
+
+        @keyframes cohereFadeScale {
+          from {
+            opacity: 0;
+            transform: translateY(-6px) scale(0.98);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes cohereFillProgress {
+          0% {
+            width: 0%;
+          }
+          60% {
+            width: 75%;
+          }
+          100% {
+            width: 100%;
+          }
         }
 
         /* Alerts */

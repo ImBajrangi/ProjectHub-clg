@@ -248,28 +248,12 @@ function LoginForm() {
 
       {/* Main Hero & Auth Area */}
       <main className="cohere-main-container">
-        {/* Ambient Decorative Background Graphics */}
-        <div className="cohere-bg-graphic left" aria-hidden="true">
+        {/* Themed Single Professional Background Graphic */}
+        <div className="cohere-bg-hero-graphic" aria-hidden="true">
           <img
-            src="/images/absurd/leader.webp"
-            alt=""
-            className="cohere-bg-doodle"
-          />
-        </div>
-
-        <div className="cohere-bg-graphic right" aria-hidden="true">
-          <img
-            src="/images/transhumans/rogue.svg"
-            alt=""
-            className="cohere-bg-sticker"
-          />
-        </div>
-
-        <div className="cohere-bg-graphic bottom-left" aria-hidden="true">
-          <img
-            src="/images/undraw/protection-themed.svg"
-            alt=""
-            className="cohere-bg-shield"
+            src="/images/undraw/happy-news-themed.svg"
+            alt="Academic Notifications & Updates"
+            className="cohere-bg-hero-img"
           />
         </div>
 
@@ -433,8 +417,8 @@ function LoginForm() {
         </div>
 
         <div className="cohere-footer-right">
-          <span className="cohere-curated-text">powered by</span>
-          <span className="cohere-curated-brand">ProjectHub 2026</span>
+          <span className="cohere-curated-text">Partnership with</span>
+          <span className="cohere-curated-brand">Vrindopnishad</span>
         </div>
       </footer>
 
@@ -602,10 +586,32 @@ function LoginForm() {
           font-weight: 500;
           color: #1e293b;
           text-decoration: none;
-          transition: opacity 0.15s ease;
+          position: relative;
+          display: inline-block;
+          padding: 2px 0;
+          transition: color 0.2s ease;
         }
+
+        .cohere-top-signup-btn::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          width: 100%;
+          height: 1.5px;
+          background-color: #1e293b;
+          transform: scaleX(0);
+          transform-origin: bottom right;
+          transition: transform 0.28s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
         .cohere-top-signup-btn:hover {
-          opacity: 0.75;
+          color: #0f172a;
+        }
+
+        .cohere-top-signup-btn:hover::after {
+          transform: scaleX(1);
+          transform-origin: bottom left;
         }
 
         /* Main Container */
@@ -620,55 +626,41 @@ function LoginForm() {
           overflow: hidden;
         }
 
-        .cohere-bg-graphic {
+        /* Single Professional Academic Background Graphic */
+        .cohere-bg-hero-graphic {
           position: absolute;
+          right: 3%;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 370px;
+          max-width: 26vw;
           pointer-events: none;
           z-index: 0;
           user-select: none;
+          opacity: 0.85;
+          transition: opacity 0.3s ease;
         }
 
-        .cohere-bg-graphic.left {
-          left: 4%;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 250px;
-          max-width: 20vw;
-        }
-
-        .cohere-bg-graphic.right {
-          right: 4%;
-          top: 48%;
-          transform: translateY(-50%) scaleX(-1);
-          width: 230px;
-          max-width: 18vw;
-        }
-
-        .cohere-bg-graphic.bottom-left {
-          left: 10%;
-          bottom: 3%;
-          width: 75px;
-          opacity: 0.3;
-        }
-
-        .cohere-bg-doodle {
+        .cohere-bg-hero-img,
+        .cohere-bg-grading-img {
           width: 100%;
           height: auto;
-          mix-blend-mode: multiply;
-          opacity: 0.6;
-          filter: contrast(110%);
+          display: block;
+          filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.04));
         }
 
-        .cohere-bg-sticker {
-          width: 100%;
-          height: auto;
-          opacity: 0.7;
-          filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.04));
+        @media (max-width: 1100px) {
+          .cohere-bg-hero-graphic {
+            right: -10px;
+            opacity: 0.35;
+            width: 290px;
+          }
         }
 
-        .cohere-bg-shield {
-          width: 100%;
-          height: auto;
-          mix-blend-mode: multiply;
+        @media (max-width: 880px) {
+          .cohere-bg-hero-graphic {
+            display: none;
+          }
         }
 
         /* Centered Spacious White Card */

@@ -1012,8 +1012,20 @@ Output ONLY the raw valid JSON array.`;
                 <tbody>
                   {paginatedTeams.length === 0 ? (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--color-text-muted)' }}>
-                        No teams match your search query. Try another keyword or roll number.
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--color-text-muted)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                          <img
+                            src="/images/undraw/searching-themed.svg"
+                            alt="No teams match search query"
+                            style={{ width: '160px', height: 'auto', opacity: 0.85, marginBottom: '4px' }}
+                          />
+                          <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--color-ink)' }}>
+                            No teams match your search or filter criteria
+                          </span>
+                          <span style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', maxWidth: '420px' }}>
+                            Try searching for another team name, team code, supervisor name, or student roll number.
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   ) : (
