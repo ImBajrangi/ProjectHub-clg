@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const token = req.cookies.get('codeshastra_token')?.value || req.headers.get('authorization')?.replace('Bearer ', '');
@@ -13,7 +16,16 @@ export async function GET(req: NextRequest) {
     const notifications = await db.getNotificationsByUser(sessionUser.id);
     const unreadCount = notifications.filter((n) => !n.is_read).length;
 
-    return NextResponse.json({ notifications, unreadCount });
+    return NextResponse.json(
+      { notifications, unreadCount },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      }
+    );
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch notifications' }, { status: 500 });
   }

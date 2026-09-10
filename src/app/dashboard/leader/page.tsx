@@ -22,6 +22,11 @@ import {
   ChevronDown,
   ChevronUp,
   X,
+  Check,
+  CheckCircle2,
+  Target,
+  GraduationCap,
+  UserCheck,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -44,10 +49,30 @@ export default function LeaderDashboardPage() {
   const editorRef = useRef<HTMLDivElement>(null);
 
   // Meeting request
+  const [wantToMeetExpanded, setWantToMeetExpanded] = useState(false);
   const [requestingMeeting, setRequestingMeeting] = useState(false);
   const [cancellingMeetingId, setCancellingMeetingId] = useState<string | null>(null);
   const [meetingMessage, setMeetingMessage] = useState('');
   const [expandedMeetingIds, setExpandedMeetingIds] = useState<Set<string>>(new Set());
+
+  // Auto-hide alert messages after 4 seconds for a clean, non-intrusive layout
+  useEffect(() => {
+    if (meetingMessage && !meetingMessage.includes('Withdrawing')) {
+      const timer = setTimeout(() => {
+        setMeetingMessage('');
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [meetingMessage]);
+
+  useEffect(() => {
+    if (psMessage) {
+      const timer = setTimeout(() => {
+        setPsMessage('');
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [psMessage]);
 
   const toggleMeetingExpand = (meetingId: string) => {
     setExpandedMeetingIds((prev) => {
@@ -66,7 +91,37 @@ export default function LeaderDashboardPage() {
     setCancellingMeetingId(meetingId);
     setMeetingMessage('Withdrawing meeting request...');
 
-    // Optimistic UI update (0ms)
+    const targetMeeting = (teamData?.meetings || []).find((m: any) => m.id === meetingId);
+    const meetIdx = targetMeeting?.meeting_index || 1;
+
+    // 1. Instant 0ms Notification Dispatch
+    const cancelNotif = {
+      id: 'temp-cancel-' + Date.now(),
+      user_id: currentUser?.id,
+      type: 'category_b',
+      category: 'Category B: Meeting Logistics & Records',
+      subject: `Meeting Request Withdrawn: Meet ${meetIdx} – ${teamData?.team?.team_name || 'Team'}`,
+      salutation: `Dear ${currentUser?.fullName || 'Project Leader'},`,
+      body: `Your pending meeting request for Meet ${meetIdx} with ${teamData?.supervisor?.full_name || 'your supervisor'} has been successfully cancelled and withdrawn.`,
+      metadata: {
+        meetingLabel: `Meet ${meetIdx}`,
+        teamName: teamData?.team?.team_name,
+        supervisorName: teamData?.supervisor?.full_name,
+      },
+      is_read: false,
+      created_at: new Date().toISOString(),
+    };
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('codeshastra_notification_instant', { detail: { notification: cancelNotif } }));
+      try {
+        const bc = new BroadcastChannel('codeshastra_notifications_channel');
+        bc.postMessage({ type: 'INSTANT_NOTIFICATION', notification: cancelNotif });
+        bc.close();
+      } catch {}
+    }
+
+    // 2. Optimistic UI update (0ms)
     setTeamData((prev: any) => {
       if (!prev) return prev;
       const filtered = (prev.meetings || []).filter((m: any) => m.id !== meetingId);
@@ -93,6 +148,14 @@ export default function LeaderDashboardPage() {
         loadDashboard();
       } else {
         setMeetingMessage('Meeting request was successfully withdrawn.');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('codeshastra_notification_update'));
+          try {
+            const bc = new BroadcastChannel('codeshastra_notifications_channel');
+            bc.postMessage({ type: 'UPDATE' });
+            bc.close();
+          } catch {}
+        }
       }
     } catch (e: any) {
       setMeetingMessage(`Error: ${e.message}`);
@@ -220,13 +283,42 @@ export default function LeaderDashboardPage() {
     setRequestingMeeting(true);
     setMeetingMessage('Meeting request sent! Your supervisor has received an immediate alert.');
 
-    // Optimistic UI update (0ms)
+    const nextMeetIdx = (teamData?.meetings?.length || 0) + 1;
+
+    // 1. Instant 0ms Notification Dispatch
+    const optimisticNotif = {
+      id: 'temp-notif-' + Date.now(),
+      user_id: currentUser?.id,
+      type: 'category_b',
+      category: 'Category B: Meeting Logistics & Records',
+      subject: `Meeting Request Submitted: Meet ${nextMeetIdx} – ${teamData?.team?.team_name || 'Team'}`,
+      salutation: `Dear ${currentUser?.fullName || 'Project Leader'},`,
+      body: `Your milestone / progress review meeting request for Meet ${nextMeetIdx} has been officially recorded and submitted to your supervisor ${teamData?.supervisor?.full_name || 'Supervisor'}.`,
+      metadata: {
+        meetingLabel: `Meet ${nextMeetIdx}`,
+        teamName: teamData?.team?.team_name,
+        supervisorName: teamData?.supervisor?.full_name,
+      },
+      is_read: false,
+      created_at: new Date().toISOString(),
+    };
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('codeshastra_notification_instant', { detail: { notification: optimisticNotif } }));
+      try {
+        const bc = new BroadcastChannel('codeshastra_notifications_channel');
+        bc.postMessage({ type: 'INSTANT_NOTIFICATION', notification: optimisticNotif });
+        bc.close();
+      } catch {}
+    }
+
+    // 2. Optimistic UI update (0ms)
     setTeamData((prev: any) => {
       if (!prev) return prev;
       const currentMeetings = prev.meetings || [];
       const newMeet = {
         id: 'temp-' + Date.now(),
-        meeting_index: currentMeetings.length + 1,
+        meeting_index: nextMeetIdx,
         status: 'requested',
         requested_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
@@ -257,12 +349,21 @@ export default function LeaderDashboardPage() {
             meetings: [...filtered, data.meeting],
           };
         });
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('codeshastra_notification_update'));
+          try {
+            const bc = new BroadcastChannel('codeshastra_notifications_channel');
+            bc.postMessage({ type: 'UPDATE' });
+            bc.close();
+          } catch {}
+        }
       }
     } catch (e: any) {
       setMeetingMessage(`Error: ${e.message}`);
       loadDashboard();
     } finally {
       setRequestingMeeting(false);
+      setWantToMeetExpanded(false);
     }
   };
 
@@ -308,11 +409,11 @@ export default function LeaderDashboardPage() {
               {supervisor?.email && (
                 <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                   <a href={`mailto:${supervisor.email}`} style={{ color: 'var(--color-accent)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    ✉️ {supervisor.email}
+                    <Mail size={12} /> {supervisor.email}
                   </a>
                   {supervisor.phone && (
                     <a href={`tel:${supervisor.phone}`} style={{ color: 'var(--color-ink-soft)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                      📞 {supervisor.phone}
+                      <Phone size={12} /> {supervisor.phone}
                     </a>
                   )}
                 </div>
@@ -333,8 +434,9 @@ export default function LeaderDashboardPage() {
             <button
               className={`segmented-pill ${activeTab === 'problem' ? 'active' : ''}`}
               onClick={() => setActiveTab('problem')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
             >
-              Problem Statement {isLocked && '✓'}
+              Problem Statement {isLocked && <Check size={12} color="#059669" strokeWidth={2.5} />}
             </button>
             <button
               className={`segmented-pill ${activeTab === 'meetings' ? 'active' : ''}`}
@@ -395,23 +497,31 @@ export default function LeaderDashboardPage() {
         {/* TAB 2: PROBLEM STATEMENT (WITH RICH AUTO-EXPANDING BOLD TEXTAREA) */}
         {activeTab === 'problem' && (
           <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '18px' }}>
-              <div style={{ flex: '1 1 240px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Milestone 1: Problem Statement Proposal</h3>
-                <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                  Once approved by your supervisor, this proposal is permanently locked against further edits.
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' }}>
+              <div>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--color-ink)' }}>
+                  Problem Statement Proposal
+                </h3>
+                <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: '2px 0 0' }}>
+                  Immutable once approved by supervisor.
                 </p>
               </div>
 
               <div style={{ flexShrink: 0 }}>
                 {problemStatement?.status === 'approved' ? (
-                  <span className="badge badge-success" style={{ whiteSpace: 'nowrap' }}>✓ Approved & Locked</span>
+                  <span className="badge badge-success" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '3px 8px' }}>
+                    <CheckCircle2 size={12} /> Approved & Locked
+                  </span>
                 ) : problemStatement?.status === 'revision_requested' ? (
-                  <span className="badge badge-warning" style={{ whiteSpace: 'nowrap' }}>⚠ Revision Requested</span>
+                  <span className="badge badge-warning" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '3px 8px' }}>
+                    <AlertCircle size={12} /> Needs Revision
+                  </span>
                 ) : problemStatement?.status === 'pending' ? (
-                  <span className="badge badge-warning" style={{ whiteSpace: 'nowrap' }}>⏳ Pending Supervisor Review</span>
+                  <span className="badge badge-warning" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '3px 8px' }}>
+                    <Clock size={12} /> Pending Review
+                  </span>
                 ) : (
-                  <span className="badge badge-neutral" style={{ whiteSpace: 'nowrap' }}>Not Submitted</span>
+                  <span className="badge badge-neutral" style={{ whiteSpace: 'nowrap', fontSize: '11px', padding: '3px 8px' }}>Not Submitted</span>
                 )}
               </div>
             </div>
@@ -435,8 +545,44 @@ export default function LeaderDashboardPage() {
             )}
 
             {psMessage && (
-              <div className={`alert-banner ${psMessage.includes('Error') ? 'alert-danger' : 'alert-success'}`}>
-                {psMessage}
+              <div
+                className={`alert-banner ${psMessage.includes('Error') ? 'alert-danger' : 'alert-success'}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  marginBottom: '16px',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 500 }}>
+                  {psMessage.includes('Error') ? (
+                    <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                  ) : (
+                    <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
+                  )}
+                  <span>{psMessage}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPsMessage('')}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '2px',
+                    color: 'inherit',
+                    opacity: 0.7,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  title="Dismiss notification"
+                  aria-label="Dismiss"
+                >
+                  <X size={15} />
+                </button>
               </div>
             )}
 
@@ -456,19 +602,33 @@ export default function LeaderDashboardPage() {
 
               {/* Dynamic Auto-Expanding Rich Bold Text Area */}
               <div className="input-group">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
-                  <label className="input-label" style={{ marginBottom: 0, flex: '1 1 auto' }}>
-                    Problem Scope & Methodology Description
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <label className="input-label" style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: 'var(--color-ink)', whiteSpace: 'nowrap' }}>
+                    Scope & Methodology
                   </label>
                   {!isLocked && (
                     <button
                       type="button"
                       onClick={handleBoldClick}
-                      className="btn btn-soft"
-                      style={{ padding: '4px 10px', fontSize: '12px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}
-                      title="Make selected text Bold (Ctrl+B / ⌘+B)"
+                      className="editor-format-btn"
+                      title="Format selected text as Bold (Ctrl+B / ⌘+B)"
+                      style={{ padding: '2px 7px', fontSize: '11px', flexShrink: 0 }}
                     >
-                      <Bold size={13} /> <span>Bold</span>
+                      <Bold size={11} strokeWidth={2.6} />
+                      <span>Bold</span>
+                      <span
+                        style={{
+                          fontSize: '8.5px',
+                          fontWeight: 700,
+                          padding: '0 3px',
+                          borderRadius: '3px',
+                          backgroundColor: '#F1F5F9',
+                          color: '#64748B',
+                          border: '1px solid #E2E8F0',
+                        }}
+                      >
+                        ⌘B
+                      </span>
                     </button>
                   )}
                 </div>
@@ -513,7 +673,7 @@ export default function LeaderDashboardPage() {
                   />
                 )}
                 <span style={{ fontSize: '11px', color: 'var(--color-text-faint)', marginTop: '6px', display: 'block' }}>
-                  • Box automatically expands to fit your text without scrollbars. Format bold text with the Bold button or Ctrl+B.
+                  Auto-expanding field • Select text and click <strong>Bold</strong> or press <strong>Ctrl+B / ⌘+B</strong> to format key terms.
                 </span>
               </div>
 
@@ -538,28 +698,187 @@ export default function LeaderDashboardPage() {
         {/* TAB 3: MEETINGS */}
         {activeTab === 'meetings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Action Bar */}
-            <div className="card-soft" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', padding: '20px' }}>
-              <div>
-                <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Request Supervisor Review</h3>
-                <p style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                  Click "Want to Meet" to notify Prof. {supervisor?.fullName || 'Supervisor'}.
-                </p>
+            {/* Minimisable Meeting Request Accordion Card */}
+            <div
+              style={{
+                borderRadius: '12px',
+                border: '1px solid var(--color-hairline)',
+                backgroundColor: wantToMeetExpanded ? '#F8FAFC' : '#FFFFFF',
+                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                overflow: 'hidden',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {/* Header Tap Area */}
+              <div
+                onClick={() => setWantToMeetExpanded((prev) => !prev)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  padding: '14px 18px',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  backgroundColor: wantToMeetExpanded ? '#F1F5F9' : '#FFFFFF',
+                  transition: 'background-color 0.15s ease',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+                  <div
+                    style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '10px',
+                      backgroundColor: '#EFF6FF',
+                      border: '1px solid #DBEAFE',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#2563EB',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Send size={16} />
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>
+                      Request Supervisor Review
+                    </h3>
+                    <p style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', margin: '1px 0 0', lineHeight: 1.2 }}>
+                      {wantToMeetExpanded
+                        ? `Official request to mentor`
+                        : `Request mentor review session`}
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '6px 12px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      borderRadius: '8px',
+                      backgroundColor: wantToMeetExpanded ? '#FFFFFF' : '#EFF6FF',
+                      color: wantToMeetExpanded ? '#475569' : '#1D4ED8',
+                      border: wantToMeetExpanded ? '1px solid #CBD5E1' : '1px solid #BFDBFE',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span>{wantToMeetExpanded ? 'Close' : 'Want to Meet'}</span>
+                    {wantToMeetExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                  </div>
+                </div>
               </div>
 
-              <button
-                onClick={handleWantToMeet}
-                className="btn btn-primary"
-                disabled={requestingMeeting}
-              >
-                <Send size={14} />
-                {requestingMeeting ? 'Dispatching...' : 'Want to Meet'}
-              </button>
+              {/* Expanded Confirmation Area */}
+              {wantToMeetExpanded && (
+                <div
+                  style={{
+                    padding: '14px 16px',
+                    borderTop: '1px solid var(--color-hairline)',
+                    backgroundColor: '#FFFFFF',
+                  }}
+                >
+                  <p style={{ fontSize: '12.5px', color: 'var(--color-ink-soft)', lineHeight: 1.45, margin: '0 0 12px 0' }}>
+                    Request a milestone / progress review meeting with <strong>Prof. {supervisor?.fullName || 'Supervisor'}</strong>? An official notice will appear in their mentor console.
+                  </p>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setWantToMeetExpanded(false)}
+                      className="btn btn-outline"
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        borderRadius: '7px',
+                        cursor: 'pointer',
+                        height: '32px',
+                        minWidth: 'auto',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <X size={13} /> Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleWantToMeet}
+                      className="btn btn-primary"
+                      disabled={requestingMeeting}
+                      style={{
+                        padding: '6px 14px',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        borderRadius: '7px',
+                        cursor: requestingMeeting ? 'not-allowed' : 'pointer',
+                        height: '32px',
+                        minWidth: 'auto',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {requestingMeeting && <span className="spinner spinner-sm" style={{ borderTopColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.25)', width: '12px', height: '12px' }} />}
+                      <Send size={12} />
+                      <span>{requestingMeeting ? 'Requesting...' : 'Request Meeting'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {meetingMessage && (
-              <div className={`alert-banner ${meetingMessage.includes('Error') ? 'alert-danger' : 'alert-success'}`}>
-                {meetingMessage}
+              <div
+                className={`alert-banner ${meetingMessage.includes('Error') ? 'alert-danger' : meetingMessage.includes('Withdrawing') ? 'alert-warning' : 'alert-success'}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  marginBottom: '16px',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 500 }}>
+                  {meetingMessage.includes('Error') ? (
+                    <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                  ) : meetingMessage.includes('Withdrawing') ? (
+                    <RefreshCw size={15} className="spin" style={{ flexShrink: 0 }} />
+                  ) : (
+                    <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
+                  )}
+                  <span>{meetingMessage}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMeetingMessage('')}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '2px',
+                    color: 'inherit',
+                    opacity: 0.7,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  title="Dismiss notification"
+                  aria-label="Dismiss"
+                >
+                  <X size={15} />
+                </button>
               </div>
             )}
 
@@ -591,7 +910,9 @@ export default function LeaderDashboardPage() {
                         key={m.id}
                         style={{
                           backgroundColor: '#FFFFFF',
-                          border: '1px solid var(--color-hairline)',
+                          borderTop: '1px solid var(--color-hairline)',
+                          borderRight: '1px solid var(--color-hairline)',
+                          borderBottom: '1px solid var(--color-hairline)',
                           borderLeft: isCompleted ? '4px solid #059669' : m.status === 'scheduled' ? '4px solid #2563EB' : '4px solid #D97706',
                           borderRadius: '10px',
                           overflow: 'hidden',
@@ -639,7 +960,19 @@ export default function LeaderDashboardPage() {
                                   whiteSpace: 'nowrap',
                                 }}
                               >
-                                {isCompleted ? '✓ Completed' : m.status === 'scheduled' ? '🗓️ Scheduled' : '⏳ Requested'}
+                                {isCompleted ? (
+                                  <>
+                                    <CheckCircle2 size={12} /> Completed
+                                  </>
+                                ) : m.status === 'scheduled' ? (
+                                  <>
+                                    <Calendar size={12} /> Scheduled
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clock size={12} /> Requested
+                                  </>
+                                )}
                               </span>
                             </div>
 
@@ -700,8 +1033,8 @@ export default function LeaderDashboardPage() {
                                   <span>{cancellingMeetingId === m.id ? 'Withdrawing...' : 'Cancel Request'}</span>
                                 </button>
                               ) : (
-                                <span style={{ fontSize: '11px', fontWeight: 600, color: '#2563EB', backgroundColor: '#EFF6FF', padding: '4px 10px', borderRadius: '6px', border: '1px solid #DBEAFE', whiteSpace: 'nowrap' }}>
-                                  🗓️ Confirmed Session
+                                <span style={{ fontSize: '11px', fontWeight: 600, color: '#2563EB', backgroundColor: '#EFF6FF', padding: '4px 10px', borderRadius: '6px', border: '1px solid #DBEAFE', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <Calendar size={12} /> Confirmed Session
                                 </span>
                               )}
                             </div>
@@ -719,9 +1052,20 @@ export default function LeaderDashboardPage() {
                                 color: '#475569',
                                 border: '1px solid #E2E8F0',
                                 whiteSpace: 'nowrap',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
                               }}
                             >
-                              {m.status === 'requested' || (!m.scheduled_date && m.meeting_index === 1) ? '🎓 Student Requested' : '👨‍🏫 Supervisor Scheduled'}
+                              {m.status === 'requested' || (!m.scheduled_date && m.meeting_index === 1) ? (
+                                <>
+                                  <GraduationCap size={12} /> Student Requested
+                                </>
+                              ) : (
+                                <>
+                                  <UserCheck size={12} /> Supervisor Scheduled
+                                </>
+                              )}
                             </span>
 
                             {isCompleted && (
@@ -736,9 +1080,12 @@ export default function LeaderDashboardPage() {
                                   border: '1px solid',
                                   borderColor: absentStudents.length === 0 ? '#A7F3D0' : '#FDE68A',
                                   whiteSpace: 'nowrap',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
                                 }}
                               >
-                                👥 {presentStudents.length}/{totalCount || 'All'} Present
+                                <Users size={12} /> {presentStudents.length}/{totalCount || 'All'} Present
                               </span>
                             )}
 
@@ -753,45 +1100,48 @@ export default function LeaderDashboardPage() {
                                   color: '#B45309',
                                   border: '1px solid #FDE68A',
                                   whiteSpace: 'nowrap',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
                                 }}
                               >
-                                ⏳ Awaiting Faculty Schedule
+                                <Clock size={12} /> Awaiting Faculty Schedule
                               </span>
                             )}
 
                             {m.scheduled_date && (
-                              <span style={{ fontSize: '11px', color: '#334155', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '2px 8px', borderRadius: '5px', whiteSpace: 'nowrap' }}>
-                                📅 {m.scheduled_date}
+                              <span style={{ fontSize: '11px', color: '#334155', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '2px 8px', borderRadius: '5px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <Calendar size={12} /> {m.scheduled_date}
                               </span>
                             )}
 
                             {m.time_slot && (
-                              <span style={{ fontSize: '11px', color: '#334155', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '2px 8px', borderRadius: '5px', whiteSpace: 'nowrap' }}>
-                                🕒 {m.time_slot}
+                              <span style={{ fontSize: '11px', color: '#334155', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '2px 8px', borderRadius: '5px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <Clock size={12} /> {m.time_slot}
                               </span>
                             )}
 
                             {m.venue && (
-                              <span style={{ fontSize: '11px', color: '#334155', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '2px 8px', borderRadius: '5px', wordBreak: 'break-word' }}>
-                                📍 {m.venue}
+                              <span style={{ fontSize: '11px', color: '#334155', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '2px 8px', borderRadius: '5px', wordBreak: 'break-word', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <MapPin size={12} /> {m.venue}
                               </span>
                             )}
                           </div>
                         </div>
 
-                        {/* Collapsible Details: Balanced 2-Column Layout */}
-                        {isExpanded && isCompleted && (
+                        {/* Collapsible Session Brief, Directives & Attendance Drawer */}
+                        {isExpanded && (
                           <div
                             style={{
-                              padding: '16px',
+                              borderTop: '1px solid var(--color-hairline)',
                               backgroundColor: '#F8FAFC',
+                              padding: '16px',
                               display: 'grid',
-                              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-                              gap: '14px',
-                              alignItems: 'stretch',
+                              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                              gap: '16px',
                             }}
                           >
-                            {/* Left Column: Meeting Notes & Actions */}
+                            {/* Left Column: Summary & Directives */}
                             <div
                               style={{
                                 backgroundColor: '#FFFFFF',
@@ -806,7 +1156,7 @@ export default function LeaderDashboardPage() {
                             >
                               <div>
                                 <div style={{ fontSize: '11px', fontWeight: 800, color: '#1D4ED8', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  📝 Discussion Summary & Feedback
+                                  <FileText size={13} color="#2563EB" /> Discussion Summary & Feedback
                                 </div>
                                 {m.summary_notes ? (
                                   <div
@@ -836,12 +1186,14 @@ export default function LeaderDashboardPage() {
                                     backgroundColor: '#FFFBEB',
                                     padding: '12px 14px',
                                     borderRadius: '6px',
-                                    border: '1px solid #FDE68A',
+                                    borderTop: '1px solid #FDE68A',
+                                    borderRight: '1px solid #FDE68A',
+                                    borderBottom: '1px solid #FDE68A',
                                     borderLeft: '3px solid #D97706',
                                   }}
                                 >
-                                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
-                                    🎯 Action Directives & Next Tasks
+                                  <div style={{ fontSize: '10px', fontWeight: 800, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <Target size={12} color="#D97706" /> Action Directives & Next Tasks
                                   </div>
                                   <p style={{ color: '#78350F', fontSize: '12px', margin: 0, whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
                                     {m.action_directives}
@@ -862,23 +1214,23 @@ export default function LeaderDashboardPage() {
                                 gap: '10px',
                               }}
                             >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-hairline)', paddingBottom: '8px' }}>
-                                <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                                  👥 Attendance Registry
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid var(--color-hairline)', paddingBottom: '8px' }}>
+                                <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                                  <Users size={12} color="#475569" /> Attendance Registry
                                 </span>
-                                <div style={{ display: 'flex', gap: '6px' }}>
-                                  <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', whiteSpace: 'nowrap' }}>
                                     {presentStudents.length} Present
                                   </span>
                                   {absentStudents.length > 0 && (
-                                    <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: '#FEF2F2', color: '#991B1B', border: '1px solid #FECACA' }}>
+                                    <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: '#FEF2F2', color: '#991B1B', border: '1px solid #FECACA', whiteSpace: 'nowrap' }}>
                                       {absentStudents.length} Absent
                                     </span>
                                   )}
                                 </div>
                               </div>
 
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '240px', overflowY: 'auto' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 {presentStudents.map((s: any) => (
                                   <div
                                     key={s.id}
@@ -907,7 +1259,7 @@ export default function LeaderDashboardPage() {
                                           fontWeight: 800,
                                         }}
                                       >
-                                        ✓
+                                        <Check size={11} strokeWidth={2.6} />
                                       </span>
                                       <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-ink)' }}>
                                         {s.full_name}
@@ -947,13 +1299,13 @@ export default function LeaderDashboardPage() {
                                           fontWeight: 800,
                                         }}
                                       >
-                                        ✕
+                                        <X size={11} strokeWidth={2.6} />
                                       </span>
                                       <span style={{ fontSize: '12px', fontWeight: 600, color: '#991B1B' }}>
                                         {s.full_name}
                                       </span>
                                     </div>
-                                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#B91C1C', backgroundColor: '#FFFFFF', padding: '2px 6px', borderRadius: '4px', border: '1px solid #FECACA' }}>
+                                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#DC2626', backgroundColor: '#FFFFFF', padding: '2px 6px', borderRadius: '4px', border: '1px solid #FECACA' }}>
                                       Absent
                                     </span>
                                   </div>

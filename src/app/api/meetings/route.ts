@@ -58,10 +58,23 @@ export async function POST(req: NextRequest) {
       if (!supervisor) return NextResponse.json({ error: 'Supervisor user not found' }, { status: 404 });
 
       const meeting = await db.createMeetingRequest(team.id, supervisor.id);
+      const meetingLabel = `Meet ${meeting.meeting_index}`;
 
-      // Notification to Supervisor (Category B)
       const nowStr = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-      const notif = NotificationTemplates.newMeetingRequest({
+
+      // 1A. Notification to Student Leader (Category B)
+      const leaderNotif = NotificationTemplates.meetingRequestDispatched({
+        userId: sessionUser.id,
+        leaderName: sessionUser.full_name,
+        teamName: team.team_name,
+        meetingLabel,
+        supervisorName: supervisor.full_name,
+        timestamp: nowStr,
+      });
+      await db.createNotification(leaderNotif);
+
+      // 1B. Notification to Supervisor (Category B)
+      const supervisorNotif = NotificationTemplates.newMeetingRequest({
         supervisorUserId: supervisor.id,
         supervisorName: supervisor.full_name,
         teamName: team.team_name,
@@ -70,7 +83,7 @@ export async function POST(req: NextRequest) {
         leaderEmail: sessionUser.email,
         timestamp: nowStr,
       });
-      await db.createNotification(notif);
+      await db.createNotification(supervisorNotif);
 
       return NextResponse.json({
         success: true,
@@ -189,10 +202,23 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Team not found' }, { status: 404 });
       }
 
+      const meetingToCancel = await db.getMeetingById(meetingId);
+      const meetingLabel = meetingToCancel ? `Meet ${meetingToCancel.meeting_index}` : 'Meeting Request';
+
       const result = await db.cancelMeetingRequest(meetingId, team.id);
       if (!result.success) {
         return NextResponse.json({ error: result.error || 'Failed to withdraw meeting request' }, { status: 400 });
       }
+
+      const supervisor = team.supervisor_id ? await db.getUserById(team.supervisor_id) : null;
+      const notif = NotificationTemplates.meetingRequestWithdrawn({
+        userId: sessionUser.id,
+        leaderName: sessionUser.full_name,
+        teamName: team.team_name,
+        meetingLabel,
+        supervisorName: supervisor?.full_name || 'Supervisor',
+      });
+      await db.createNotification(notif);
 
       return NextResponse.json({
         success: true,

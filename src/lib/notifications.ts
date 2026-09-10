@@ -126,6 +126,52 @@ This record has been permanently archived in your project tracking log on your d
     signoff: DEFAULT_SIGNOFF,
   }),
 
+  meetingRequestDispatched: (params: {
+    userId: string;
+    leaderName: string;
+    teamName: string;
+    meetingLabel: string;
+    supervisorName: string;
+    timestamp: string;
+  }): NotificationPayload => ({
+    userId: params.userId,
+    category: 'Category B: Meeting Logistics & Records',
+    subject: `Meeting Request Submitted: ${params.meetingLabel} - ${params.teamName}`,
+    salutation: `Dear ${params.leaderName} (${params.teamName}),`,
+    body: `Your milestone / progress review meeting request for ${params.meetingLabel} has been officially recorded and submitted to your supervisor.
+
+Request Summary:
+- Milestone: ${params.meetingLabel}
+- Supervisor: Prof. ${params.supervisorName}
+- Status: Awaiting Faculty Schedule
+- Submitted Timestamp: ${params.timestamp}
+
+Your supervisor has received an immediate alert. You will be notified in this console as soon as your mentor confirms the date, time slot, and venue.`,
+    signoff: DEFAULT_SIGNOFF,
+  }),
+
+  meetingRequestWithdrawn: (params: {
+    userId: string;
+    leaderName: string;
+    teamName: string;
+    meetingLabel: string;
+    supervisorName: string;
+  }): NotificationPayload => ({
+    userId: params.userId,
+    category: 'Category B: Meeting Logistics & Records',
+    subject: `Meeting Request Withdrawn: ${params.meetingLabel} - ${params.teamName}`,
+    salutation: `Dear ${params.leaderName} (${params.teamName}),`,
+    body: `Your pending meeting request for ${params.meetingLabel} with Prof. ${params.supervisorName} has been successfully cancelled and withdrawn.
+
+Details:
+- Milestone: ${params.meetingLabel}
+- Status: Request Cancelled & Withdrawn
+- Team: ${params.teamName}
+
+You may submit a fresh review meeting request at any time from your Leader Dashboard when your team is ready.`,
+    signoff: DEFAULT_SIGNOFF,
+  }),
+
   newMeetingRequest: (params: {
     supervisorUserId: string;
     supervisorName: string;

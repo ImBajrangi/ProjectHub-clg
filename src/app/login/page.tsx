@@ -272,8 +272,10 @@ function LoginForm() {
                     position: 'relative',
                     zIndex: 1,
                     backgroundColor: '#F8FAFC',
-                    border: '1px solid #E2E8F0',
                     borderTop: '3px solid #2563EB',
+                    borderRight: '1px solid #E2E8F0',
+                    borderBottom: '1px solid #E2E8F0',
+                    borderLeft: '1px solid #E2E8F0',
                     borderRadius: '10px',
                     padding: '12px 10px',
                     display: 'flex',
@@ -310,8 +312,8 @@ function LoginForm() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', marginTop: 'auto', paddingTop: '4px' }}>
-                    <span style={{ fontSize: '9px', fontWeight: 600, padding: '1px 5px', borderRadius: '3px', backgroundColor: '#EFF6FF', color: '#1D4ED8' }}>
-                      🔒 Locked PS
+                    <span style={{ fontSize: '9px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', backgroundColor: '#EFF6FF', color: '#1D4ED8', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      <Lock size={9} /> Locked PS
                     </span>
                   </div>
                 </div>
@@ -322,8 +324,10 @@ function LoginForm() {
                     position: 'relative',
                     zIndex: 1,
                     backgroundColor: '#F8FAFC',
-                    border: '1px solid #E2E8F0',
                     borderTop: '3px solid #059669',
+                    borderRight: '1px solid #E2E8F0',
+                    borderBottom: '1px solid #E2E8F0',
+                    borderLeft: '1px solid #E2E8F0',
                     borderRadius: '10px',
                     padding: '12px 10px',
                     display: 'flex',
@@ -360,8 +364,8 @@ function LoginForm() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', marginTop: 'auto', paddingTop: '4px' }}>
-                    <span style={{ fontSize: '9px', fontWeight: 600, padding: '1px 5px', borderRadius: '3px', backgroundColor: '#ECFDF5', color: '#047857' }}>
-                      👥 3 Judges
+                    <span style={{ fontSize: '9px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', backgroundColor: '#ECFDF5', color: '#047857', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      <Users size={9} /> 3 Judges
                     </span>
                   </div>
                 </div>
@@ -372,8 +376,10 @@ function LoginForm() {
                     position: 'relative',
                     zIndex: 1,
                     backgroundColor: '#F8FAFC',
-                    border: '1px solid #E2E8F0',
                     borderTop: '3px solid #D97706',
+                    borderRight: '1px solid #E2E8F0',
+                    borderBottom: '1px solid #E2E8F0',
+                    borderLeft: '1px solid #E2E8F0',
                     borderRadius: '10px',
                     padding: '12px 10px',
                     display: 'flex',
@@ -410,8 +416,8 @@ function LoginForm() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', marginTop: 'auto', paddingTop: '4px' }}>
-                    <span style={{ fontSize: '9px', fontWeight: 600, padding: '1px 5px', borderRadius: '3px', backgroundColor: '#FFFBEB', color: '#B45309' }}>
-                      📜 Clearance
+                    <span style={{ fontSize: '9px', fontWeight: 600, padding: '1px 6px', borderRadius: '3px', backgroundColor: '#FFFBEB', color: '#B45309', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                      <FileCheck size={9} /> Clearance
                     </span>
                   </div>
                 </div>
@@ -627,7 +633,7 @@ function LoginForm() {
             display: none !important; /* Hide image completely on mobile per user instruction */
           }
           .login-right-form {
-            padding: 36px 20px !important;
+            padding: 20px 16px !important;
             width: 100% !important;
           }
         }

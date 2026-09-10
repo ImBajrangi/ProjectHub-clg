@@ -42,14 +42,14 @@ export default function Footer() {
                 GLA University
               </span>
             </div>
-            <p style={{ fontSize: '11.5px', color: 'var(--color-text-faint)', marginTop: '3px' }}>
+            <p style={{ fontSize: '11px', color: 'var(--color-text-faint)', marginTop: '2px', marginBottom: 0 }}>
               Dept. of Computer Applications • Academic Milestone Governance
             </p>
           </div>
 
           {/* Right / Middle: Compact Developer Credits */}
           <div className="footer-devs-section">
-            <span style={{ fontSize: '11px', color: 'var(--color-text-faint)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <span style={{ fontSize: '10px', color: 'var(--color-text-faint)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Crafted by
             </span>
             <div className="footer-devs-list">
@@ -71,44 +71,45 @@ export default function Footer() {
         .site-footer {
           background-color: #FFFFFF;
           border-top: 1px solid var(--color-hairline);
-          padding: 24px 16px 18px;
+          padding: 14px 16px 12px;
           margin-top: auto;
+          width: 100%;
         }
         .footer-content {
           display: flex;
           justify-content: space-between;
           align-items: center;
           flex-wrap: wrap;
-          gap: 16px;
-          padding-bottom: 14px;
+          gap: 12px;
+          padding-bottom: 10px;
           border-bottom: 1px solid var(--color-hairline);
         }
         .footer-brand-info {
-          flex: 1 1 240px;
+          flex: 0 1 auto;
         }
         .footer-devs-section {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-        .footer-devs-list {
           display: flex;
           align-items: center;
           gap: 8px;
           flex-wrap: wrap;
         }
+        .footer-devs-list {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
         .dev-pill {
           display: inline-flex;
           align-items: center;
-          gap: 7px;
-          padding: 3px 10px 3px 4px;
+          gap: 6px;
+          padding: 2px 8px 2px 3px;
           background-color: var(--color-canvas-soft);
           border: 1px solid var(--color-hairline);
           border-radius: 9999px;
           text-decoration: none;
           color: var(--color-ink);
-          font-size: 11.5px;
+          font-size: 11px;
           font-weight: 600;
           transition: all 0.15s ease;
         }
@@ -118,22 +119,22 @@ export default function Footer() {
           color: #1D4ED8;
         }
         .dev-pill-img {
-          width: 22px;
-          height: 22px;
+          width: 20px;
+          height: 20px;
           border-radius: 50%;
           object-fit: cover;
           display: block;
         }
         .dev-pill-fallback {
-          width: 22px;
-          height: 22px;
+          width: 20px;
+          height: 20px;
           border-radius: 50%;
           background: #E2E8F0;
           color: #475569;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 9px;
+          font-size: 8.5px;
           font-weight: 700;
         }
         .footer-bottom-strip {
@@ -141,34 +142,44 @@ export default function Footer() {
           justify-content: space-between;
           align-items: center;
           flex-wrap: wrap;
-          gap: 8px;
-          padding-top: 12px;
-          font-size: 11px;
+          gap: 6px;
+          padding-top: 8px;
+          font-size: 10.5px;
           color: var(--color-text-faint);
         }
         @media (max-width: 640px) {
           .site-footer {
-            padding: 16px 12px 14px !important;
+            padding: 12px 14px 12px !important;
           }
           .footer-content {
             flex-direction: column;
             align-items: flex-start;
-            gap: 12px;
-            padding-bottom: 12px;
+            justify-content: flex-start !important;
+            gap: 8px;
+            padding-bottom: 8px;
           }
           .footer-devs-section {
             flex-direction: column;
             align-items: flex-start;
-            gap: 6px;
+            gap: 4px;
             width: 100%;
           }
           .footer-devs-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
             width: 100%;
+          }
+          .dev-pill {
+            padding: 2px 7px 2px 3px;
+            font-size: 10.5px;
+            gap: 4px;
           }
           .footer-bottom-strip {
             flex-direction: column;
             align-items: flex-start;
-            gap: 4px;
+            gap: 2px;
+            padding-top: 6px;
           }
         }
       `}</style>

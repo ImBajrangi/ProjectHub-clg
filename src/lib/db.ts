@@ -469,6 +469,11 @@ export const db = {
     return store.meeting_attendance.filter((a) => a.meeting_id === meetingId);
   },
 
+  async getMeetingById(meetingId: string): Promise<Meeting | null> {
+    const store = await this.getStore();
+    return store.meetings.find((m) => m.id === meetingId) || null;
+  },
+
   async createMeetingRequest(teamId: string, supervisorId: string): Promise<Meeting> {
     const store = await this.getStore();
     const existing = store.meetings.filter((m) => m.team_id === teamId);
@@ -869,20 +874,30 @@ export const db = {
 
   async markNotificationAsRead(id: string): Promise<boolean> {
     const store = await this.getStore();
-    const notif = store.notifications.find((n) => n.id === id);
-    if (notif) notif.is_read = true;
+    const notif = store.notifications.find((n) => String(n.id) === String(id));
+    if (notif) {
+      notif.is_read = true;
+    }
 
-    supabase.from('notifications').update({ is_read: true }).eq('id', id).then();
+    try {
+      await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    } catch (err) {
+      console.error('Error updating notification read state in supabase:', err);
+    }
     return true;
   },
 
   async markAllNotificationsRead(userId: string): Promise<boolean> {
     const store = await this.getStore();
     store.notifications
-      .filter((n) => n.user_id === userId)
+      .filter((n) => String(n.user_id) === String(userId))
       .forEach((n) => (n.is_read = true));
 
-    supabase.from('notifications').update({ is_read: true }).eq('user_id', userId).then();
+    try {
+      await supabase.from('notifications').update({ is_read: true }).eq('user_id', userId);
+    } catch (err) {
+      console.error('Error updating markAllNotificationsRead in supabase:', err);
+    }
     return true;
   },
 };

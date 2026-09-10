@@ -302,8 +302,9 @@ export default function LeaderRegistrationPage() {
                       <strong>{selectedMemberObj.course}</strong>
                     </div>
                   </div>
-                  <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--color-hairline)', fontSize: '12px', color: 'var(--color-ink)' }}>
-                    ✓ Initial Password will be configured as the preloaded mobile number: <strong>{selectedMemberObj.mobile}</strong>
+                  <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--color-hairline)', fontSize: '12px', color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CheckCircle2 size={14} color="#059669" />
+                    <span>Initial Password will be configured as the preloaded mobile number: <strong>{selectedMemberObj.mobile}</strong></span>
                   </div>
                 </div>
               )}

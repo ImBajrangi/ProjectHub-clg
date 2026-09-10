@@ -1,7 +1,24 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { X, CheckCheck, Bell, CheckCircle, Info, BellOff, CheckCircle2, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  X,
+  CheckCheck,
+  Bell,
+  CheckCircle,
+  Info,
+  BellOff,
+  CheckCircle2,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
+  Calendar,
+  Send,
+  FileText,
+  XCircle,
+  AlertTriangle,
+} from 'lucide-react';
 import { NotificationItem } from '@/lib/types';
 
 interface NotificationDrawerProps {
@@ -11,6 +28,113 @@ interface NotificationDrawerProps {
   onMarkRead: (id: string) => void;
   onMarkAllRead: () => void;
   userName?: string;
+}
+
+interface NotificationTheme {
+  borderLeft: string;
+  badgeBg: string;
+  badgeColor: string;
+  badgeBorder: string;
+  unreadDot: string;
+  cardBorder: string;
+  cardBg: string;
+  btnBorder: string;
+  btnColor: string;
+  typeLabel: string;
+  icon: React.ReactNode;
+}
+
+function getNotificationTheme(item: NotificationItem): NotificationTheme {
+  const text = `${item.subject} ${item.body} ${item.category || ''}`.toLowerCase();
+
+  // 1. Withdrawn / Cancelled / Rejected (Rose / Crimson)
+  if (text.includes('withdrawn') || text.includes('cancelled') || text.includes('canceled') || text.includes('rejected')) {
+    return {
+      borderLeft: item.is_read ? '3px solid #CBD5E1' : '3px solid #E11D48',
+      badgeBg: item.is_read ? 'var(--color-canvas-soft)' : '#FFF1F2',
+      badgeColor: item.is_read ? 'var(--color-text-muted)' : '#BE123C',
+      badgeBorder: item.is_read ? 'var(--color-hairline)' : '#FECDD3',
+      unreadDot: '#E11D48',
+      cardBorder: item.is_read ? 'var(--color-hairline)' : '#FFE4E6',
+      cardBg: '#FFFFFF',
+      btnBorder: '#FECDD3',
+      btnColor: '#BE123C',
+      typeLabel: 'Request Withdrawn',
+      icon: <XCircle size={11} style={{ color: item.is_read ? 'var(--color-text-muted)' : '#E11D48', flexShrink: 0 }} />,
+    };
+  }
+
+  // 2. Approved / Completed / Phase Cleared / Logged (Emerald Green)
+  if (
+    text.includes('approved') ||
+    text.includes('completed') ||
+    text.includes('cleared') ||
+    text.includes('logged') ||
+    text.includes('scores successfully recorded')
+  ) {
+    return {
+      borderLeft: item.is_read ? '3px solid #CBD5E1' : '3px solid #059669',
+      badgeBg: item.is_read ? 'var(--color-canvas-soft)' : '#ECFDF5',
+      badgeColor: item.is_read ? 'var(--color-text-muted)' : '#047857',
+      badgeBorder: item.is_read ? 'var(--color-hairline)' : '#A7F3D0',
+      unreadDot: '#059669',
+      cardBorder: item.is_read ? 'var(--color-hairline)' : '#D1FAE5',
+      cardBg: '#FFFFFF',
+      btnBorder: '#A7F3D0',
+      btnColor: '#047857',
+      typeLabel: 'Approved / Completed',
+      icon: <CheckCircle2 size={11} style={{ color: item.is_read ? 'var(--color-text-muted)' : '#059669', flexShrink: 0 }} />,
+    };
+  }
+
+  // 3. Revision Requested / Action Required / Directive (Amber)
+  if (text.includes('revision') || text.includes('attention') || text.includes('directive') || text.includes('action required')) {
+    return {
+      borderLeft: item.is_read ? '3px solid #CBD5E1' : '3px solid #D97706',
+      badgeBg: item.is_read ? 'var(--color-canvas-soft)' : '#FFFBEB',
+      badgeColor: item.is_read ? 'var(--color-text-muted)' : '#B45309',
+      badgeBorder: item.is_read ? 'var(--color-hairline)' : '#FDE68A',
+      unreadDot: '#D97706',
+      cardBorder: item.is_read ? 'var(--color-hairline)' : '#FEF3C7',
+      cardBg: '#FFFFFF',
+      btnBorder: '#FDE68A',
+      btnColor: '#B45309',
+      typeLabel: 'Revision Required',
+      icon: <AlertTriangle size={11} style={{ color: item.is_read ? 'var(--color-text-muted)' : '#D97706', flexShrink: 0 }} />,
+    };
+  }
+
+  // 4. Scheduled / Confirmed / Calendar (Purple / Indigo)
+  if (text.includes('scheduled') || text.includes('rescheduled') || text.includes('slot confirmed')) {
+    return {
+      borderLeft: item.is_read ? '3px solid #CBD5E1' : '3px solid #7C3AED',
+      badgeBg: item.is_read ? 'var(--color-canvas-soft)' : '#F5F3FF',
+      badgeColor: item.is_read ? 'var(--color-text-muted)' : '#6D28D9',
+      badgeBorder: item.is_read ? 'var(--color-hairline)' : '#DDD6FE',
+      unreadDot: '#7C3AED',
+      cardBorder: item.is_read ? 'var(--color-hairline)' : '#E9D5FF',
+      cardBg: '#FFFFFF',
+      btnBorder: '#DDD6FE',
+      btnColor: '#6D28D9',
+      typeLabel: 'Meeting Scheduled',
+      icon: <Calendar size={11} style={{ color: item.is_read ? 'var(--color-text-muted)' : '#7C3AED', flexShrink: 0 }} />,
+    };
+  }
+
+  // 5. Submitted / New Request / General (Royal Blue)
+  return {
+    borderLeft: item.is_read ? '3px solid #CBD5E1' : '3px solid #2563EB',
+    badgeBg: item.is_read ? 'var(--color-canvas-soft)' : '#EFF6FF',
+    badgeColor: item.is_read ? 'var(--color-text-muted)' : '#1D4ED8',
+    badgeBorder: item.is_read ? 'var(--color-hairline)' : '#BFDBFE',
+    unreadDot: '#2563EB',
+    cardBorder: item.is_read ? 'var(--color-hairline)' : '#DBEAFE',
+    cardBg: '#FFFFFF',
+    btnBorder: '#BFDBFE',
+    btnColor: '#1D4ED8',
+    typeLabel: 'Request Dispatched',
+    icon: <Send size={11} style={{ color: item.is_read ? 'var(--color-text-muted)' : '#2563EB', flexShrink: 0 }} />,
+  };
 }
 
 function getDirectSnippet(body: string): string {
@@ -39,8 +163,9 @@ export default function NotificationDrawer({
   notifications,
   onMarkRead,
   onMarkAllRead,
+  onRefresh,
   userName,
-}: NotificationDrawerProps) {
+}: NotificationDrawerProps & { onRefresh?: () => void }) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const toggleExpand = (id: string) => {
@@ -55,17 +180,18 @@ export default function NotificationDrawer({
     });
   };
 
-  // Background page scroll lock
+  // Background page scroll lock & instant refresh on open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      onRefresh?.();
     } else {
       document.body.style.overflow = 'unset';
     }
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen]);
+  }, [isOpen, onRefresh]);
 
   if (!isOpen) return null;
 
@@ -235,18 +361,20 @@ export default function NotificationDrawer({
             notifications.map((item) => {
               const isExpanded = expandedIds.has(item.id);
               const previewText = getDirectSnippet(item.body);
+              const theme = getNotificationTheme(item);
 
               return (
                 <div
                   key={item.id}
                   style={{
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: theme.cardBg,
                     borderRadius: '10px',
-                    border: '1px solid',
-                    borderColor: item.is_read ? 'var(--color-hairline)' : '#BFDBFE',
-                    borderLeft: item.is_read ? '3px solid #CBD5E1' : '3px solid #2563EB',
+                    borderTop: `1px solid ${theme.cardBorder}`,
+                    borderRight: `1px solid ${theme.cardBorder}`,
+                    borderBottom: `1px solid ${theme.cardBorder}`,
+                    borderLeft: theme.borderLeft,
                     padding: '14px 16px',
-                    boxShadow: item.is_read ? '0 1px 2px rgba(15, 23, 42, 0.02)' : '0 2px 8px rgba(37, 99, 235, 0.05)',
+                    boxShadow: item.is_read ? '0 1px 2px rgba(15, 23, 42, 0.02)' : '0 2px 8px rgba(15, 23, 42, 0.04)',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '8px',
@@ -260,19 +388,22 @@ export default function NotificationDrawer({
                         style={{
                           fontSize: '10px',
                           fontWeight: 700,
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          backgroundColor: item.is_read ? 'var(--color-canvas-soft)' : '#EFF6FF',
-                          color: item.is_read ? 'var(--color-text-muted)' : '#1D4ED8',
-                          border: '1px solid',
-                          borderColor: item.is_read ? 'var(--color-hairline)' : '#DBEAFE',
+                          padding: '2.5px 8px',
+                          borderRadius: '5px',
+                          backgroundColor: theme.badgeBg,
+                          color: theme.badgeColor,
+                          border: `1px solid ${theme.badgeBorder}`,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4.5px',
                         }}
                       >
-                        {item.category || 'System Notice'}
+                        {theme.icon}
+                        <span>{item.category || theme.typeLabel}</span>
                       </span>
                       {!item.is_read && (
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#2563EB', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#2563EB', display: 'inline-block' }}></span>
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: theme.badgeColor, display: 'flex', alignItems: 'center', gap: '3.5px' }}>
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: theme.unreadDot, display: 'inline-block' }}></span>
                           Unread
                         </span>
                       )}
@@ -355,7 +486,7 @@ export default function NotificationDrawer({
                         gap: '4px',
                         fontSize: '11px',
                         fontWeight: 600,
-                        color: isExpanded ? '#1D4ED8' : 'var(--color-text-muted)',
+                        color: isExpanded ? theme.badgeColor : 'var(--color-text-muted)',
                         backgroundColor: 'transparent',
                         border: 'none',
                         cursor: 'pointer',
@@ -377,14 +508,15 @@ export default function NotificationDrawer({
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '4px',
-                          padding: '3px 8px',
+                          padding: '3px 9px',
                           fontSize: '11px',
                           fontWeight: 600,
                           backgroundColor: '#FFFFFF',
-                          color: '#2563EB',
-                          border: '1px solid #BFDBFE',
-                          borderRadius: '4px',
+                          color: theme.btnColor,
+                          border: `1px solid ${theme.btnBorder}`,
+                          borderRadius: '5px',
                           cursor: 'pointer',
+                          transition: 'all 0.15s ease',
                         }}
                       >
                         <CheckCircle2 size={11} /> Mark Read

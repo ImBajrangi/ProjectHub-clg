@@ -23,6 +23,11 @@ import {
   RefreshCw,
   X,
   Plus,
+  Check,
+  CheckCircle2,
+  AlertCircle,
+  Target,
+  GraduationCap,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -77,6 +82,16 @@ export default function FacultyDashboardPage() {
   const [studentScores, setStudentScores] = useState<Record<string, { score: string; isAbsent: boolean; remarks: string }>>({});
   const [scoringLoading, setScoringLoading] = useState(false);
   const [scoreMessage, setScoreMessage] = useState('');
+
+  // Auto-hide score status message after 4s
+  useEffect(() => {
+    if (scoreMessage) {
+      const timer = setTimeout(() => {
+        setScoreMessage('');
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [scoreMessage]);
 
   const loadFacultyData = async () => {
     try {
@@ -164,6 +179,14 @@ export default function FacultyDashboardPage() {
 
       if (res.ok) {
         setProblemReviewText('');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('codeshastra_notification_update'));
+          try {
+            const bc = new BroadcastChannel('codeshastra_notifications_channel');
+            bc.postMessage({ type: 'UPDATE' });
+            bc.close();
+          } catch {}
+        }
       } else {
         const data = await res.json();
         alert(`Error: ${data.error}`);
@@ -250,6 +273,14 @@ export default function FacultyDashboardPage() {
             })
           );
         }
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('codeshastra_notification_update'));
+          try {
+            const bc = new BroadcastChannel('codeshastra_notifications_channel');
+            bc.postMessage({ type: 'UPDATE' });
+            bc.close();
+          } catch {}
+        }
       } else {
         const data = await res.json();
         alert(data.error);
@@ -328,6 +359,14 @@ export default function FacultyDashboardPage() {
               return { ...t, meetings: nextMeetings };
             })
           );
+        }
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('codeshastra_notification_update'));
+          try {
+            const bc = new BroadcastChannel('codeshastra_notifications_channel');
+            bc.postMessage({ type: 'UPDATE' });
+            bc.close();
+          } catch {}
         }
       } else {
         const data = await res.json();
@@ -536,7 +575,7 @@ export default function FacultyDashboardPage() {
         {/* SUPERVISOR VIEW */}
         {/* =================================================================== */}
         {mode === 'supervisor' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '24px' }}>
+          <div className="faculty-split-layout">
             {/* Left Column: Team Selector List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -644,7 +683,9 @@ export default function FacultyDashboardPage() {
                       <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Problem Statement Review</h3>
                       <div>
                         {selectedTeam.problemStatement?.status === 'approved' && (
-                          <span className="badge badge-success">✓ Finalized & Locked</span>
+                          <span className="badge badge-success" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <CheckCircle2 size={12} /> Finalized & Locked
+                          </span>
                         )}
                         {selectedTeam.problemStatement?.status === 'pending' && (
                           <span className="badge badge-warning">Awaiting Your Review</span>
@@ -861,12 +902,12 @@ export default function FacultyDashboardPage() {
                                     Meet {m.meeting_index}
                                   </strong>
                                   {m.meeting_index === 1 ? (
-                                    <span className="badge badge-success" style={{ fontSize: '10px', padding: '2px 8px' }}>
-                                      🎓 Student Requested
+                                    <span className="badge badge-success" style={{ fontSize: '10px', padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                      <GraduationCap size={11} /> Student Requested
                                     </span>
                                   ) : (
-                                    <span style={{ fontSize: '10px', padding: '2px 8px', backgroundColor: '#EEF2FF', color: '#4F46E5', border: '1px solid #C7D2FE', borderRadius: 'var(--rounded-full)', fontWeight: 600 }}>
-                                      👨‍🏫 Faculty Scheduled
+                                    <span style={{ fontSize: '10px', padding: '2px 8px', backgroundColor: '#EEF2FF', color: '#4F46E5', border: '1px solid #C7D2FE', borderRadius: 'var(--rounded-full)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                      <UserCheck size={11} /> Faculty Scheduled
                                     </span>
                                   )}
                                 </div>
@@ -912,7 +953,9 @@ export default function FacultyDashboardPage() {
                                   key={m.id}
                                   style={{
                                     backgroundColor: '#FFFFFF',
-                                    border: '1px solid var(--color-hairline)',
+                                    borderTop: '1px solid var(--color-hairline)',
+                                    borderRight: '1px solid var(--color-hairline)',
+                                    borderBottom: '1px solid var(--color-hairline)',
                                     borderLeft: '4px solid #059669',
                                     borderRadius: '10px',
                                     overflow: 'hidden',
@@ -955,7 +998,7 @@ export default function FacultyDashboardPage() {
                                           border: '1px solid #A7F3D0',
                                         }}
                                       >
-                                        ✓ Completed
+                                        <CheckCircle2 size={12} /> Completed
                                       </span>
 
                                       <span
@@ -967,9 +1010,20 @@ export default function FacultyDashboardPage() {
                                           backgroundColor: '#F1F5F9',
                                           color: '#475569',
                                           border: '1px solid #E2E8F0',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px',
                                         }}
                                       >
-                                        {m.meeting_index === 1 ? '🎓 Student Initiated' : '👨‍🏫 Supervisor Scheduled'}
+                                        {m.meeting_index === 1 ? (
+                                          <>
+                                            <GraduationCap size={11} /> Student Initiated
+                                          </>
+                                        ) : (
+                                          <>
+                                            <UserCheck size={11} /> Supervisor Scheduled
+                                          </>
+                                        )}
                                       </span>
 
                                       <span
@@ -982,9 +1036,12 @@ export default function FacultyDashboardPage() {
                                           color: absentStudents.length === 0 ? '#047857' : '#B45309',
                                           border: '1px solid',
                                           borderColor: absentStudents.length === 0 ? '#A7F3D0' : '#FDE68A',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px',
                                         }}
                                       >
-                                        👥 {presentStudents.length}/{totalCount || 'All'} Present
+                                        <Users size={11} /> {presentStudents.length}/{totalCount || 'All'} Present
                                       </span>
                                     </div>
 
@@ -993,16 +1050,16 @@ export default function FacultyDashboardPage() {
                                       {m.scheduled_date && (
                                         <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '10px' }}>
                                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                            📅 {m.scheduled_date}
+                                            <Calendar size={12} /> {m.scheduled_date}
                                           </span>
                                           {m.time_slot && (
                                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                              🕒 {m.time_slot}
+                                              <Clock size={12} /> {m.time_slot}
                                             </span>
                                           )}
                                           {m.venue && (
                                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                              📍 {m.venue}
+                                              <MapPin size={12} /> {m.venue}
                                             </span>
                                           )}
                                         </div>
@@ -1062,7 +1119,7 @@ export default function FacultyDashboardPage() {
                                       >
                                         <div>
                                           <div style={{ fontSize: '11px', fontWeight: 800, color: '#1D4ED8', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            📝 Discussion Summary & Feedback
+                                            <FileText size={13} color="#2563EB" /> Discussion Summary & Feedback
                                           </div>
                                           {m.summary_notes ? (
                                             <div
@@ -1092,12 +1149,14 @@ export default function FacultyDashboardPage() {
                                               backgroundColor: '#FFFBEB',
                                               padding: '12px 14px',
                                               borderRadius: '6px',
-                                              border: '1px solid #FDE68A',
+                                              borderTop: '1px solid #FDE68A',
+                                              borderRight: '1px solid #FDE68A',
+                                              borderBottom: '1px solid #FDE68A',
                                               borderLeft: '3px solid #D97706',
                                             }}
                                           >
-                                            <div style={{ fontSize: '10px', fontWeight: 800, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
-                                              🎯 Action Directives & Next Tasks
+                                            <div style={{ fontSize: '10px', fontWeight: 800, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                              <Target size={12} color="#D97706" /> Action Directives & Next Tasks
                                             </div>
                                             <p style={{ color: '#78350F', fontSize: '12px', margin: 0, whiteSpace: 'pre-wrap', lineHeight: '1.4' }}>
                                               {m.action_directives}
@@ -1118,16 +1177,16 @@ export default function FacultyDashboardPage() {
                                           gap: '10px',
                                         }}
                                       >
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-hairline)', paddingBottom: '8px' }}>
-                                          <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                                            👥 Attendance Registry
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: '1px solid var(--color-hairline)', paddingBottom: '8px' }}>
+                                          <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-ink-soft)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                                            <Users size={12} color="#475569" /> Attendance Registry
                                           </span>
-                                          <div style={{ display: 'flex', gap: '6px' }}>
-                                            <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', whiteSpace: 'nowrap' }}>
                                               {presentStudents.length} Present
                                             </span>
                                             {absentStudents.length > 0 && (
-                                              <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: '#FEF2F2', color: '#991B1B', border: '1px solid #FECACA' }}>
+                                              <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: '#FEF2F2', color: '#991B1B', border: '1px solid #FECACA', whiteSpace: 'nowrap' }}>
                                                 {absentStudents.length} Absent
                                               </span>
                                             )}
@@ -1163,7 +1222,7 @@ export default function FacultyDashboardPage() {
                                                     fontWeight: 800,
                                                   }}
                                                 >
-                                                  ✓
+                                                  <Check size={11} strokeWidth={2.6} />
                                                 </span>
                                                 <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-ink)' }}>
                                                   {s.full_name}
@@ -1203,7 +1262,7 @@ export default function FacultyDashboardPage() {
                                                     fontWeight: 800,
                                                   }}
                                                 >
-                                                  ✕
+                                                  <X size={11} strokeWidth={2.6} />
                                                 </span>
                                                 <span style={{ fontSize: '12px', fontWeight: 600, color: '#991B1B' }}>
                                                   {s.full_name}
@@ -1252,9 +1311,15 @@ export default function FacultyDashboardPage() {
                         <button
                           onClick={() => handleTogglePhaseClearance(1, selectedTeam.phase1_approved)}
                           className={selectedTeam.phase1_approved ? 'btn btn-primary' : 'btn btn-outline'}
-                          style={{ width: '100%', fontSize: '12px' }}
+                          style={{ width: '100%', fontSize: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                         >
-                          {selectedTeam.phase1_approved ? '✓ Approved (Revoke)' : 'Grant Permission'}
+                          {selectedTeam.phase1_approved ? (
+                            <>
+                              <CheckCircle2 size={13} /> Approved (Revoke)
+                            </>
+                          ) : (
+                            'Grant Permission'
+                          )}
                         </button>
                       </div>
 
@@ -1266,9 +1331,15 @@ export default function FacultyDashboardPage() {
                         <button
                           onClick={() => handleTogglePhaseClearance(2, selectedTeam.phase2_approved)}
                           className={selectedTeam.phase2_approved ? 'btn btn-primary' : 'btn btn-outline'}
-                          style={{ width: '100%', fontSize: '12px' }}
+                          style={{ width: '100%', fontSize: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                         >
-                          {selectedTeam.phase2_approved ? '✓ Approved (Revoke)' : 'Grant Permission'}
+                          {selectedTeam.phase2_approved ? (
+                            <>
+                              <CheckCircle2 size={13} /> Approved (Revoke)
+                            </>
+                          ) : (
+                            'Grant Permission'
+                          )}
                         </button>
                       </div>
 
@@ -1280,9 +1351,15 @@ export default function FacultyDashboardPage() {
                         <button
                           onClick={() => handleTogglePhaseClearance(3, selectedTeam.phase3_approved)}
                           className={selectedTeam.phase3_approved ? 'btn btn-primary' : 'btn btn-outline'}
-                          style={{ width: '100%', fontSize: '12px' }}
+                          style={{ width: '100%', fontSize: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                         >
-                          {selectedTeam.phase3_approved ? '✓ Approved (Revoke)' : 'Grant Permission'}
+                          {selectedTeam.phase3_approved ? (
+                            <>
+                              <CheckCircle2 size={13} /> Approved (Revoke)
+                            </>
+                          ) : (
+                            'Grant Permission'
+                          )}
                         </button>
                       </div>
                     </div>
@@ -1318,7 +1395,7 @@ export default function FacultyDashboardPage() {
                 </p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: selectedPanelTeam ? '340px 1fr' : '1fr', gap: '24px' }}>
+              <div className={selectedPanelTeam ? 'panel-split-layout' : ''}>
                 {/* Panel Listings */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {panelData.map((p) => (
@@ -1410,8 +1487,45 @@ export default function FacultyDashboardPage() {
                     )}
 
                     {scoreMessage && (
-                      <div className="alert-banner alert-success" style={{ fontSize: '13px' }}>
-                        {scoreMessage}
+                      <div
+                        className={`alert-banner ${scoreMessage.includes('Error') ? 'alert-danger' : 'alert-success'}`}
+                        style={{
+                          fontSize: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '12px',
+                          padding: '10px 14px',
+                          borderRadius: '8px',
+                          marginBottom: '16px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
+                          {scoreMessage.includes('Error') ? (
+                            <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                          ) : (
+                            <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
+                          )}
+                          <span>{scoreMessage}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setScoreMessage('')}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '2px',
+                            color: 'inherit',
+                            opacity: 0.7,
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                          title="Dismiss notification"
+                          aria-label="Dismiss"
+                        >
+                          <X size={15} />
+                        </button>
                       </div>
                     )}
 

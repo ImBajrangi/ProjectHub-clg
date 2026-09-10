@@ -282,11 +282,13 @@ export default function HomePage() {
               {/* Floating Pill Bottom */}
               <div
                 style={{
-                  alignSelf: 'flex-start',
+                  position: 'absolute',
+                  bottom: '-12px',
+                  right: '-8px',
                   backgroundColor: '#FFFFFF',
-                  padding: '7px 12px',
-                  borderRadius: 'var(--rounded-full)',
-                  boxShadow: '0 2px 10px rgba(15, 23, 42, 0.05)',
+                  borderRadius: 'var(--rounded-md)',
+                  padding: '8px 12px',
+                  boxShadow: 'var(--shadow-md)',
                   border: '1px solid var(--color-hairline)',
                   display: 'flex',
                   alignItems: 'center',
@@ -295,7 +297,9 @@ export default function HomePage() {
                   color: 'var(--color-ink)',
                 }}
               >
-                <span>👨‍🏫 Panel 3: 6 Evaluations Scheduled in AB10</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <Award size={13} color="#2563EB" /> Panel 3: 6 Evaluations Scheduled in AB10
+                </span>
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#059669' }} />
               </div>
             </div>
@@ -371,10 +375,10 @@ export default function HomePage() {
                 </div>
                 <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Student Team Leader</h3>
               </div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px', color: 'var(--color-ink-soft)', lineHeight: '1.8' }}>
-                <li>✓ Submit and lock problem statements</li>
-                <li>✓ Request mentor meetings via &quot;Want to Meet&quot;</li>
-                <li>✓ Upload finalized Phase 3 documentation</li>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px', color: 'var(--color-ink-soft)', lineHeight: '1.8', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Submit and lock problem statements</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Request mentor meetings via &quot;Want to Meet&quot;</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Upload finalized Phase 3 documentation</li>
               </ul>
             </div>
 
@@ -386,10 +390,10 @@ export default function HomePage() {
                 </div>
                 <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Faculty Supervisor (Mentor)</h3>
               </div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px', color: 'var(--color-ink-soft)', lineHeight: '1.8' }}>
-                <li>✓ Approve and lock problem statements</li>
-                <li>✓ Schedule meetings & log attendance rosters</li>
-                <li>✓ Grant Phase 1, Phase 2 & Phase 3 clearances</li>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px', color: 'var(--color-ink-soft)', lineHeight: '1.8', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Approve and lock problem statements</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Schedule meetings & log attendance rosters</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Grant Phase 1, Phase 2 & Phase 3 clearances</li>
               </ul>
             </div>
 
@@ -401,10 +405,10 @@ export default function HomePage() {
                 </div>
                 <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Panel Judge (Faculty)</h3>
               </div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px', color: 'var(--color-ink-soft)', lineHeight: '1.8' }}>
-                <li>✓ Conflict-free panel assignment</li>
-                <li>✓ Score presentation rounds out of 10 points</li>
-                <li>✓ Final defense & viva evaluation</li>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px', color: 'var(--color-ink-soft)', lineHeight: '1.8', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Conflict-free panel assignment</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Score presentation rounds out of 10 points</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Final defense & viva evaluation</li>
               </ul>
             </div>
 
@@ -416,10 +420,10 @@ export default function HomePage() {
                 </div>
                 <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Project Incharge (Admin)</h3>
               </div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px', color: 'var(--color-ink-soft)', lineHeight: '1.8' }}>
-                <li>✓ Manage presentation dates & venue halls (AB10)</li>
-                <li>✓ Toggle phases to Live & audit defaulting teams</li>
-                <li>✓ Export verified marks to institutional Excel sheets</li>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '13px', color: 'var(--color-ink-soft)', lineHeight: '1.8', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Manage presentation dates & venue halls (AB10)</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Toggle phases to Live & audit defaulting teams</li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><Check size={14} color="#059669" strokeWidth={2.4} /> Export verified marks to institutional Excel sheets</li>
               </ul>
             </div>
           </div>
