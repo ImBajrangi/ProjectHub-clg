@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 
-export const alt = 'CodeShastra Hub | Academic Project Lifecycle & Milestone Evaluation';
+export const alt = 'CodeShastra Hub • Vrindopnishad | Academic Project Lifecycle & Milestone Evaluation';
 export const size = {
   width: 1200,
   height: 630,
@@ -17,28 +17,28 @@ export default function OpenGraphImage() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          padding: '60px 70px',
-          background: 'linear-gradient(135deg, #0E1713 0%, #17241E 45%, #2D4439 100%)',
+          padding: '56px 64px',
+          background: 'linear-gradient(135deg, #09130F 0%, #15241D 40%, #294035 100%)',
           color: '#FFFFFF',
           fontFamily: 'sans-serif',
           position: 'relative',
         }}
       >
-        {/* Subtle decorative border frame */}
+        {/* Subtle decorative outer card border */}
         <div
           style={{
             position: 'absolute',
-            top: 24,
-            left: 24,
-            right: 24,
-            bottom: 24,
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            top: 20,
+            left: 20,
+            right: 20,
+            bottom: 20,
+            border: '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: '20px',
             display: 'flex',
           }}
         />
 
-        {/* Top Header Row */}
+        {/* Top Header Bar: Corner Brand & Partnership Tag */}
         <div
           style={{
             display: 'flex',
@@ -47,14 +47,15 @@ export default function OpenGraphImage() {
             width: '100%',
           }}
         >
+          {/* Top Left: CodeShastra Hub Brand */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div
               style={{
-                width: '52px',
-                height: '52px',
+                width: '54px',
+                height: '54px',
                 borderRadius: '14px',
-                background: '#23342C',
-                border: '1px solid rgba(134, 239, 172, 0.35)',
+                background: '#1F3127',
+                border: '1.5px solid rgba(134, 239, 172, 0.4)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -65,24 +66,27 @@ export default function OpenGraphImage() {
               <span style={{ fontSize: '26px', fontWeight: 800, color: '#FFFFFF' }}>&gt;</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '28px', fontWeight: 800, color: '#F8FAFC' }}>CodeShastra</span>
-                <span style={{ fontSize: '28px', fontWeight: 500, color: '#94A3B8' }}>Hub</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '30px', fontWeight: 800, color: '#F8FAFC', letterSpacing: '-0.5px' }}>
+                  CodeShastra
+                </span>
+                <span style={{ fontSize: '30px', fontWeight: 500, color: '#94A3B8' }}>Hub</span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#86EFAC', letterSpacing: '2px' }}>
-                DEPARTMENT OF DATA SCIENCE
+              <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#86EFAC', letterSpacing: '2px' }}>
+                DEPARTMENT OF DATA SCIENCE • GLA
               </span>
             </div>
           </div>
 
+          {/* Top Right: Vrindopnishad Partnership Badge */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              backgroundColor: 'rgba(52, 77, 65, 0.7)',
-              border: '1px solid rgba(134, 239, 172, 0.3)',
-              padding: '8px 20px',
+              gap: '10px',
+              backgroundColor: 'rgba(35, 54, 44, 0.85)',
+              border: '1.5px solid rgba(134, 239, 172, 0.35)',
+              padding: '10px 22px',
               borderRadius: '999px',
             }}
           >
@@ -95,21 +99,22 @@ export default function OpenGraphImage() {
                 display: 'flex',
               }}
             />
-            <span style={{ fontSize: '13px', fontWeight: 700, color: '#D1FAE5', letterSpacing: '1px' }}>
-              ACADEMIC CYCLE 2026
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '13px', color: '#CBD5E1' }}>In Partnership with</span>
+              <span style={{ fontSize: '14px', fontWeight: 800, color: '#86EFAC' }}>Vrindopnishad</span>
+            </div>
           </div>
         </div>
 
-        {/* Center Main Message */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '980px' }}>
+        {/* Center Punchy Headline */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '1000px' }}>
           <div
             style={{
               fontSize: '56px',
               fontWeight: 800,
-              lineHeight: 1.12,
+              lineHeight: 1.1,
               color: '#FFFFFF',
-              letterSpacing: '-1px',
+              letterSpacing: '-1.5px',
               display: 'flex',
               flexDirection: 'column',
             }}
@@ -121,15 +126,15 @@ export default function OpenGraphImage() {
             style={{
               fontSize: '21px',
               color: '#CBD5E1',
-              lineHeight: 1.4,
+              lineHeight: 1.45,
               fontWeight: 400,
             }}
           >
-            Unified milestone submissions, verified faculty consultations, and conflict-free panel defenses.
+            Synchronized milestone management, verified consultation attendance, and conflict-free panel defense evaluations.
           </span>
         </div>
 
-        {/* Bottom Feature Badges & Credit */}
+        {/* Bottom Bar: Stats Metrics & Academic Cycle */}
         <div
           style={{
             display: 'flex',
@@ -138,45 +143,58 @@ export default function OpenGraphImage() {
             width: '100%',
           }}
         >
+          {/* Bottom Left: Audited Metrics */}
           <div style={{ display: 'flex', gap: '12px' }}>
             <div
               style={{
                 display: 'flex',
-                background: 'rgba(255, 255, 255, 0.08)',
+                background: 'rgba(255, 255, 255, 0.07)',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
-                padding: '10px 18px',
+                padding: '10px 20px',
                 borderRadius: '10px',
               }}
             >
-              <span style={{ fontSize: '14px', fontWeight: 700, color: '#F1F5F9' }}>102 Project Teams</span>
+              <span style={{ fontSize: '14.5px', fontWeight: 700, color: '#F8FAFC' }}>102 Project Teams</span>
             </div>
             <div
               style={{
                 display: 'flex',
-                background: 'rgba(255, 255, 255, 0.08)',
+                background: 'rgba(255, 255, 255, 0.07)',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
-                padding: '10px 18px',
+                padding: '10px 20px',
                 borderRadius: '10px',
               }}
             >
-              <span style={{ fontSize: '14px', fontWeight: 700, color: '#F1F5F9' }}>601 Students</span>
+              <span style={{ fontSize: '14.5px', fontWeight: 700, color: '#F8FAFC' }}>601 Students</span>
             </div>
             <div
               style={{
                 display: 'flex',
-                background: 'rgba(255, 255, 255, 0.08)',
+                background: 'rgba(255, 255, 255, 0.07)',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
-                padding: '10px 18px',
+                padding: '10px 20px',
                 borderRadius: '10px',
               }}
             >
-              <span style={{ fontSize: '14px', fontWeight: 700, color: '#F1F5F9' }}>23 Faculty Mentors</span>
+              <span style={{ fontSize: '14.5px', fontWeight: 700, color: '#F8FAFC' }}>23 Faculty Mentors</span>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '14px', color: '#94A3B8' }}>Partnership with</span>
-            <span style={{ fontSize: '14px', fontWeight: 700, color: '#FFFFFF' }}>Vrindopnishad</span>
+          {/* Bottom Right: Academic Cycle Tag */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'rgba(134, 239, 172, 0.1)',
+              border: '1px solid rgba(134, 239, 172, 0.2)',
+              padding: '8px 16px',
+              borderRadius: '8px',
+            }}
+          >
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#86EFAC', letterSpacing: '1px' }}>
+              ACADEMIC CYCLE 2026
+            </span>
           </div>
         </div>
       </div>

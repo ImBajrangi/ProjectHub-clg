@@ -54,10 +54,10 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: '/',
-    siteName: 'CodeShastra Hub',
+    siteName: 'CodeShastra Hub • Vrindopnishad',
     title: 'CodeShastra Hub | Academic Project Lifecycle & Milestone Evaluation',
     description:
-      '102 student teams. 601 allocated students. 23 faculty mentors. A single synchronized platform for frictionless milestone submissions, mentor consultations, and conflict-free panel defenses.',
+      '102 student teams. 601 allocated students. 23 faculty mentors. Direct milestone reviews, verified attendance rosters, and conflict-free panel defenses. In partnership with Vrindopnishad.',
   },
   twitter: {
     card: 'summary_large_image',
