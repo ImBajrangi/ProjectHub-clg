@@ -42,12 +42,13 @@ export const metadata: Metadata = {
   category: 'education',
   icons: {
     icon: [
+      { url: '/favicon.ico', sizes: 'any' },
       { url: '/favicon.svg', type: 'image/svg+xml' },
     ],
     apple: [
       { url: '/apple-icon', sizes: '180x180', type: 'image/png' },
     ],
-    shortcut: '/favicon.svg',
+    shortcut: '/favicon.ico',
   },
   manifest: '/manifest.webmanifest',
   openGraph: {
