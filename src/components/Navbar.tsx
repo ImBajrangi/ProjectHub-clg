@@ -16,6 +16,8 @@ import {
   HelpCircle,
   ChevronDown,
   User,
+  BellRing,
+  X,
 } from 'lucide-react';
 import NotificationDrawer from './NotificationDrawer';
 import PasswordChangeModal from './PasswordChangeModal';
@@ -50,11 +52,21 @@ export default function Navbar({
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [showPermissionPrompt, setShowPermissionPrompt] = useState(false);
 
   const notifiedIdsRef = React.useRef<Set<string>>(new Set());
   const isInitialFetchRef = React.useRef<boolean>(true);
   const isFetchingRef = React.useRef<boolean>(false);
   const userMenuRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (user && Notification.permission === 'default' && !sessionStorage.getItem('notif_prompt_dismissed')) {
+        const timer = setTimeout(() => setShowPermissionPrompt(true), 2500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [user]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -132,10 +144,10 @@ export default function Navbar({
     if (user) {
       fetchNotifications();
 
-      // Lightweight 30-second heartbeat polling for live notifications
+      // Lightweight 12-second heartbeat polling for live notifications
       const intervalId = setInterval(() => {
         fetchNotifications();
-      }, 30000);
+      }, 12000);
 
       const handleImmediateUpdate = () => {
         fetchNotifications(true);
@@ -876,6 +888,115 @@ export default function Navbar({
           onClose={() => setHelpModalOpen(false)}
           userRole={user.role === 'supervisor' ? 'supervisor' : user.role === 'admin' ? 'admin' : 'leader'}
         />
+      )}
+
+      {/* Floating System OS Notification Activation Prompt */}
+      {showPermissionPrompt && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 9999,
+            maxWidth: '380px',
+            backgroundColor: '#0F172A',
+            color: '#FFFFFF',
+            borderRadius: '12px',
+            padding: '16px 18px',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 8px 10px -6px rgba(0, 0, 0, 0.25)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px',
+            animation: 'fadeIn 0.25s ease-out',
+          }}
+        >
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              backgroundColor: '#2563EB',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              color: '#FFFFFF',
+            }}
+          >
+            <BellRing size={16} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h4 style={{ fontSize: '13.5px', fontWeight: 700, margin: '0 0 3px 0', color: '#F8FAFC' }}>
+              Enable Desktop Alerts
+            </h4>
+            <p style={{ fontSize: '12px', color: '#94A3B8', margin: '0 0 10px 0', lineHeight: 1.4 }}>
+              Get instant OS & browser notifications when your mentor reviews proposals or schedules meetings.
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={async () => {
+                  const perm = await requestDeviceNotificationPermission();
+                  setShowPermissionPrompt(false);
+                  sessionStorage.setItem('notif_prompt_dismissed', 'true');
+                  if (perm === 'granted') {
+                    triggerSystemNotification({
+                      id: 'system-activated',
+                      subject: 'System Notifications Activated',
+                      body: 'You will now receive instant desktop alerts for proposals, revisions, and meetings.',
+                    });
+                  }
+                }}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  backgroundColor: '#2563EB',
+                  color: '#FFFFFF',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Enable Alerts
+              </button>
+              <button
+                onClick={() => {
+                  setShowPermissionPrompt(false);
+                  sessionStorage.setItem('notif_prompt_dismissed', 'true');
+                }}
+                style={{
+                  padding: '5px 10px',
+                  borderRadius: '6px',
+                  backgroundColor: 'transparent',
+                  color: '#94A3B8',
+                  fontSize: '12px',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  cursor: 'pointer',
+                }}
+              >
+                Later
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setShowPermissionPrompt(false);
+              sessionStorage.setItem('notif_prompt_dismissed', 'true');
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#94A3B8',
+              cursor: 'pointer',
+              padding: '2px',
+              marginLeft: '-4px',
+              marginTop: '-4px',
+            }}
+          >
+            <X size={15} />
+          </button>
+        </div>
       )}
     </>
   );
