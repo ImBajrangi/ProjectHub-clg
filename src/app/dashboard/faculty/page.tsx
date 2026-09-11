@@ -48,6 +48,7 @@ import {
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LoadingScreen from '@/components/LoadingScreen';
+import EmptyStateGraphic from '@/components/EmptyStateGraphic';
 import { clientCache } from '@/lib/clientCache';
 
 export default function FacultyDashboardPage() {
@@ -1517,45 +1518,21 @@ export default function FacultyDashboardPage() {
 
                     {/* Empty State when no meetings exist */}
                     {(!selectedTeam.meetings || selectedTeam.meetings.length === 0) && (
-                      <div
-                        style={{
-                          padding: '36px 20px',
-                          textAlign: 'center',
-                          backgroundColor: 'var(--color-canvas-soft)',
-                          borderRadius: 'var(--rounded-md)',
-                          border: '1px dashed var(--color-hairline)',
-                          margin: '12px 0 24px',
+                      <EmptyStateGraphic
+                        type="meetings"
+                        title="No Scheduled Review Sessions Yet"
+                        description="Set a confirmed date, time, and venue or Google Meet link for this team's next milestone review session."
+                        actionText="Schedule First Meeting"
+                        actionIcon={<Plus size={14} />}
+                        onAction={() => {
+                          setTargetMeetingId('');
+                          setSchedDate('');
+                          setSchedStartTime('11:00');
+                          setSchedEndTime('11:45');
+                          setSchedVenue('');
+                          setScheduleModalOpen(true);
                         }}
-                      >
-                        <Calendar size={36} style={{ color: 'var(--color-text-muted)', margin: '0 auto 12px' }} />
-                        <h4 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--color-ink)', marginBottom: '4px' }}>
-                          No Scheduled Review Sessions Yet
-                        </h4>
-                        <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', maxWidth: '420px', margin: '0 auto 16px' }}>
-                          Set a confirmed date, time, and venue or Google Meet link for this team's next milestone review session.
-                        </p>
-                        <button
-                          onClick={() => {
-                            setTargetMeetingId('');
-                            setSchedDate('');
-                            setSchedStartTime('11:00');
-                            setSchedEndTime('11:45');
-                            setSchedVenue('');
-                            setScheduleModalOpen(true);
-                          }}
-                          className="btn btn-primary"
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            fontSize: '13px',
-                            padding: '8px 18px',
-                            borderRadius: 'var(--rounded-full)',
-                          }}
-                        >
-                          <Plus size={14} /> Schedule First Meeting
-                        </button>
-                      </div>
+                      />
                     )}
 
                     {/* Pending Requests */}
@@ -2456,9 +2433,11 @@ export default function FacultyDashboardPage() {
                       <p style={{ fontSize: '12.5px', marginTop: '4px' }}>Fetching student profiles and prior phase marks from database.</p>
                     </div>
                   ) : panelTeamMembers.length === 0 ? (
-                    <div style={{ padding: '40px 20px', textAlign: 'center', backgroundColor: '#F8FAFC', borderRadius: '14px', color: 'var(--color-text-muted)', fontSize: '13px', border: '1px dashed #CBD5E1' }}>
-                      No registered student candidates found for this team.
-                    </div>
+                    <EmptyStateGraphic
+                      type="roster"
+                      title="No Candidate Roster Available"
+                      description="No registered student candidates were found for this team in the system database."
+                    />
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       {panelTeamMembers.map((student, idx) => {
@@ -3484,13 +3463,11 @@ export default function FacultyDashboardPage() {
                 </div>
 
                 {panelData.length === 0 ? (
-                  <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
-                    <Award size={40} style={{ opacity: 0.3, margin: '0 auto 12px' }} />
-                    <h4 style={{ fontSize: '16px', fontWeight: 700 }}>No Panel Assignments Yet</h4>
-                    <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                      The Project Incharge will allocate your evaluation panels for the upcoming phase.
-                    </p>
-                  </div>
+                  <EmptyStateGraphic
+                    type="panels"
+                    title="No Panel Assignments Yet"
+                    description="The Project Incharge will allocate your evaluation panels for the upcoming phase."
+                  />
                 ) : (
                   <>
                     {/* Search Bar for Assigned Teams */}
@@ -3586,11 +3563,13 @@ export default function FacultyDashboardPage() {
 
                             {/* Teams Grid inside Panel */}
                             {matchingTeams.length === 0 ? (
-                              <div style={{ padding: '24px', textAlign: 'center', backgroundColor: '#F8FAFC', borderRadius: '10px', color: 'var(--color-text-muted)', fontSize: '12.5px' }}>
-                                {panelTeamSearch
-                                  ? `No teams in this panel matched "${panelTeamSearch}"`
-                                  : 'No teams currently cleared for evaluation in this live phase.'}
-                              </div>
+                              <EmptyStateGraphic
+                                type="search"
+                                title={panelTeamSearch ? "No Matching Teams Found" : "No Cleared Teams Available"}
+                                description={panelTeamSearch
+                                  ? `No teams in this panel matched "${panelTeamSearch}". Try a different search keyword.`
+                                  : 'No teams currently have supervisor clearance for evaluation in this live phase.'}
+                              />
                             ) : (
                               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '14px' }}>
                                 {matchingTeams.map((t: any) => (

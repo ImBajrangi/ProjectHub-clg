@@ -32,6 +32,7 @@ import {
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LoadingScreen from '@/components/LoadingScreen';
+import EmptyStateGraphic from '@/components/EmptyStateGraphic';
 import { clientCache } from '@/lib/clientCache';
 
 export default function LeaderDashboardPage() {
@@ -1290,9 +1291,11 @@ export default function LeaderDashboardPage() {
               </h3>
 
               {meetings.length === 0 ? (
-                <p style={{ fontSize: '13px', color: 'var(--color-text-faint)', textAlign: 'center', padding: '40px' }}>
-                  No meetings requested or logged yet.
-                </p>
+                <EmptyStateGraphic
+                  type="meetings"
+                  title="No Meetings Logged Yet"
+                  description="Use the 'Request Meeting with Guide' button above to schedule your next milestone review session with your faculty supervisor."
+                />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   {meetings.map((m: any) => {
@@ -1742,23 +1745,11 @@ export default function LeaderDashboardPage() {
             </div>
 
             {schedules.length === 0 ? (
-              <div
-                style={{
-                  textAlign: 'center',
-                  padding: '48px 24px',
-                  backgroundColor: 'var(--color-canvas-soft)',
-                  borderRadius: 'var(--rounded-sm)',
-                  border: '1px dashed var(--color-hairline)',
-                }}
-              >
-                <Calendar size={36} style={{ opacity: 0.35, margin: '0 auto 12px' }} />
-                <h4 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-ink)' }}>
-                  No Panel Assigned Yet
-                </h4>
-                <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px', maxWidth: '440px', margin: '4px auto 0' }}>
-                  The Project Incharge has not yet allocated an evaluation panel for your team in this phase. Once published, complete schedule and faculty judge details will appear here.
-                </p>
-              </div>
+              <EmptyStateGraphic
+                type="panels"
+                title="No Evaluation Panel Assigned Yet"
+                description="The Project Incharge has not yet allocated an evaluation panel for your team in this phase. Once published, complete schedule, shift time, room number in AB10, and faculty judge details will appear here."
+              />
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {schedules.map((sc: any) => (

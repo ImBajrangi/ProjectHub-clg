@@ -53,6 +53,7 @@ import {
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LoadingScreen from '@/components/LoadingScreen';
+import EmptyStateGraphic from '@/components/EmptyStateGraphic';
 import { clientCache } from '@/lib/clientCache';
 import {
   exportPanelsData,
@@ -1774,20 +1775,12 @@ Output ONLY the raw valid JSON array.`;
                 <tbody>
                   {paginatedTeams.length === 0 ? (
                     <tr>
-                      <td colSpan={5} style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--color-text-muted)' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                          <img
-                            src="/images/undraw/searching-themed.svg"
-                            alt="No teams match search query"
-                            style={{ width: '160px', height: 'auto', opacity: 0.85, marginBottom: '4px' }}
-                          />
-                          <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--color-ink)' }}>
-                            No teams match your search or filter criteria
-                          </span>
-                          <span style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', maxWidth: '420px' }}>
-                            Try searching for another team name, team code, supervisor name, or student roll number.
-                          </span>
-                        </div>
+                      <td colSpan={5} style={{ padding: '24px 12px' }}>
+                        <EmptyStateGraphic
+                          type="search"
+                          title="No Teams Match Your Criteria"
+                          description="Try adjusting your search query, roll number, or program filter to find registered teams."
+                        />
                       </td>
                     </tr>
                   ) : (
@@ -1856,9 +1849,11 @@ Output ONLY the raw valid JSON array.`;
             {/* Mobile Responsive Cards View */}
             <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {paginatedTeams.length === 0 ? (
-                <div className="card" style={{ textAlign: 'center', padding: '30px 16px', color: 'var(--color-text-muted)' }}>
-                  No teams match your search query. Try another keyword or roll number.
-                </div>
+                <EmptyStateGraphic
+                  type="search"
+                  title="No Teams Found"
+                  description="No teams matched your active search query or filter."
+                />
               ) : (
                 paginatedTeams.map((t: any) => (
                   <div
@@ -2297,13 +2292,14 @@ Output ONLY the raw valid JSON array.`;
 
             {/* Panels Display Grid */}
             {filteredPanels.length === 0 ? (
-              <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
-                <Award size={40} style={{ opacity: 0.3, margin: '0 auto 12px' }} />
-                <h4 style={{ fontSize: '16px', fontWeight: 700 }}>No Panels Configured for Phase {panelPhaseFilter}</h4>
-                <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                  Click &quot;Assign Panel&quot; above to configure team ranges, presentation shifts (e.g. 8–10 AM / 12–2 PM), room numbers in AB10, and faculty judges.
-                </p>
-              </div>
+              <EmptyStateGraphic
+                type="panels"
+                title={`No Panels Configured for Phase ${panelPhaseFilter}`}
+                description="Click 'Assign Panel' above to configure team ranges, presentation shifts (e.g. 8–10 AM / 12–2 PM), room numbers in AB10, and faculty judges."
+                actionText="Create Phase Panel"
+                actionIcon={<Plus size={14} />}
+                onAction={() => setCreatePanelModalOpen(true)}
+              />
             ) : (
               <div className="grid-cols-3">
                 {filteredPanels.map((p: any) => {
@@ -2591,11 +2587,11 @@ Output ONLY the raw valid JSON array.`;
             </div>
 
             {defaultingTeams.length === 0 ? (
-              <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>
-                <CheckCircle2 size={40} color="var(--color-success)" style={{ margin: '0 auto 12px' }} />
-                <h4 style={{ fontSize: '16px', fontWeight: 700 }}>Zero Defaulting Teams!</h4>
-                <p style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>All teams are fully compliant with operational milestones.</p>
-              </div>
+              <EmptyStateGraphic
+                type="compliance"
+                title="Zero Defaulting Teams Detected"
+                description="All supervised teams are fully compliant with mandatory submissions and scheduled review milestones."
+              />
             ) : (
               <>
                 <div className="desktop-only data-table-container">
@@ -2951,19 +2947,13 @@ Output ONLY the raw valid JSON array.`;
             {/* Attendance & Shift Segregation Table */}
             <div className="card" style={{ padding: 0, borderRadius: '14px', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
               {filteredAbsentAndShiftEntries.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '48px 24px' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                    <CheckCircle2 size={24} color="#059669" />
-                  </div>
-                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-ink)', margin: 0 }}>
-                    No non-present students found
-                  </h3>
-                  <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px', maxWidth: '400px', margin: '4px auto 0' }}>
-                    {absentAndShiftEntries.length === 0
-                      ? 'All students evaluated by examination panels are present or no evaluations are recorded yet.'
-                      : 'No students match the current phase, status, or search filters.'}
-                  </p>
-                </div>
+                <EmptyStateGraphic
+                  type="attendance"
+                  title="No Absent or Re-scheduled Students"
+                  description={absentAndShiftEntries.length === 0
+                    ? 'All students evaluated by examination panels are present, or evaluations have not yet commenced.'
+                    : 'No students match the current phase, attendance filter, or search query.'}
+                />
               ) : (
                 <div className="data-table-container" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%' }}>
                   <table className="data-table" style={{ width: '100%', minWidth: '850px', borderCollapse: 'collapse' }}>
