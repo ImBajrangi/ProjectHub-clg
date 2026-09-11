@@ -39,6 +39,24 @@ export default function NotificationsPage() {
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>('default');
   const [actionLoading, setActionLoading] = useState(false);
 
+  const scrollToCenter = (elementId: string) => {
+    setTimeout(() => {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const navOffset = 70;
+      const availableHeight = window.innerHeight - navOffset;
+      if (rect.height >= availableHeight) {
+        const targetScroll = window.scrollY + rect.top - navOffset - 16;
+        window.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
+      } else {
+        const centerOffset = (availableHeight - rect.height) / 2;
+        const targetScroll = window.scrollY + rect.top - navOffset - centerOffset;
+        window.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
+      }
+    }, 60);
+  };
+
   // Check system notification permission
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -500,9 +518,14 @@ export default function NotificationsPage() {
               return (
                 <div
                   key={notif.id}
+                  id={`notif-card-${notif.id}`}
                   onClick={() => {
                     if (isUnread) handleMarkRead(String(notif.id));
-                    setExpandedId(isExpanded ? null : String(notif.id));
+                    const nextExpanded = !isExpanded;
+                    setExpandedId(nextExpanded ? String(notif.id) : null);
+                    if (nextExpanded) {
+                      scrollToCenter(`notif-card-${notif.id}`);
+                    }
                   }}
                   className="card"
                   style={{

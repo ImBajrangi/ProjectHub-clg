@@ -27,6 +27,7 @@ import {
   Target,
   GraduationCap,
   UserCheck,
+  ArrowRight,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -74,13 +75,45 @@ export default function LeaderDashboardPage() {
     }
   }, [psMessage]);
 
+  const scrollToCenter = (elementId: string) => {
+    setTimeout(() => {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const navOffset = 70; // Top fixed navbar height
+      const availableHeight = window.innerHeight - navOffset;
+      if (rect.height >= availableHeight) {
+        const targetScroll = window.scrollY + rect.top - navOffset - 16;
+        window.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
+      } else {
+        const centerOffset = (availableHeight - rect.height) / 2;
+        const targetScroll = window.scrollY + rect.top - navOffset - centerOffset;
+        window.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
+      }
+    }, 60);
+  };
+
   const toggleMeetingExpand = (meetingId: string) => {
     setExpandedMeetingIds((prev) => {
       const next = new Set(prev);
+      const isOpening = !next.has(meetingId);
       if (next.has(meetingId)) {
         next.delete(meetingId);
       } else {
         next.add(meetingId);
+      }
+      if (isOpening) {
+        scrollToCenter(`meeting-card-${meetingId}`);
+      }
+      return next;
+    });
+  };
+
+  const toggleWantToMeet = () => {
+    setWantToMeetExpanded((prev) => {
+      const next = !prev;
+      if (next) {
+        scrollToCenter('want-to-meet-card');
       }
       return next;
     });
@@ -545,9 +578,22 @@ export default function LeaderDashboardPage() {
                     <CheckCircle2 size={13} /> Approved & Locked
                   </span>
                 ) : problemStatement?.status === 'revision_requested' ? (
-                  <span className="badge badge-warning" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', padding: '4px 10px', fontWeight: 700, backgroundColor: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D' }}>
-                    <AlertCircle size={13} /> Action Required: Revision Requested
-                  </span>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    backgroundColor: '#FFFBEB',
+                    color: '#B45309',
+                    border: '1px solid #FDE68A',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#D97706' }} />
+                    Revision Requested
+                  </div>
                 ) : problemStatement?.status === 'pending' ? (
                   <span className="badge badge-warning" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', padding: '4px 10px' }}>
                     <Clock size={13} /> Pending Supervisor Review
@@ -563,35 +609,99 @@ export default function LeaderDashboardPage() {
               <div
                 style={{
                   marginBottom: '20px',
-                  padding: '16px 18px',
-                  backgroundColor: '#FFFBEB',
+                  borderRadius: '8px',
                   border: '1px solid #FDE68A',
-                  borderLeft: '4px solid #F59E0B',
-                  borderRadius: '10px',
-                  boxShadow: '0 2px 6px rgba(245, 158, 11, 0.08)',
+                  backgroundColor: '#FEFDFB',
+                  overflow: 'hidden',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D97706', flexShrink: 0, marginTop: '2px' }}>
-                    <AlertCircle size={16} strokeWidth={2.5} />
+                {/* Header bar */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '9px 14px',
+                    backgroundColor: '#FFFBEB',
+                    borderBottom: '1px solid #FDE68A',
+                    gap: '8px',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '4px',
+                        backgroundColor: '#FDE68A',
+                        color: '#B45309',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <AlertCircle size={12} strokeWidth={2.5} />
+                    </div>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#92400E' }}>
+                      Supervisor Revision Notes
+                    </span>
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
-                      <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#92400E', margin: 0 }}>
-                        Mentor Revision Requested
-                      </h4>
-                      {supervisor?.fullName && (
-                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#B45309', backgroundColor: '#FEF3C7', padding: '2px 8px', borderRadius: '4px' }}>
-                          By {supervisor.fullName}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ marginTop: '6px', fontSize: '13px', color: '#78350F', lineHeight: '1.5', backgroundColor: '#FFFFFF', padding: '10px 14px', borderRadius: '6px', border: '1px solid #FDE68A' }}>
-                      <strong>Directives:</strong> {problemStatement.supervisor_remarks || 'Please refine the problem scope and methodology according to mentor discussion.'}
-                    </div>
-                    <p style={{ margin: '8px 0 0 0', fontSize: '11.5px', color: '#B45309' }}>
-                      💡 Make the necessary adjustments to your Title and Scope below, then click <strong>&quot;Submit Revised Proposal&quot;</strong>.
+
+                  {supervisor?.fullName && (
+                    <span
+                      style={{
+                        fontSize: '11.5px',
+                        fontWeight: 500,
+                        color: '#78350F',
+                        backgroundColor: '#FEF3C7',
+                        border: '1px solid #FDE68A',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      {supervisor.fullName}
+                    </span>
+                  )}
+                </div>
+
+                {/* Directive body */}
+                <div style={{ padding: '14px 16px' }}>
+                  <div
+                    style={{
+                      borderLeft: '3px solid #D97706',
+                      paddingLeft: '12px',
+                      margin: '0 0 12px 0',
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: '13px',
+                        color: '#1E293B',
+                        lineHeight: '1.6',
+                        margin: 0,
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      {problemStatement.supervisor_remarks || 'Please refine the problem scope and methodology according to mentor discussion.'}
                     </p>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '12px',
+                      color: '#B45309',
+                      paddingTop: '8px',
+                      borderTop: '1px solid #FEF3C7',
+                    }}
+                  >
+                    <ArrowRight size={13} style={{ flexShrink: 0, color: '#D97706' }} />
+                    <span>Update the title and scope fields below, then submit your revised proposal.</span>
                   </div>
                 </div>
               </div>
@@ -820,6 +930,7 @@ export default function LeaderDashboardPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Minimisable Meeting Request Accordion Card */}
             <div
+              id="want-to-meet-card"
               style={{
                 borderRadius: '12px',
                 border: '1px solid var(--color-hairline)',
@@ -831,7 +942,7 @@ export default function LeaderDashboardPage() {
             >
               {/* Header Tap Area */}
               <div
-                onClick={() => setWantToMeetExpanded((prev) => !prev)}
+                onClick={toggleWantToMeet}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -1028,6 +1139,7 @@ export default function LeaderDashboardPage() {
                     return (
                       <div
                         key={m.id}
+                        id={`meeting-card-${m.id}`}
                         style={{
                           backgroundColor: '#FFFFFF',
                           borderTop: '1px solid var(--color-hairline)',

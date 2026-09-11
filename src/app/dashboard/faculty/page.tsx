@@ -49,13 +49,35 @@ export default function FacultyDashboardPage() {
   const [reviewActionLoading, setReviewActionLoading] = useState(false);
   const [expandedMeetingIds, setExpandedMeetingIds] = useState<Set<string>>(new Set());
 
+  const scrollToCenter = (elementId: string) => {
+    setTimeout(() => {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const navOffset = 70; // Top fixed navbar height
+      const availableHeight = window.innerHeight - navOffset;
+      if (rect.height >= availableHeight) {
+        const targetScroll = window.scrollY + rect.top - navOffset - 16;
+        window.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
+      } else {
+        const centerOffset = (availableHeight - rect.height) / 2;
+        const targetScroll = window.scrollY + rect.top - navOffset - centerOffset;
+        window.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
+      }
+    }, 60);
+  };
+
   const toggleMeetingExpand = (meetingId: string) => {
     setExpandedMeetingIds((prev) => {
       const next = new Set(prev);
+      const isOpening = !next.has(meetingId);
       if (next.has(meetingId)) {
         next.delete(meetingId);
       } else {
         next.add(meetingId);
+      }
+      if (isOpening) {
+        scrollToCenter(`faculty-meeting-card-${meetingId}`);
       }
       return next;
     });
@@ -1283,6 +1305,7 @@ export default function FacultyDashboardPage() {
                               return (
                                 <div
                                   key={m.id}
+                                  id={`faculty-meeting-card-${m.id}`}
                                   style={{
                                     backgroundColor: '#FFFFFF',
                                     borderTop: '1px solid var(--color-hairline)',

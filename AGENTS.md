@@ -10,3 +10,5 @@ Deterministic State Invalidation:
 Audit Trail Logging:
 "Every score override or panel reassignment made by the Administrator must log an immutable audit remark with timestamp."
 
+Viewport Scroll Ergonomics: "Whenever accordions, dropdown detail views, or large cards expand, automatically scroll the expanded container to the center of the available viewport (accounting for fixed navbars) with smooth scrolling."
+
