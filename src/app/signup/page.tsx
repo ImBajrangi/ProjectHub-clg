@@ -566,7 +566,7 @@ function SignUpForm() {
                     {/* Filtered Team List */}
                     <div
                       style={{
-                        maxHeight: '250px',
+                        maxHeight: '210px',
                         overflowY: 'auto',
                         padding: '6px',
                       }}
@@ -836,7 +836,7 @@ function SignUpForm() {
                     {/* Filtered Member List */}
                     <div
                       style={{
-                        maxHeight: '250px',
+                        maxHeight: '210px',
                         overflowY: 'auto',
                         padding: '6px',
                       }}
@@ -1145,10 +1145,11 @@ function SignUpForm() {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 30px 20px 50px;
+          padding: 36px 20px 110px;
+          min-height: calc(100vh - 140px);
           position: relative;
-          z-index: 1;
-          overflow: hidden;
+          z-index: 20;
+          overflow: visible;
         }
 
         /* Single Professional Botanical Background Graphic */
@@ -1195,10 +1196,11 @@ function SignUpForm() {
           border-radius: 12px;
           border: 1px solid #e5e7eb;
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
-          padding: 56px 48px 44px 48px;
+          padding: 48px 44px 38px 44px;
           position: relative;
-          z-index: 2;
+          z-index: 30;
           box-sizing: border-box;
+          margin: auto 0;
         }
 
         .cohere-login-title {
