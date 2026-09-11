@@ -2720,7 +2720,7 @@ Output ONLY the raw valid JSON array.`;
           onClick={() => setScoreEditModalOpen(false)}
         >
           <div
-            className="card animate-scale-in"
+            className="card animate-scale-in modal-card-responsive"
             style={{
               width: '100%',
               maxWidth: '480px',

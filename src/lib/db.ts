@@ -19,10 +19,14 @@ import {
 import { NotificationPayload } from './notifications';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ezspbqjnvmxuglivdjzb.supabase.co';
-const SUPABASE_SERVICE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  '';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+if (!SUPABASE_SERVICE_KEY) {
+  console.error(
+    '\x1b[31m[CRITICAL] SUPABASE_SERVICE_ROLE_KEY is missing from environment variables.\n' +
+    'The app will NOT be able to read/write data. Set it in .env.local.\x1b[0m'
+  );
+}
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
   auth: { persistSession: false },
@@ -51,6 +55,24 @@ let memoryStore: DatabaseStore | null = null;
 let lastStoreFetch = 0;
 let isFetchingStore = false;
 const STORE_TTL_MS = 60000; // 60 seconds warm TTL with background refresh
+
+// Helper to log Supabase errors consistently
+function logSupabaseError(table: string, error: any) {
+  if (error) {
+    console.error(`[Supabase ERROR] Table "${table}": ${error.message} (code: ${error.code}, hint: ${error.hint || 'none'})`);
+  }
+}
+
+// Helper for fire-and-forget writes with error logging
+function fireAndLog(promise: PromiseLike<{ error: any }>, context: string) {
+  Promise.resolve(promise).then(({ error }) => {
+    if (error) {
+      console.error(`[Supabase WRITE ERROR] ${context}: ${error.message} (code: ${error.code})`);
+    }
+  }).catch((err) => {
+    console.error(`[Supabase WRITE EXCEPTION] ${context}:`, err);
+  });
+}
 
 async function fetchFreshStore(): Promise<DatabaseStore> {
   const [
@@ -82,6 +104,34 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
     supabase.from('notifications').select('*').order('created_at', { ascending: false }),
     supabase.from('push_subscriptions').select('*'),
   ]);
+
+  // Log ALL errors from Supabase queries
+  logSupabaseError('users', usersRes.error);
+  logSupabaseError('supervisors', supervisorsRes.error);
+  logSupabaseError('teams', teamsRes.error);
+  logSupabaseError('students', studentsRes.error);
+  logSupabaseError('problem_statements', psRes.error);
+  logSupabaseError('meetings', meetingsRes.error);
+  logSupabaseError('meeting_attendance', meetingAttRes.error);
+  logSupabaseError('evaluation_phases', phasesRes.error);
+  logSupabaseError('panels', panelsRes.error);
+  logSupabaseError('panel_members', panelMembersRes.error);
+  logSupabaseError('evaluations', evalsRes.error);
+  logSupabaseError('notifications', notifsRes.error);
+  logSupabaseError('push_subscriptions', pushSubsRes.error);
+
+  // Log row counts for quick diagnostics
+  const counts = {
+    users: usersRes.data?.length ?? 0,
+    teams: teamsRes.data?.length ?? 0,
+    students: studentsRes.data?.length ?? 0,
+    supervisors: supervisorsRes.data?.length ?? 0,
+  };
+  console.log(`[DB Store] Loaded: ${counts.users} users, ${counts.teams} teams, ${counts.students} students, ${counts.supervisors} supervisors`);
+
+  if (counts.users === 0 && !usersRes.error) {
+    console.warn('[DB Store WARNING] Users table returned 0 rows without error — RLS may be blocking reads. Check Supabase RLS settings.');
+  }
 
   const fresh: DatabaseStore = {
     users: usersRes.data || [],
@@ -210,7 +260,11 @@ export const db = {
       .ilike('email', cleanEmail)
       .maybeSingle();
 
-    if (error || !data) return null;
+    if (error) {
+      logSupabaseError('users (getUserByEmail)', error);
+      return null;
+    }
+    if (!data) return null;
     if (memoryStore && !memoryStore.users.some((u) => u.id === data.id)) {
       memoryStore.users.push(data as User);
     }
@@ -229,7 +283,11 @@ export const db = {
       .eq('id', id)
       .maybeSingle();
 
-    if (error || !data) return null;
+    if (error) {
+      logSupabaseError('users (getUserById)', error);
+      return null;
+    }
+    if (!data) return null;
     if (memoryStore && !memoryStore.users.some((u) => u.id === data.id)) {
       memoryStore.users.push(data as User);
     }
@@ -438,7 +496,7 @@ export const db = {
           updated_at: now,
         })
         .eq('id', existing.id)
-        .then();
+        .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('problem_statements (update)', writeErr); });
 
       return { success: true, problemStatement: existing };
     } else {
@@ -454,7 +512,7 @@ export const db = {
       };
 
       store.problem_statements.push(ps);
-      supabase.from('problem_statements').insert(ps).then();
+      fireAndLog(supabase.from('problem_statements').insert(ps), 'problem_statements insert');
 
       return { success: true, problemStatement: ps };
     }
@@ -495,7 +553,7 @@ export const db = {
         updated_at: now,
       })
       .eq('team_id', teamId)
-      .then();
+      .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('problem_statements (review)', writeErr); });
 
     return { success: true, problemStatement: existing };
   },
@@ -550,7 +608,7 @@ export const db = {
     };
 
     store.meetings.push(m);
-    supabase.from('meetings').insert(m).then();
+    fireAndLog(supabase.from('meetings').insert(m), 'meetings insert (request)');
     return m;
   },
 
@@ -580,7 +638,7 @@ export const db = {
     };
 
     store.meetings.push(m);
-    supabase.from('meetings').insert(m).then();
+    fireAndLog(supabase.from('meetings').insert(m), 'meetings insert (schedule)');
     return m;
   },
 
@@ -611,7 +669,7 @@ export const db = {
         venue,
       })
       .eq('id', meetingId)
-      .then();
+      .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('meetings (schedule update)', writeErr); });
 
     return { success: true, meeting };
   },
@@ -636,7 +694,7 @@ export const db = {
     store.meetings.splice(meetingIndex, 1);
 
     // Delete from Supabase
-    supabase.from('meetings').delete().eq('id', meetingId).then();
+    fireAndLog(supabase.from('meetings').delete().eq('id', meetingId), 'meetings delete');
 
     return { success: true };
   },
@@ -686,7 +744,7 @@ export const db = {
         completed_at: now,
       })
       .eq('id', meetingId)
-      .then();
+      .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('meetings (log record)', writeErr); });
 
     for (const att of attendanceRecords) {
       supabase.from('meeting_attendance').upsert(
@@ -697,7 +755,7 @@ export const db = {
           created_at: now,
         },
         { onConflict: 'meeting_id,student_id' }
-      ).then();
+      ).then(({ error: writeErr }) => { if (writeErr) logSupabaseError('meeting_attendance (upsert)', writeErr); });
     }
 
     return { success: true, meeting };
@@ -723,7 +781,7 @@ export const db = {
       .from('evaluation_phases')
       .update({ is_live: isLive, updated_at: now })
       .eq('phase_number', phaseNumber)
-      .then();
+      .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('evaluation_phases (setPhaseLive)', writeErr); });
 
     return phase || null;
   },
@@ -749,7 +807,7 @@ export const db = {
     if (phaseNumber === 2) updates.phase2_approved = approved;
     if (phaseNumber === 3) updates.phase3_approved = approved;
 
-    supabase.from('teams').update(updates).eq('id', teamId).then();
+    fireAndLog(supabase.from('teams').update(updates).eq('id', teamId), 'teams update (phase approval)');
 
     return team || null;
   },
@@ -802,7 +860,7 @@ export const db = {
     };
 
     store.panels.push(panel);
-    supabase.from('panels').insert(panel).then();
+    fireAndLog(supabase.from('panels').insert(panel), 'panels insert');
 
     for (const supId of supervisorIds) {
       const pm: PanelMember = {
@@ -812,7 +870,7 @@ export const db = {
         created_at: now,
       };
       store.panel_members.push(pm);
-      supabase.from('panel_members').insert(pm).then();
+      fireAndLog(supabase.from('panel_members').insert(pm), 'panel_members insert');
     }
 
     return panel;
@@ -866,13 +924,14 @@ export const db = {
           team_range_end: teamRangeEnd,
         })
         .eq('id', existing.id)
-        .then();
+        .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('panels (upsert update)', writeErr); });
 
       supabase
         .from('panel_members')
         .delete()
         .eq('panel_id', existing.id)
-        .then(() => {
+        .then(({ error: delErr }) => {
+          if (delErr) logSupabaseError('panel_members (delete for upsert)', delErr);
           const newMembers = supervisorIds.map((supId) => ({
             id: crypto.randomUUID(),
             panel_id: existing.id,
@@ -880,7 +939,7 @@ export const db = {
             created_at: now,
           }));
           if (newMembers.length > 0) {
-            supabase.from('panel_members').insert(newMembers).then();
+            fireAndLog(supabase.from('panel_members').insert(newMembers), 'panel_members insert (upsert)');
           }
         });
 
@@ -925,7 +984,7 @@ export const db = {
       })
       .eq('panel_number', panelNumber)
       .eq('phase_number', phaseNumber)
-      .then();
+      .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('panels (schedule update)', writeErr); });
 
     return panel || null;
   },
@@ -935,8 +994,8 @@ export const db = {
     store.panels = store.panels.filter((p) => p.id !== panelId);
     store.panel_members = store.panel_members.filter((pm) => pm.panel_id !== panelId);
 
-    supabase.from('panels').delete().eq('id', panelId).then();
-    supabase.from('panel_members').delete().eq('panel_id', panelId).then();
+    fireAndLog(supabase.from('panels').delete().eq('id', panelId), 'panels delete');
+    fireAndLog(supabase.from('panel_members').delete().eq('panel_id', panelId), 'panel_members delete');
     return true;
   },
 
@@ -989,7 +1048,7 @@ export const db = {
     supabase
       .from('evaluations')
       .upsert(payload, { onConflict: 'phase_number,student_id,panel_member_id' })
-      .then();
+      .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('evaluations (upsert)', writeErr); });
 
     return payload;
   },
@@ -1010,7 +1069,7 @@ export const db = {
     };
 
     store.notifications.unshift(item);
-    supabase.from('notifications').insert(item).then();
+    fireAndLog(supabase.from('notifications').insert(item), 'notifications insert');
     return item;
   },
 

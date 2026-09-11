@@ -1235,31 +1235,74 @@ textarea {
   color: var(--color-ink);
 }
 
+/* Modal Scale-In Animation (used across admin, faculty, leader modals) */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* Universal Modal Overlay & Outer-Click Accessibility */
 .modal-overlay-responsive {
   cursor: pointer;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1200 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: rgba(15, 23, 42, 0.5) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  padding: 20px 16px !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  box-sizing: border-box !important;
 }
 
-.modal-overlay-responsive > *,
+.modal-overlay-responsive > * {
+  cursor: default;
+}
+
 .modal-card-responsive {
   cursor: default;
+  position: relative !important;
+  margin: auto !important;
+  max-height: calc(100dvh - 40px) !important;
+  max-height: calc(100vh - 40px) !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  border-radius: 16px !important;
+  box-sizing: border-box !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.06) !important;
 }
 
 /* Mobile-Friendly Modal Layouts & Grids */
 @media (max-width: 768px) {
 
-  /* Modal Overlays & Bottom Sheet Mode */
+  /* Modal Overlays & Centered Responsive Card */
   .modal-overlay-responsive {
-    padding: 10px 8px !important;
-    align-items: flex-end !important;
+    padding: 16px 12px !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   .modal-card-responsive {
-    max-height: 92vh !important;
-    border-radius: 16px 16px 0 0 !important;
-    margin: 0 !important;
+    max-height: calc(100dvh - 32px) !important;
+    max-height: calc(100vh - 32px) !important;
+    border-radius: 16px !important;
+    margin: auto !important;
     width: 100% !important;
-    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .modal-header-responsive {

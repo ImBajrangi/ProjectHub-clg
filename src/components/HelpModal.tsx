@@ -343,6 +343,7 @@ export default function HelpModal({ isOpen, onClose, userRole }: HelpModalProps)
 
   return (
     <div
+      className="modal-overlay-responsive"
       style={{
         position: 'fixed',
         inset: 0,
@@ -358,7 +359,7 @@ export default function HelpModal({ isOpen, onClose, userRole }: HelpModalProps)
       onClick={onClose}
     >
       <div
-        className="card animate-scale-in"
+        className="card animate-scale-in modal-card-responsive"
         style={{
           width: '100%',
           maxWidth: '820px',

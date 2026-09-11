@@ -1,4 +1,4 @@
-export type UserRole = 'leader' | 'supervisor' | 'panel' | 'admin';
+export type UserRole = 'leader' | 'supervisor' | 'admin';
 
 export interface User {
   id: string;
@@ -47,7 +47,7 @@ export interface Team {
   team_name: string; // e.g. "Team BCA-1"
   team_number: number;
   program: string; // "BCA" | "BCA - DS"
-  supervisor_id: string;
+  supervisor_id?: string | null;
   leader_id?: string | null;
   phase1_approved: boolean;
   phase2_approved: boolean;
