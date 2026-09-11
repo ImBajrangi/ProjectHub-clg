@@ -2486,210 +2486,217 @@ Output ONLY the raw valid JSON array.`;
             className="card animate-scale-in modal-card-responsive"
             style={{
               width: '100%',
-              maxWidth: '800px',
-              maxHeight: 'min(90vh, 720px)',
-              overflowY: 'auto',
-              padding: '24px',
+              maxWidth: '880px',
+              maxHeight: 'min(90vh, 760px)',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: 0,
               borderRadius: '16px',
               backgroundColor: '#FFFFFF',
               boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
               border: '1px solid var(--color-border)',
-              margin: 'auto',
+              margin: 'auto 0',
+              overflow: 'hidden',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px', gap: '12px' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                  <span className="badge badge-brand" style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    {selectedTeamModal.program}
-                  </span>
-                  {selectedTeamModal.panel_name && (
-                    <span className="badge badge-neutral" style={{ fontSize: '11px' }}>
-                      {selectedTeamModal.panel_name}
+            {/* Pinned Header */}
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border)', backgroundColor: '#FFFFFF', flexShrink: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                    <span className="badge badge-brand" style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      {selectedTeamModal.program}
                     </span>
-                  )}
-                </div>
-                <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.02em', margin: '0 0 8px 0', lineHeight: 1.25 }}>
-                  {selectedTeamModal.team_name}
-                </h3>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', backgroundColor: 'var(--color-canvas-soft)', borderRadius: '6px', fontSize: '12px', border: '1px solid var(--color-border)' }}>
-                    <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Supervisor:</span>
-                    <strong style={{ color: 'var(--color-ink)' }}>{selectedTeamModal.supervisor?.name || 'Unassigned'}</strong>
+                    {selectedTeamModal.panel_name && (
+                      <span className="badge badge-neutral" style={{ fontSize: '11px' }}>
+                        {selectedTeamModal.panel_name}
+                      </span>
+                    )}
                   </div>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', backgroundColor: 'var(--color-canvas-soft)', borderRadius: '6px', fontSize: '12px', border: '1px solid var(--color-border)' }}>
-                    <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Leader:</span>
-                    <strong style={{ color: 'var(--color-ink)' }}>{selectedTeamModal.leader?.name || 'Not Elected'}</strong>
+                  <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.02em', margin: '0 0 8px 0', lineHeight: 1.25 }}>
+                    {selectedTeamModal.team_name}
+                  </h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', backgroundColor: 'var(--color-canvas-soft)', borderRadius: '6px', fontSize: '12px', border: '1px solid var(--color-border)' }}>
+                      <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Supervisor:</span>
+                      <strong style={{ color: 'var(--color-ink)' }}>{selectedTeamModal.supervisor?.name || 'Unassigned'}</strong>
+                    </div>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 10px', backgroundColor: 'var(--color-canvas-soft)', borderRadius: '6px', fontSize: '12px', border: '1px solid var(--color-border)' }}>
+                      <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Leader:</span>
+                      <strong style={{ color: 'var(--color-ink)' }}>{selectedTeamModal.leader?.name || 'Not Elected'}</strong>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <button
-                onClick={() => setSelectedTeamModal(null)}
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '1px solid var(--color-border)',
-                  background: 'var(--color-canvas-soft)',
-                  cursor: 'pointer',
-                  color: 'var(--color-ink)',
-                  transition: 'all 0.15s ease',
-                  flexShrink: 0,
-                }}
-                className="btn-icon-hover"
-                aria-label="Close modal"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Problem Statement Box */}
-            <div style={{ backgroundColor: 'var(--color-canvas-soft)', borderRadius: '12px', padding: '16px', marginBottom: '20px', border: '1px solid var(--color-border)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <FileText size={14} style={{ color: 'var(--color-brand)' }} />
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Problem Statement
-                  </span>
-                </div>
-                <span
-                  className={`badge ${selectedTeamModal.problemStatement?.status === 'APPROVED' ? 'badge-success' : selectedTeamModal.problemStatement?.status === 'REJECTED' ? 'badge-danger' : 'badge-warning'}`}
-                  style={{ fontSize: '11px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', textTransform: 'capitalize' }}
+                <button
+                  onClick={() => setSelectedTeamModal(null)}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid var(--color-border)',
+                    background: 'var(--color-canvas-soft)',
+                    cursor: 'pointer',
+                    color: 'var(--color-ink)',
+                    transition: 'all 0.15s ease',
+                    flexShrink: 0,
+                  }}
+                  className="btn-icon-hover"
+                  aria-label="Close modal"
                 >
-                  {selectedTeamModal.problemStatement?.status === 'APPROVED' ? (
-                    <><Check size={12} /> Approved</>
-                  ) : (
-                    selectedTeamModal.problemStatement?.status ? selectedTeamModal.problemStatement.status.toLowerCase() : 'Not Submitted'
-                  )}
-                </span>
+                  <X size={18} />
+                </button>
               </div>
-              <strong style={{ fontSize: '14.5px', color: 'var(--color-ink)', display: 'block', marginBottom: '4px', lineHeight: 1.4 }}>
-                {selectedTeamModal.problemStatement?.title || 'No Title Submitted'}
-              </strong>
-              {selectedTeamModal.problemStatement?.description ? (
-                <div
-                  className="rich-text-content"
-                  style={{ fontSize: '12.5px', marginTop: '6px', paddingTop: '8px', borderTop: '1px dashed var(--color-border)', color: 'var(--color-ink-soft)', lineHeight: 1.6 }}
-                  dangerouslySetInnerHTML={{ __html: selectedTeamModal.problemStatement.description }}
-                />
-              ) : null}
             </div>
 
-            {/* Students Scorecard & Marks Roster */}
-            <div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <h4 style={{ fontSize: '15px', fontWeight: 800, margin: 0, color: 'var(--color-ink)' }}>
-                      Student Scorecard & Evaluation Marks
-                    </h4>
-                    <span className="badge badge-neutral" style={{ fontSize: '11px', padding: '2px 8px' }}>
-                      {selectedTeamModal.students?.length || 0} Students
+            {/* Scrollable Body */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
+              {/* Problem Statement Box */}
+              <div style={{ backgroundColor: 'var(--color-canvas-soft)', borderRadius: '12px', padding: '16px', marginBottom: '20px', border: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <FileText size={14} style={{ color: 'var(--color-brand)' }} />
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Problem Statement
                     </span>
                   </div>
-                  <span style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                    Click &quot;Edit&quot; on any student to modify marks
+                  <span
+                    className={`badge ${selectedTeamModal.problemStatement?.status === 'APPROVED' ? 'badge-success' : selectedTeamModal.problemStatement?.status === 'REJECTED' ? 'badge-danger' : 'badge-warning'}`}
+                    style={{ fontSize: '11px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', textTransform: 'capitalize' }}
+                  >
+                    {selectedTeamModal.problemStatement?.status === 'APPROVED' ? (
+                      <><Check size={12} /> Approved</>
+                    ) : (
+                      selectedTeamModal.problemStatement?.status ? selectedTeamModal.problemStatement.status.toLowerCase() : 'Not Submitted'
+                    )}
                   </span>
                 </div>
+                <strong style={{ fontSize: '14.5px', color: 'var(--color-ink)', display: 'block', marginBottom: '4px', lineHeight: 1.4 }}>
+                  {selectedTeamModal.problemStatement?.title || 'No Title Submitted'}
+                </strong>
+                {selectedTeamModal.problemStatement?.description ? (
+                  <div
+                    className="rich-text-content"
+                    style={{ fontSize: '12.5px', marginTop: '6px', paddingTop: '8px', borderTop: '1px dashed var(--color-border)', color: 'var(--color-ink-soft)', lineHeight: 1.6 }}
+                    dangerouslySetInnerHTML={{ __html: selectedTeamModal.problemStatement.description }}
+                  />
+                ) : null}
               </div>
 
-              <div className="data-table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Student</th>
-                      <th>Roll No</th>
-                      <th>Phase 1</th>
-                      <th>Phase 2</th>
-                      <th>Phase 3</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedTeamModal.students?.map((s: any) => (
-                      <tr key={s.id}>
-                        <td>
-                          <div style={{ fontWeight: 600, fontSize: '13px' }}>{s.full_name}</div>
-                          <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                            {s.isLeader ? <span style={{ color: '#059669', fontWeight: 700 }}>● Team Leader</span> : 'Member'}
-                          </div>
-                        </td>
-                        <td style={{ color: 'var(--color-text-muted)', fontSize: '12px' }}>{s.roll_no}</td>
-                        <td>
-                          {s.phase1 ? (
-                            s.phase1.isAbsent ? (
-                              <span className="badge badge-danger" style={{ fontSize: '10px' }}>Absent</span>
-                            ) : (
-                              <span style={{ fontWeight: 700, color: '#059669', fontSize: '12px' }}>{s.phase1.score} / 10</span>
-                            )
-                          ) : (
-                            <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
-                          )}
-                        </td>
-                        <td>
-                          {s.phase2 ? (
-                            s.phase2.isAbsent ? (
-                              <span className="badge badge-danger" style={{ fontSize: '10px' }}>Absent</span>
-                            ) : (
-                              <span style={{ fontWeight: 700, color: '#2563EB', fontSize: '12px' }}>{s.phase2.score} / 10</span>
-                            )
-                          ) : (
-                            <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
-                          )}
-                        </td>
-                        <td>
-                          {s.phase3 ? (
-                            s.phase3.isAbsent ? (
-                              <span className="badge badge-danger" style={{ fontSize: '10px' }}>Absent</span>
-                            ) : (
-                              <span style={{ fontWeight: 700, color: '#7C3AED', fontSize: '12px' }}>{s.phase3.score} / 10</span>
-                            )
-                          ) : (
-                            <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
-                          )}
-                        </td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '4px' }}>
-                            <button
-                              onClick={() => handleOpenScoreEditor(selectedTeamModal, s, 1)}
-                              className="btn btn-outline"
-                              style={{ padding: '3px 8px', fontSize: '11px' }}
-                              title="Edit Phase 1 Score"
-                            >
-                              P1
-                            </button>
-                            <button
-                              onClick={() => handleOpenScoreEditor(selectedTeamModal, s, 2)}
-                              className="btn btn-outline"
-                              style={{ padding: '3px 8px', fontSize: '11px' }}
-                              title="Edit Phase 2 Score"
-                            >
-                              P2
-                            </button>
-                            <button
-                              onClick={() => handleOpenScoreEditor(selectedTeamModal, s, 3)}
-                              className="btn btn-outline"
-                              style={{ padding: '3px 8px', fontSize: '11px' }}
-                              title="Edit Phase 3 Score"
-                            >
-                              P3
-                            </button>
-                          </div>
-                        </td>
+              {/* Students Scorecard & Marks Roster */}
+              <div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <h4 style={{ fontSize: '15px', fontWeight: 800, margin: 0, color: 'var(--color-ink)' }}>
+                        Student Scorecard & Evaluation Marks
+                      </h4>
+                      <span className="badge badge-neutral" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                        {selectedTeamModal.students?.length || 0} Students
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                      Click &quot;Edit&quot; on any student to modify marks
+                    </span>
+                  </div>
+                </div>
+
+                <div className="data-table-container" style={{ border: '1px solid var(--color-border)', borderRadius: '10px', overflow: 'hidden' }}>
+                  <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: '28%', minWidth: '160px' }}>Student</th>
+                        <th style={{ width: '18%', minWidth: '105px' }}>Roll No</th>
+                        <th style={{ width: '13%', minWidth: '80px', textAlign: 'center' }}>Phase 1</th>
+                        <th style={{ width: '13%', minWidth: '80px', textAlign: 'center' }}>Phase 2</th>
+                        <th style={{ width: '13%', minWidth: '80px', textAlign: 'center' }}>Phase 3</th>
+                        <th style={{ width: '15%', minWidth: '115px', textAlign: 'right' }}>Action</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {selectedTeamModal.students?.map((s: any) => (
+                        <tr key={s.id}>
+                          <td>
+                            <div style={{ fontWeight: 600, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.full_name}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                              {s.isLeader ? <span style={{ color: '#059669', fontWeight: 700 }}>● Team Leader</span> : 'Member'}
+                            </div>
+                          </td>
+                          <td style={{ color: 'var(--color-text-muted)', fontSize: '12px', fontFamily: 'monospace' }}>{s.roll_no}</td>
+                          <td style={{ textAlign: 'center' }}>
+                            {s.phase1 ? (
+                              s.phase1.isAbsent ? (
+                                <span className="badge badge-danger" style={{ fontSize: '10px' }}>Absent</span>
+                              ) : (
+                                <span style={{ fontWeight: 700, color: '#059669', fontSize: '12px' }}>{s.phase1.score} / 10</span>
+                              )
+                            ) : (
+                              <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
+                            )}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            {s.phase2 ? (
+                              s.phase2.isAbsent ? (
+                                <span className="badge badge-danger" style={{ fontSize: '10px' }}>Absent</span>
+                              ) : (
+                                <span style={{ fontWeight: 700, color: '#2563EB', fontSize: '12px' }}>{s.phase2.score} / 10</span>
+                              )
+                            ) : (
+                              <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
+                            )}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            {s.phase3 ? (
+                              s.phase3.isAbsent ? (
+                                <span className="badge badge-danger" style={{ fontSize: '10px' }}>Absent</span>
+                              ) : (
+                                <span style={{ fontWeight: 700, color: '#7C3AED', fontSize: '12px' }}>{s.phase3.score} / 10</span>
+                              )
+                            ) : (
+                              <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
+                            )}
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <div style={{ display: 'inline-flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                              <button
+                                onClick={() => handleOpenScoreEditor(selectedTeamModal, s, 1)}
+                                className="btn btn-outline"
+                                style={{ padding: '3px 7px', fontSize: '11px', fontWeight: 600 }}
+                                title="Edit Phase 1 Score"
+                              >
+                                P1
+                              </button>
+                              <button
+                                onClick={() => handleOpenScoreEditor(selectedTeamModal, s, 2)}
+                                className="btn btn-outline"
+                                style={{ padding: '3px 7px', fontSize: '11px', fontWeight: 600 }}
+                                title="Edit Phase 2 Score"
+                              >
+                                P2
+                              </button>
+                              <button
+                                onClick={() => handleOpenScoreEditor(selectedTeamModal, s, 3)}
+                                className="btn btn-outline"
+                                style={{ padding: '3px 7px', fontSize: '11px', fontWeight: 600 }}
+                                title="Edit Phase 3 Score"
+                              >
+                                P3
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
-            {/* Footer */}
-            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            {/* Pinned Footer */}
+            <div style={{ padding: '16px 24px', borderTop: '1px solid var(--color-border)', backgroundColor: '#F8FAFC', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', flexShrink: 0 }}>
               <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
                 {selectedTeamModal.program} • {selectedTeamModal.team_name}
               </div>
