@@ -272,6 +272,24 @@ button > *,
   appearance: none !important;
 }
 
+/* Custom Sleek Scrollbar for Popups & Lists */
+.team-search-dropdown-popup > div::-webkit-scrollbar {
+  width: 5px;
+}
+
+.team-search-dropdown-popup > div::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.team-search-dropdown-popup > div::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+.team-search-dropdown-popup > div::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

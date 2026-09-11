@@ -453,29 +453,29 @@ function SignUpForm() {
                     className="team-search-dropdown-popup"
                     style={{
                       position: 'absolute',
-                      top: 'calc(100% + 4px)',
-                      left: '-1px',
-                      right: '-1px',
-                      zIndex: 100,
+                      top: 'calc(100% + 8px)',
+                      left: 0,
+                      right: 0,
+                      zIndex: 1000,
                       backgroundColor: '#FFFFFF',
-                      borderRadius: '10px',
-                      border: '1px solid #111827',
-                      boxShadow: '0 12px 28px -4px rgba(15, 23, 42, 0.14), 0 4px 10px -2px rgba(15, 23, 42, 0.06)',
+                      borderRadius: '12px',
+                      border: '1px solid #E2E8F0',
+                      boxShadow: '0 20px 35px -4px rgba(15, 23, 42, 0.16), 0 8px 16px -4px rgba(15, 23, 42, 0.08)',
                       overflow: 'hidden',
                     }}
                   >
                     {/* Search Team Bar Header */}
                     <div
                       style={{
-                        padding: '8px 12px',
-                        borderBottom: '1px solid #E2E8F0',
+                        padding: '10px 14px',
+                        borderBottom: '1px solid #F1F5F9',
                         backgroundColor: '#F8FAFC',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px',
+                        gap: '10px',
                       }}
                     >
-                      <Search size={14} style={{ color: '#64748B', flexShrink: 0 }} />
+                      <Search size={15} style={{ color: '#64748B', flexShrink: 0 }} />
                       <input
                         ref={searchInputRef}
                         type="text"
@@ -489,8 +489,8 @@ function SignUpForm() {
                           boxShadow: 'none',
                           WebkitBoxShadow: 'none',
                           background: 'transparent',
-                          fontSize: '13px',
-                          color: '#111827',
+                          fontSize: '13.5px',
+                          color: '#0F172A',
                           width: '100%',
                           fontFamily: 'inherit',
                           padding: '2px 0',
@@ -511,13 +511,14 @@ function SignUpForm() {
                             background: 'transparent',
                             color: '#94A3B8',
                             cursor: 'pointer',
-                            padding: '2px',
+                            padding: '3px',
                             display: 'flex',
                             alignItems: 'center',
+                            borderRadius: '4px',
                           }}
                           aria-label="Clear search"
                         >
-                          <X size={13} />
+                          <X size={14} />
                         </button>
                       )}
                     </div>
@@ -525,14 +526,14 @@ function SignUpForm() {
                     {/* Filtered Team List */}
                     <div
                       style={{
-                        maxHeight: '230px',
+                        maxHeight: '250px',
                         overflowY: 'auto',
-                        padding: '4px',
+                        padding: '6px',
                       }}
                     >
                       {filteredTeams.length === 0 ? (
-                        <div style={{ padding: '20px 14px', textAlign: 'center' }}>
-                          <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#64748B' }}>
+                        <div style={{ padding: '24px 14px', textAlign: 'center' }}>
+                          <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#64748B' }}>
                             No teams match &ldquo;<strong>{teamSearchQuery}</strong>&rdquo;
                           </p>
                           <button
@@ -565,29 +566,30 @@ function SignUpForm() {
                                 setTeamDropdownOpen(false);
                               }}
                               style={{
-                                padding: '9px 12px',
-                                borderRadius: '6px',
+                                padding: '10px 12px',
+                                borderRadius: '8px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
                                 gap: '8px',
                                 cursor: 'pointer',
                                 backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
-                                transition: 'background-color 0.12s ease',
+                                transition: 'all 0.12s ease',
+                                margin: '1px 0',
                               }}
                               onMouseEnter={(e) => {
-                                if (!isSelected) e.currentTarget.style.backgroundColor = '#F1F5F9';
+                                if (!isSelected) e.currentTarget.style.backgroundColor = '#F8FAFC';
                               }}
                               onMouseLeave={(e) => {
                                 if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
                               }}
                             >
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
                                 <span
                                   style={{
                                     fontSize: '13.5px',
                                     fontWeight: isSelected ? 700 : 500,
-                                    color: isSelected ? '#1D4ED8' : '#111827',
+                                    color: isSelected ? '#1D4ED8' : '#0F172A',
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
                                     whiteSpace: 'nowrap',
@@ -598,7 +600,17 @@ function SignUpForm() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#64748B' }}>
                                   <span style={{ fontFamily: 'monospace' }}>{t.team_code}</span>
                                   <span>•</span>
-                                  <span>{t.program}</span>
+                                  <span
+                                    style={{
+                                      backgroundColor: '#F1F5F9',
+                                      padding: '1px 6px',
+                                      borderRadius: '4px',
+                                      border: '1px solid #E2E8F0',
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    {t.program}
+                                  </span>
                                 </div>
                               </div>
                               {isSelected && (
@@ -923,12 +935,23 @@ function SignUpForm() {
           border: 1px solid #d1d5db;
           border-radius: 10px;
           background-color: #ffffff;
-          overflow: hidden;
+          position: relative;
+          overflow: visible !important;
           transition: border-color 0.15s ease;
         }
 
         .cohere-stacked-box:focus-within {
           border-color: #111827;
+        }
+
+        .cohere-compartment:first-child {
+          border-top-left-radius: 9px;
+          border-top-right-radius: 9px;
+        }
+
+        .cohere-compartment:last-child {
+          border-bottom-left-radius: 9px;
+          border-bottom-right-radius: 9px;
         }
 
         .cohere-compartment {
