@@ -162,49 +162,60 @@ function LoginForm() {
     setSessionConflict(false);
     setLoading(true);
 
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+    const attemptLogin = async (isRetry = false): Promise<boolean> => {
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+        });
 
-      const data = await res.json();
+        const data = await res.json();
 
-      if (!res.ok) {
-        if (res.status === 409) {
-          setSessionConflict(true);
-          setError(data.error || 'Account is already active on another device.');
-        } else {
-          setError(data.error || 'Invalid email or password');
+        if (!res.ok) {
+          if (res.status === 409) {
+            setSessionConflict(true);
+            setError(data.error || 'Account is already active on another device.');
+          } else {
+            setError(data.error || 'Invalid email or password');
+          }
+          setLoading(false);
+          return true;
         }
+
+        if (data.token) {
+          localStorage.setItem('codeshastra_token', data.token);
+        }
+
+        // Proactively request native OS desktop notification permission on login user gesture
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+          try {
+            await requestDeviceNotificationPermission();
+          } catch {}
+        }
+
+        const role = data.user?.role;
+        if (role === 'admin') {
+          router.push('/admin');
+        } else if (role === 'supervisor') {
+          router.push('/dashboard/faculty');
+        } else {
+          router.push('/dashboard/leader');
+        }
+        return true;
+      } catch (err: any) {
+        if (!isRetry) {
+          // Automatic 1-time retry on connection hiccup
+          await new Promise((r) => setTimeout(r, 400));
+          return await attemptLogin(true);
+        }
+        setError('Network connection lost or server unreachable. Please check your internet and try again.');
         setLoading(false);
-        return;
+        return false;
       }
+    };
 
-      if (data.token) {
-        localStorage.setItem('codeshastra_token', data.token);
-      }
-
-      // Proactively request native OS desktop notification permission on login user gesture
-      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-        try {
-          await requestDeviceNotificationPermission();
-        } catch {}
-      }
-
-      const role = data.user?.role;
-      if (role === 'admin') {
-        router.push('/admin');
-      } else if (role === 'supervisor') {
-        router.push('/dashboard/faculty');
-      } else {
-        router.push('/dashboard/leader');
-      }
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred');
-      setLoading(false);
-    }
+    await attemptLogin();
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {

@@ -101,23 +101,9 @@ export const auth = {
       };
     }
 
-    // STRICT SINGLE-DEVICE CONCURRENT SESSION ENFORCEMENT
-    // If user is a Team Leader, they are strictly allowed to be logged in on only ONE device or browser session at any time.
-    if (user.role === 'leader' && user.active_session_token) {
-      // Check if session is recent (within last 12 hours)
-      const lastActive = user.active_session_at ? new Date(user.active_session_at).getTime() : 0;
-      const now = Date.now();
-      const twelveHours = 12 * 60 * 60 * 1000;
-
-      if (now - lastActive < twelveHours) {
-        return {
-          success: false,
-          error: 'Account is already active on another device. Please log out from that device first.',
-        };
-      }
-    }
-
-    // Issue new session token
+    // Issue new session token & take over active session (Strict Single-Device Policy)
+    // Overwriting the active session token ensures that only this current device/browser is valid,
+    // and any previous device session is immediately disconnected on its next request.
     const sessionToken = crypto.randomBytes(32).toString('hex');
     const now = new Date().toISOString();
 
