@@ -49,13 +49,36 @@ export default function LeaderDashboardPage() {
   const [submittingPs, setSubmittingPs] = useState(false);
   const [psMessage, setPsMessage] = useState('');
   const editorRef = useRef<HTMLDivElement>(null);
+  const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Meeting request
   const [wantToMeetExpanded, setWantToMeetExpanded] = useState(false);
   const [requestingMeeting, setRequestingMeeting] = useState(false);
   const [cancellingMeetingId, setCancellingMeetingId] = useState<string | null>(null);
   const [meetingMessage, setMeetingMessage] = useState('');
+  const [meetingConfirmation, setMeetingConfirmation] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    mentorName: string;
+    meetIndex: number;
+    timestamp: string;
+  } | null>(null);
   const [expandedMeetingIds, setExpandedMeetingIds] = useState<Set<string>>(new Set());
+
+  // Auto-resize title textarea as text changes
+  const handleTitleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setPsTitle(e.target.value);
+    e.target.style.height = 'auto';
+    e.target.style.height = `${Math.max(42, e.target.scrollHeight)}px`;
+  };
+
+  useEffect(() => {
+    if (titleTextareaRef.current) {
+      titleTextareaRef.current.style.height = 'auto';
+      titleTextareaRef.current.style.height = `${Math.max(42, titleTextareaRef.current.scrollHeight)}px`;
+    }
+  }, [psTitle, activeTab]);
 
   // Auto-hide alert messages after 4 seconds for a clean, non-intrusive layout
   useEffect(() => {
@@ -367,9 +390,19 @@ export default function LeaderDashboardPage() {
 
   const handleWantToMeet = async () => {
     setRequestingMeeting(true);
-    setMeetingMessage('Meeting request sent! Your supervisor has received an immediate alert.');
-
+    const supervisorName = teamData?.supervisor?.full_name || 'Supervisor';
     const nextMeetIdx = (teamData?.meetings?.length || 0) + 1;
+
+    // Set dedicated in-software confirmation state
+    setMeetingConfirmation({
+      show: true,
+      title: `Meeting Request Dispatched (Meet ${nextMeetIdx})`,
+      message: `Your milestone review request has been recorded and transmitted to Prof. ${supervisorName}. An official notification is now active in their mentor console in real time.`,
+      mentorName: supervisorName,
+      meetIndex: nextMeetIdx,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    });
+    setMeetingMessage(`Milestone review request for Meet ${nextMeetIdx} submitted to Prof. ${supervisorName}.`);
 
     // 1. Instant 0ms Notification Dispatch
     const optimisticNotif = {
@@ -415,6 +448,9 @@ export default function LeaderDashboardPage() {
       };
     });
 
+    setWantToMeetExpanded(false);
+    scrollToCenter('meeting-confirmation-bar');
+
     try {
       const res = await fetch('/api/meetings', {
         method: 'POST',
@@ -425,6 +461,7 @@ export default function LeaderDashboardPage() {
 
       if (!res.ok) {
         setMeetingMessage(`Error: ${data.error}`);
+        setMeetingConfirmation(null);
         loadDashboard();
       } else if (data.meeting) {
         setTeamData((prev: any) => {
@@ -446,10 +483,10 @@ export default function LeaderDashboardPage() {
       }
     } catch (e: any) {
       setMeetingMessage(`Error: ${e.message}`);
+      setMeetingConfirmation(null);
       loadDashboard();
     } finally {
       setRequestingMeeting(false);
-      setWantToMeetExpanded(false);
     }
   };
 
@@ -817,21 +854,42 @@ export default function LeaderDashboardPage() {
                       fontSize: '14px',
                       fontWeight: 600,
                       color: 'var(--color-ink)',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
+                      lineHeight: '1.45',
+                      minHeight: '42px',
                     }}
                   >
                     {psTitle || 'Untitled Project'}
                   </div>
                 ) : (
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={psTitle}
-                    onChange={(e) => setPsTitle(e.target.value)}
-                    placeholder="Enter project title..."
-                    required
-                    disabled={submittingPs}
-                    style={{ fontSize: '14px', fontWeight: 600 }}
-                  />
+                  <>
+                    <textarea
+                      ref={titleTextareaRef}
+                      rows={1}
+                      className="input-field"
+                      value={psTitle}
+                      onChange={handleTitleChange}
+                      placeholder="Enter project title..."
+                      required
+                      disabled={submittingPs}
+                      style={{
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        resize: 'none',
+                        overflow: 'hidden',
+                        lineHeight: '1.45',
+                        minHeight: '42px',
+                        padding: '10px 14px',
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        display: 'block',
+                      }}
+                    />
+                    <span style={{ fontSize: '11px', color: 'var(--color-text-faint)', marginTop: '4px', display: 'block' }}>
+                      Auto-expanding field • Automatically expands to accommodate multi-line project titles.
+                    </span>
+                  </>
                 )}
               </div>
 
@@ -879,6 +937,8 @@ export default function LeaderDashboardPage() {
                       lineHeight: '1.6',
                       minHeight: '140px',
                       color: 'var(--color-ink)',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
                     }}
                     dangerouslySetInnerHTML={{ __html: psDescription || 'No description provided.' }}
                   />
@@ -901,6 +961,8 @@ export default function LeaderDashboardPage() {
                       outline: 'none',
                       boxSizing: 'border-box',
                       whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
                       overflowY: 'visible',
                     }}
                     className="rich-bold-editor"
@@ -949,81 +1011,72 @@ export default function LeaderDashboardPage() {
         {/* TAB 3: MEETINGS */}
         {activeTab === 'meetings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Minimisable Meeting Request Accordion Card */}
+            {/* Want to Meet Accordion Card */}
             <div
               id="want-to-meet-card"
               style={{
+                backgroundColor: '#F8FAFC',
+                border: '1.5px solid #E2E8F0',
                 borderRadius: '12px',
-                border: '1px solid var(--color-hairline)',
-                backgroundColor: wantToMeetExpanded ? '#F8FAFC' : '#FFFFFF',
-                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
                 overflow: 'hidden',
-                transition: 'all 0.2s ease',
+                transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
               }}
             >
-              {/* Header Tap Area */}
               <div
                 onClick={toggleWantToMeet}
                 style={{
+                  padding: '16px 20px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  gap: '12px',
-                  padding: '14px 18px',
                   cursor: 'pointer',
                   userSelect: 'none',
-                  backgroundColor: wantToMeetExpanded ? '#F1F5F9' : '#FFFFFF',
-                  transition: 'background-color 0.15s ease',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                   <div
                     style={{
-                      width: '36px',
-                      height: '36px',
+                      width: '40px',
+                      height: '40px',
                       borderRadius: '10px',
                       backgroundColor: '#EFF6FF',
                       border: '1px solid #DBEAFE',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#2563EB',
+                      color: 'var(--color-primary)',
                       flexShrink: 0,
                     }}
                   >
-                    <Send size={16} />
+                    <Send size={18} />
                   </div>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: 'var(--color-ink)', letterSpacing: '-0.01em' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--color-ink)' }}>
                       Request Supervisor Review
                     </h3>
-                    <p style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', margin: '1px 0 0', lineHeight: 1.2 }}>
-                      {wantToMeetExpanded
-                        ? `Official request to mentor`
-                        : `Request mentor review session`}
+                    <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'var(--color-ink-soft)' }}>
+                      Official request to mentor • Prof. {supervisor?.fullName || 'Supervisor'}
                     </p>
                   </div>
                 </div>
 
-                <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <div
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      padding: '6px 12px',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      borderRadius: '8px',
-                      backgroundColor: wantToMeetExpanded ? '#FFFFFF' : '#EFF6FF',
-                      color: wantToMeetExpanded ? '#475569' : '#1D4ED8',
-                      border: wantToMeetExpanded ? '1px solid #CBD5E1' : '1px solid #BFDBFE',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <span>{wantToMeetExpanded ? 'Close' : 'Want to Meet'}</span>
-                    {wantToMeetExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                  </div>
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid var(--color-hairline)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: 'var(--color-ink)',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                  }}
+                >
+                  <span>{wantToMeetExpanded ? 'Close' : 'Expand'}</span>
+                  {wantToMeetExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </div>
               </div>
 
@@ -1089,6 +1142,92 @@ export default function LeaderDashboardPage() {
                 </div>
               )}
             </div>
+
+            {/* Dedicated In-Software Confirmation Bar */}
+            {meetingConfirmation && meetingConfirmation.show && (
+              <div
+                id="meeting-confirmation-bar"
+                style={{
+                  padding: '16px 18px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+                  border: '1.5px solid #86EFAC',
+                  boxShadow: '0 4px 16px -2px rgba(16, 185, 129, 0.14), 0 2px 6px -1px rgba(0, 0, 0, 0.04)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                  animation: 'fadeIn 0.25s ease-out',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                    <div
+                      style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '10px',
+                        backgroundColor: '#16A34A',
+                        color: '#FFFFFF',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)',
+                      }}
+                    >
+                      <CheckCircle2 size={20} />
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                        <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#14532D' }}>
+                          {meetingConfirmation.title}
+                        </h4>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            color: '#15803D',
+                            backgroundColor: '#BBF7D0',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                          }}
+                        >
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#16A34A' }} />
+                          Live Transmitted • {meetingConfirmation.timestamp}
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '13px', color: '#166534', lineHeight: 1.5 }}>
+                        {meetingConfirmation.message}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMeetingConfirmation(null)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#15803D',
+                      cursor: 'pointer',
+                      padding: '4px',
+                      borderRadius: '6px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: 0.75,
+                      transition: 'opacity 0.15s ease',
+                    }}
+                    title="Dismiss confirmation bar"
+                    aria-label="Dismiss confirmation bar"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {meetingMessage && (
               <div

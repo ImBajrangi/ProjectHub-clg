@@ -15,6 +15,7 @@ export default function PasswordChangeModal({ isOpen, onClose, onSuccess, userNa
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   const onCloseRef = React.useRef(onClose);
@@ -73,8 +74,10 @@ export default function PasswordChangeModal({ isOpen, onClose, onSuccess, userNa
         return;
       }
 
-      alert('Password updated. As per security policy, all active sessions have been terminated. Please log in again.');
-      onSuccess();
+      setSuccessMessage('Password updated. As per security policy, all active sessions have been terminated. Redirecting to login...');
+      setTimeout(() => {
+        onSuccess();
+      }, 1200);
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred');
       setLoading(false);
@@ -141,6 +144,12 @@ export default function PasswordChangeModal({ isOpen, onClose, onSuccess, userNa
         {error && (
           <div className="alert-banner alert-danger" style={{ fontSize: '13px', marginBottom: '14px' }}>
             {error}
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="alert-banner alert-success" style={{ fontSize: '13px', marginBottom: '14px' }}>
+            {successMessage}
           </div>
         )}
 

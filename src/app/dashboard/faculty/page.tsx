@@ -272,11 +272,11 @@ export default function FacultyDashboardPage() {
         }
       } else {
         const data = await res.json();
-        alert(`Error: ${data.error}`);
+        setScoreMessage(`Error: ${data.error}`);
         loadFacultyData();
       }
     } catch (e: any) {
-      alert(`Error: ${e.message}`);
+      setScoreMessage(`Error: ${e.message}`);
       loadFacultyData();
     } finally {
       setReviewActionLoading(false);
@@ -366,11 +366,11 @@ export default function FacultyDashboardPage() {
         }
       } else {
         const data = await res.json();
-        alert(data.error);
+        setScoreMessage(`Error: ${data.error}`);
         loadFacultyData();
       }
     } catch (e: any) {
-      alert(e.message);
+      setScoreMessage(`Error: ${e.message}`);
       loadFacultyData();
     }
   };
@@ -477,11 +477,11 @@ export default function FacultyDashboardPage() {
         }
       } else {
         const data = await res.json();
-        alert(data.error);
+        setScoreMessage(`Error: ${data.error}`);
         loadFacultyData(); // Rollback on server error
       }
     } catch (e: any) {
-      alert(e.message);
+      setScoreMessage(`Error: ${e.message}`);
       loadFacultyData(); // Rollback on network error
     }
   };
@@ -512,7 +512,7 @@ export default function FacultyDashboardPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        alert(data.error);
+        setScoreMessage(`Error: ${data.error}`);
         // Rollback on failure
         setSelectedTeam((prev: any) => (prev ? { ...prev, [key]: currentApproved } : prev));
         setGuidedTeams((prev: any[]) =>
@@ -520,7 +520,7 @@ export default function FacultyDashboardPage() {
         );
       }
     } catch (e: any) {
-      alert(e.message);
+      setScoreMessage(`Error: ${e.message}`);
       setSelectedTeam((prev: any) => (prev ? { ...prev, [key]: currentApproved } : prev));
       setGuidedTeams((prev: any[]) =>
         prev.map((t) => (t.id === selectedTeam.id ? { ...t, [key]: currentApproved } : t))
@@ -613,7 +613,7 @@ export default function FacultyDashboardPage() {
       });
 
       if (res.ok) {
-        alert('Phase 3 Report Clearance submitted successfully.');
+        setScoreMessage('Phase 3 Report Clearance submitted successfully.');
         loadFacultyData();
       }
     } catch (e) {
@@ -678,6 +678,33 @@ export default function FacultyDashboardPage() {
             </div>
           </div>
         </div>
+
+        {scoreMessage && (
+          <div
+            className={`alert-banner ${scoreMessage.includes('Error') ? 'alert-danger' : 'alert-success'}`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              marginBottom: '20px',
+              padding: '12px 16px',
+              borderRadius: '8px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', fontWeight: 600 }}>
+              {scoreMessage.includes('Error') ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
+              <span>{scoreMessage}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setScoreMessage('')}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'inherit', opacity: 0.7 }}
+            >
+              <X size={15} />
+            </button>
+          </div>
+        )}
 
         {/* =================================================================== */}
         {/* SUPERVISOR VIEW */}

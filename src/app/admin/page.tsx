@@ -331,10 +331,10 @@ export default function AdminDashboardPage() {
         loadAdminData();
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to delete panel');
+        setPanelFormError(data.error || 'Failed to delete panel');
       }
     } catch (e: any) {
-      alert(e.message);
+      setPanelFormError(e.message || 'Error deleting panel');
     }
   };
 
