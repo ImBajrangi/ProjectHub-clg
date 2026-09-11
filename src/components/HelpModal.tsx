@@ -624,7 +624,7 @@ export default function HelpModal({ isOpen, onClose, userRole }: HelpModalProps)
           <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
             CodeShastra ProjectHub Documentation v3.0 • Role: <strong>{userRole}</strong>
           </div>
-          <button onClick={onClose} className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '13px' }}>
+          <button type="button" onClick={onClose} className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '13px' }}>
             Close Guide
           </button>
         </div>

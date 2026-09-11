@@ -231,7 +231,29 @@ a:hover {
   color: #FFFFFF !important;
 }
 
-/* Buttons */
+/* Universal Buttons & Interactive Element Synchronization */
+button,
+.btn,
+[role="button"],
+.segmented-pill,
+.tab-pill,
+.clickable-item {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+}
+
+/* Ensure inner icons and text never intercept or drop click events */
+button > *,
+.btn > *,
+[role="button"] > *,
+.segmented-pill > *,
+.tab-pill > * {
+  pointer-events: none;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -244,13 +266,15 @@ a:hover {
   border-radius: var(--rounded-sm);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: var(--transition-fast);
+  transition: transform 0.08s ease, opacity 0.12s ease, background-color 0.15s ease, border-color 0.15s ease;
   white-space: nowrap;
   line-height: 1.2;
 }
 
-.btn:active:not(:disabled) {
-  opacity: 0.85;
+.btn:active:not(:disabled),
+button:active:not(:disabled) {
+  opacity: 0.88;
+  transform: scale(0.985);
 }
 
 /* Primary Button */
@@ -303,9 +327,11 @@ a:hover {
   background-color: #DBEAFE;
 }
 
-.btn:disabled {
+.btn:disabled,
+button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* Segmented Control */

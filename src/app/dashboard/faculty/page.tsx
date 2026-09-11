@@ -1141,6 +1141,7 @@ export default function FacultyDashboardPage() {
 
                             <div style={{ display: 'flex', gap: '10px' }}>
                               <button
+                                type="button"
                                 onClick={() => handleReviewProblemStatement('approve')}
                                 className="btn btn-primary"
                                 disabled={reviewActionLoading}
@@ -1148,6 +1149,7 @@ export default function FacultyDashboardPage() {
                                 <CheckCircle size={15} /> Approve & Lock Statement
                               </button>
                               <button
+                                type="button"
                                 onClick={() => handleReviewProblemStatement('revise')}
                                 className="btn btn-outline"
                                 disabled={reviewActionLoading || !problemReviewText}
@@ -1890,7 +1892,7 @@ export default function FacultyDashboardPage() {
                         <h3 style={{ fontSize: '18px', fontWeight: 700 }}>
                           Scoring Console: {selectedPanelTeam.team_name}
                         </h3>
-                        <button onClick={() => setSelectedPanelTeam(null)} className="btn btn-outline" style={{ padding: '4px 10px', fontSize: '12px' }}>
+                        <button type="button" onClick={() => setSelectedPanelTeam(null)} className="btn btn-outline" style={{ padding: '4px 10px', fontSize: '12px' }}>
                           Close
                         </button>
                       </div>
@@ -1912,7 +1914,7 @@ export default function FacultyDashboardPage() {
                                 <ExternalLink size={12} /> Research Paper PDF
                               </a>
                             )}
-                            <button onClick={() => handleReportClearance(true)} className="btn btn-primary" style={{ fontSize: '12px', padding: '6px 12px' }}>
+                            <button type="button" onClick={() => handleReportClearance(true)} className="btn btn-primary" style={{ fontSize: '12px', padding: '6px 12px' }}>
                               Submit Clearance
                             </button>
                           </div>
