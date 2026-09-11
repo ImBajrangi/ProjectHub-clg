@@ -18,7 +18,7 @@ import {
   NotificationItem,
   PushSubscriptionItem,
 } from './types';
-import { NotificationPayload } from './notifications';
+import { NotificationPayload, NotificationTemplates } from './notifications';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ezspbqjnvmxuglivdjzb.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -118,8 +118,8 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
     supabase.from('evaluation_phases').select('id, phase_number, phase_name, description, is_live, updated_at').order('phase_number', { ascending: true }),
     supabase.from('panels').select('id, panel_number, phase_number, panel_name, date, time_window, academic_block, room_number, team_range_start, team_range_end, created_at'),
     supabase.from('panel_members').select('id, panel_id, supervisor_id, created_at'),
-    supabase.from('evaluations').select('id, team_id, student_id, phase_number, score, remarks, criteria_scores, is_absent, locked, updated_at'),
-    supabase.from('notifications').select('id, user_id, category, subject, body, salutation, signoff, is_read, metadata, created_at').order('created_at', { ascending: false }).limit(200),
+    supabase.from('evaluations').select('id, team_id, student_id, panel_member_id, phase_number, score, remarks, is_absent, submitted_at'),
+    supabase.from('notifications').select('id, user_id, category, subject, body, salutation, signoff, is_read, created_at').order('created_at', { ascending: false }).limit(200),
     supabase.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth, created_at'),
   ]);
 
@@ -156,16 +156,34 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
   }
 
   const fresh: DatabaseStore = {
-    users: (usersRes.data && usersRes.data.length > 0) ? usersRes.data : (localFallback.users || []),
-    supervisors: (supervisorsRes.data && supervisorsRes.data.length > 0) ? supervisorsRes.data : (localFallback.supervisors || []),
-    teams: ((teamsRes.data && teamsRes.data.length > 0 ? teamsRes.data : localFallback.teams) || []).map((t: any) => ({
+    users: usersRes.data ?? (localFallback.users || []),
+    supervisors: supervisorsRes.data ?? (localFallback.supervisors || []),
+    teams: (teamsRes.data ?? (localFallback.teams || [])).map((t: any) => ({
       ...t,
-      team_name: `Team ${t.team_code}`,
+      team_name: t.team_name || `Team ${t.team_code}`,
     })),
-    students: (studentsRes.data && studentsRes.data.length > 0) ? studentsRes.data : (localFallback.students || []),
-    problem_statements: (psRes.data && psRes.data.length > 0) ? psRes.data : (localFallback.problem_statements || []),
-    meetings: (meetingsRes.data && meetingsRes.data.length > 0) ? meetingsRes.data : (localFallback.meetings || []),
-    meeting_attendance: (meetingAttRes.data && meetingAttRes.data.length > 0) ? meetingAttRes.data : (localFallback.meeting_attendance || []),
+    students: studentsRes.data ?? (localFallback.students || []),
+    problem_statements: psRes.data ?? (localFallback.problem_statements || []),
+    meetings: (() => {
+      const fromSupabase = meetingsRes.data || [];
+      const fromMemory = memoryStore?.meetings || [];
+      const fromLocal = localFallback.meetings || [];
+      const mergedMap = new Map<string, any>();
+      [...fromLocal, ...fromMemory, ...fromSupabase].forEach((m: any) => {
+        if (m && m.id) mergedMap.set(String(m.id), m);
+      });
+      return Array.from(mergedMap.values());
+    })(),
+    meeting_attendance: (() => {
+      const fromSupabase = meetingAttRes.data || [];
+      const fromMemory = memoryStore?.meeting_attendance || [];
+      const fromLocal = localFallback.meeting_attendance || [];
+      const mergedMap = new Map<string, any>();
+      [...fromLocal, ...fromMemory, ...fromSupabase].forEach((a: any) => {
+        if (a && a.id) mergedMap.set(String(a.id), a);
+      });
+      return Array.from(mergedMap.values());
+    })(),
     evaluation_phases: (phasesRes.data && phasesRes.data.length > 0
       ? phasesRes.data.map((p: any) => ({
           ...p,
@@ -226,11 +244,11 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
             updated_at: new Date().toISOString(),
           },
         ]),
-    panels: (panelsRes.data && panelsRes.data.length > 0) ? panelsRes.data : (localFallback.panels || []),
-    panel_members: (panelMembersRes.data && panelMembersRes.data.length > 0) ? panelMembersRes.data : (localFallback.panel_members || []),
-    evaluations: (evalsRes.data && evalsRes.data.length > 0) ? evalsRes.data : (localFallback.evaluations || []),
-    notifications: (notifsRes.data && notifsRes.data.length > 0) ? notifsRes.data : (localFallback.notifications || []),
-    push_subscriptions: (pushSubsRes.data && pushSubsRes.data.length > 0) ? pushSubsRes.data : (localFallback.push_subscriptions || []),
+    panels: panelsRes.data ?? (localFallback.panels || []),
+    panel_members: panelMembersRes.data ?? (localFallback.panel_members || []),
+    evaluations: evalsRes.data ?? (localFallback.evaluations || []),
+    notifications: notifsRes.data ?? (localFallback.notifications || []),
+    push_subscriptions: pushSubsRes.data ?? (localFallback.push_subscriptions || []),
   };
 
   memoryStore = fresh;
@@ -643,39 +661,40 @@ export const db = {
   // Meetings
   async getMeetingsByTeam(teamId: string): Promise<Meeting[]> {
     const store = await this.getStore();
-    return store.meetings
-      .filter((m) => m.team_id === teamId)
-      .sort((a, b) => a.meeting_index - b.meeting_index)
+    return (store.meetings || [])
+      .filter((m) => m && String(m.team_id) === String(teamId))
+      .sort((a, b) => (a.meeting_index || 0) - (b.meeting_index || 0))
       .map((m) => ({
         ...m,
-        attendance: store.meeting_attendance.filter((a) => a.meeting_id === m.id),
+        attendance: (store.meeting_attendance || []).filter((a) => a && String(a.meeting_id) === String(m.id)),
       }));
   },
 
   async getMeetingsBySupervisor(supervisorId: string): Promise<Meeting[]> {
     const store = await this.getStore();
-    return store.meetings
-      .filter((m) => m.supervisor_id === supervisorId)
-      .sort((a, b) => new Date(b.requested_at).getTime() - new Date(a.requested_at).getTime())
+    return (store.meetings || [])
+      .filter((m) => m && String(m.supervisor_id) === String(supervisorId))
+      .sort((a, b) => new Date(b.requested_at || 0).getTime() - new Date(a.requested_at || 0).getTime())
       .map((m) => ({
         ...m,
-        attendance: store.meeting_attendance.filter((a) => a.meeting_id === m.id),
+        attendance: (store.meeting_attendance || []).filter((a) => a && String(a.meeting_id) === String(m.id)),
       }));
   },
 
   async getMeetingAttendance(meetingId: string): Promise<MeetingAttendance[]> {
     const store = await this.getStore();
-    return store.meeting_attendance.filter((a) => a.meeting_id === meetingId);
+    return (store.meeting_attendance || []).filter((a) => a && String(a.meeting_id) === String(meetingId));
   },
 
   async getMeetingById(meetingId: string): Promise<Meeting | null> {
     const store = await this.getStore();
-    return store.meetings.find((m) => m.id === meetingId) || null;
+    return (store.meetings || []).find((m) => m && String(m.id) === String(meetingId)) || null;
   },
 
   async createMeetingRequest(teamId: string, supervisorId: string): Promise<Meeting> {
     const store = await this.getStore();
-    const existing = store.meetings.filter((m) => m.team_id === teamId);
+    if (!store.meetings) store.meetings = [];
+    const existing = store.meetings.filter((m) => m && String(m.team_id) === String(teamId));
     const nextIndex = existing.length + 1;
     const now = new Date().toISOString();
 
@@ -690,6 +709,7 @@ export const db = {
     };
 
     store.meetings.push(m);
+    this.syncLocalBackup();
     fireAndLog(supabase.from('meetings').insert(m), 'meetings insert (request)');
     return m;
   },
@@ -702,7 +722,8 @@ export const db = {
     venue: string
   ): Promise<Meeting> {
     const store = await this.getStore();
-    const existing = store.meetings.filter((m) => m.team_id === teamId);
+    if (!store.meetings) store.meetings = [];
+    const existing = store.meetings.filter((m) => m && String(m.team_id) === String(teamId));
     const nextIndex = existing.length + 1;
     const now = new Date().toISOString();
 
@@ -720,6 +741,7 @@ export const db = {
     };
 
     store.meetings.push(m);
+    this.syncLocalBackup();
     fireAndLog(supabase.from('meetings').insert(m), 'meetings insert (schedule)');
     return m;
   },
@@ -731,7 +753,8 @@ export const db = {
     venue: string
   ): Promise<{ success: boolean; meeting?: Meeting }> {
     const store = await this.getStore();
-    const meeting = store.meetings.find((m) => m.id === meetingId);
+    if (!store.meetings) store.meetings = [];
+    const meeting = store.meetings.find((m) => m && String(m.id) === String(meetingId));
 
     if (!meeting) {
       return { success: false };
@@ -741,6 +764,7 @@ export const db = {
     meeting.scheduled_date = scheduledDate;
     meeting.time_slot = timeSlot;
     meeting.venue = venue;
+    this.syncLocalBackup();
 
     supabase
       .from('meetings')
@@ -761,7 +785,8 @@ export const db = {
     teamId: string
   ): Promise<{ success: boolean; error?: string }> {
     const store = await this.getStore();
-    const meetingIndex = store.meetings.findIndex((m) => m.id === meetingId && m.team_id === teamId);
+    if (!store.meetings) store.meetings = [];
+    const meetingIndex = store.meetings.findIndex((m) => m && String(m.id) === String(meetingId) && String(m.team_id) === String(teamId));
 
     if (meetingIndex === -1) {
       return { success: false, error: 'Meeting request not found.' };
@@ -774,6 +799,7 @@ export const db = {
 
     // Remove from in-memory store
     store.meetings.splice(meetingIndex, 1);
+    this.syncLocalBackup();
 
     // Delete from Supabase
     fireAndLog(supabase.from('meetings').delete().eq('id', meetingId), 'meetings delete');
@@ -788,7 +814,8 @@ export const db = {
     attendanceRecords: { studentId: string; isPresent: boolean }[]
   ): Promise<{ success: boolean; meeting?: Meeting }> {
     const store = await this.getStore();
-    const meeting = store.meetings.find((m) => m.id === meetingId);
+    if (!store.meetings) store.meetings = [];
+    const meeting = store.meetings.find((m) => m && String(m.id) === String(meetingId));
 
     if (!meeting) return { success: false };
 
@@ -798,10 +825,11 @@ export const db = {
     meeting.action_directives = actionDirectives;
     meeting.completed_at = now;
 
+    if (!store.meeting_attendance) store.meeting_attendance = [];
     // Update in-memory attendance
     for (const att of attendanceRecords) {
       const existingAtt = store.meeting_attendance.find(
-        (a) => a.meeting_id === meetingId && a.student_id === att.studentId
+        (a) => a && String(a.meeting_id) === String(meetingId) && String(a.student_id) === String(att.studentId)
       );
       if (existingAtt) {
         existingAtt.is_present = att.isPresent;
@@ -815,6 +843,7 @@ export const db = {
         });
       }
     }
+    this.syncLocalBackup();
 
     // Persist to Supabase
     supabase
@@ -1157,8 +1186,8 @@ export const db = {
 
   async getNotificationsByUser(userId: string): Promise<NotificationItem[]> {
     const store = await this.getStore();
-    return store.notifications
-      .filter((n) => n.user_id === userId)
+    return (store.notifications || [])
+      .filter((n) => n && n.user_id && String(n.user_id) === String(userId))
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   },
 
@@ -1215,5 +1244,218 @@ export const db = {
       console.error('Error clearing notifications in supabase:', err);
     }
     return true;
+  },
+
+  // Persist memory store changes locally if fallback file exists
+  syncLocalBackup() {
+    try {
+      if (!memoryStore) return;
+      const dbPath = path.join(process.cwd(), 'data', 'projecthub.db.json');
+      if (fs.existsSync(dbPath)) {
+        fs.writeFileSync(dbPath, JSON.stringify(memoryStore, null, 2), 'utf8');
+      }
+    } catch (err) {
+      console.error('Failed to sync local projecthub.db.json:', err);
+    }
+  },
+
+  // Admin Governance: Create new Faculty Supervisor or Admin directly
+  async createSupervisorOrAdmin(params: {
+    fullName: string;
+    email: string;
+    phone?: string;
+    employeeId: string;
+    designation?: string;
+    department?: string;
+    cabinNumber?: string;
+    role: 'supervisor' | 'admin';
+    password?: string;
+  }): Promise<{ success: boolean; error?: string; user?: User; supervisor?: SupervisorProfile }> {
+    const store = await this.getStore();
+    const cleanEmail = params.email.toLowerCase().trim();
+
+    // Check if user already exists
+    const existing = store.users.find((u) => u.email.toLowerCase() === cleanEmail);
+    if (existing) {
+      return { success: false, error: `A user with email "${cleanEmail}" already exists in the system.` };
+    }
+
+    // Check if employee_id already used
+    const cleanEmpId = (params.employeeId || '').trim();
+    if (cleanEmpId) {
+      const existingEmp = store.supervisors.find(
+        (s) => s.employee_id?.toLowerCase() === cleanEmpId.toLowerCase()
+      );
+      if (existingEmp) {
+        return { success: false, error: `Faculty Employee ID "${cleanEmpId}" is already assigned to another faculty member.` };
+      }
+    }
+
+    const userId = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const cleanPhone = (params.phone || '').trim();
+    const last4 = cleanPhone ? cleanPhone.slice(-4) : '2026';
+    const plainPassword = params.password?.trim() || (params.role === 'admin' ? 'Admin@CodeShastra2026' : `CodeShastra@${last4}`);
+    const passwordHash = bcrypt.hashSync(plainPassword, 10);
+    const finalEmpId = cleanEmpId || `FAC-${Math.floor(100 + Math.random() * 900)}`;
+
+    const newUser: User = {
+      id: userId,
+      email: cleanEmail,
+      password_hash: passwordHash,
+      role: params.role,
+      full_name: params.fullName.trim(),
+      phone: cleanPhone || undefined,
+      is_leader: false,
+      active_session_token: null,
+      active_session_device: null,
+      active_session_at: null,
+      reset_token: null,
+      reset_token_expires_at: null,
+      created_at: now,
+      updated_at: now,
+    };
+
+    const newSupervisor: SupervisorProfile = {
+      id: userId,
+      employee_id: finalEmpId,
+      designation: params.designation?.trim() || (params.role === 'admin' ? 'Project Incharge (Administrator)' : 'Faculty Mentor'),
+      department: params.department?.trim() || 'Dept. of Computer Applications',
+      cabin_number: params.cabinNumber?.trim() || 'Academic Block AB10',
+      created_at: now,
+    };
+
+    store.users.push(newUser);
+    store.supervisors.push(newSupervisor);
+    this.syncLocalBackup();
+
+    fireAndLog(supabase.from('users').insert(newUser), 'users insert');
+    fireAndLog(supabase.from('supervisors').insert(newSupervisor), 'supervisors insert');
+
+    // Send welcome notification
+    await this.createNotification(
+      NotificationTemplates.newFacultyAccountCreated({
+        userId,
+        userName: newUser.full_name,
+        email: newUser.email,
+        employeeId: newSupervisor.employee_id,
+        role: newUser.role,
+        timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+      })
+    );
+
+    return { success: true, user: newUser, supervisor: newSupervisor };
+  },
+
+  // Admin Governance: Transfer Admin Authority
+  async transferAdminAuthority(params: {
+    targetUserId: string;
+    currentAdminId: string;
+    demoteCurrentAdmin?: boolean;
+    assignedByName?: string;
+  }): Promise<{ success: boolean; error?: string; targetUser?: User; currentAdminUser?: User }> {
+    const store = await this.getStore();
+    const targetUser = store.users.find((u) => u.id === params.targetUserId);
+    if (!targetUser) {
+      return { success: false, error: 'Target teacher / supervisor not found.' };
+    }
+
+    const currentAdmin = store.users.find((u) => u.id === params.currentAdminId);
+    if (!currentAdmin) {
+      return { success: false, error: 'Current admin session is invalid.' };
+    }
+
+    const now = new Date().toISOString();
+    const timestampStr = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+    const isPrimaryTransfer = params.demoteCurrentAdmin !== false && params.targetUserId !== params.currentAdminId;
+
+    // 1. Promote target user to admin
+    targetUser.role = 'admin';
+    targetUser.updated_at = now;
+    await this.updateUser(targetUser.id, { role: 'admin' });
+
+    // Ensure target user has a supervisor record
+    let targetSup = store.supervisors.find((s) => s.id === targetUser.id);
+    if (!targetSup) {
+      const newSup: SupervisorProfile = {
+        id: targetUser.id,
+        employee_id: `ADM-${Math.floor(100 + Math.random() * 900)}`,
+        designation: 'Project Incharge (Administrator)',
+        department: 'Dept. of Computer Applications',
+        cabin_number: 'Incharge Office',
+        created_at: now,
+      };
+      store.supervisors.push(newSup);
+      fireAndLog(supabase.from('supervisors').insert(newSup), 'supervisors insert');
+    }
+
+    // 2. If full transfer, demote current admin to supervisor
+    if (isPrimaryTransfer) {
+      currentAdmin.role = 'supervisor';
+      currentAdmin.updated_at = now;
+      await this.updateUser(currentAdmin.id, { role: 'supervisor' });
+
+      // Ensure former admin has a supervisor record
+      let formerSup = store.supervisors.find((s) => s.id === currentAdmin.id);
+      if (!formerSup) {
+        const formerProfile: SupervisorProfile = {
+          id: currentAdmin.id,
+          employee_id: `FAC-${Math.floor(100 + Math.random() * 900)}`,
+          designation: 'Faculty Mentor',
+          department: 'Dept. of Computer Applications',
+          cabin_number: 'Academic Block AB10',
+          created_at: now,
+        };
+        store.supervisors.push(formerProfile);
+        fireAndLog(supabase.from('supervisors').insert(formerProfile), 'supervisors insert');
+      }
+
+      // Notify former admin
+      await this.createNotification(
+        NotificationTemplates.adminAuthorityTransferredFromUser({
+          userId: currentAdmin.id,
+          userName: currentAdmin.full_name,
+          transferredToName: targetUser.full_name,
+          timestamp: timestampStr,
+        })
+      );
+    }
+
+    // Notify new admin
+    await this.createNotification(
+      NotificationTemplates.adminAuthorityTransferredToUser({
+        userId: targetUser.id,
+        userName: targetUser.full_name,
+        assignedBy: params.assignedByName || currentAdmin.full_name,
+        timestamp: timestampStr,
+        isPrimaryTransfer,
+      })
+    );
+
+    this.syncLocalBackup();
+    return { success: true, targetUser, currentAdminUser: currentAdmin };
+  },
+
+  // Admin Governance: Set role (toggle between admin & supervisor)
+  async setFacultyAdminRole(userId: string, role: 'admin' | 'supervisor'): Promise<{ success: boolean; error?: string; user?: User }> {
+    const store = await this.getStore();
+    const user = store.users.find((u) => u.id === userId);
+    if (!user) {
+      return { success: false, error: 'User not found.' };
+    }
+
+    if (role === 'supervisor') {
+      const adminCount = store.users.filter((u) => u.role === 'admin' && u.id !== userId).length;
+      if (adminCount === 0) {
+        return { success: false, error: 'Cannot revoke admin role. At least one administrator must remain active in the system.' };
+      }
+    }
+
+    user.role = role;
+    user.updated_at = new Date().toISOString();
+    await this.updateUser(userId, { role });
+    this.syncLocalBackup();
+
+    return { success: true, user };
   },
 };

@@ -60,15 +60,28 @@ export async function requestDeviceNotificationPermission(): Promise<Notificatio
     return 'granted';
   }
 
+  if (Notification.permission === 'denied') {
+    return 'denied';
+  }
+
   try {
-    const permission = await Notification.requestPermission();
+    // Standard Promise-based API with callback fallback for older WebKit/Safari
+    let permission: NotificationPermission;
+    try {
+      permission = await Notification.requestPermission();
+    } catch {
+      permission = await new Promise<NotificationPermission>((resolve) => {
+        Notification.requestPermission((p) => resolve(p));
+      });
+    }
+
     if (permission === 'granted') {
       // Play a quick test confirmation chime so user knows it's active
       playNotificationChime();
     }
     return permission;
   } catch (err) {
-    console.warn('Error requesting notification permission:', err);
+    // In Safari/iOS, calling without an immediate synchronous user gesture throws a NotAllowedError
     return Notification.permission;
   }
 }
@@ -106,23 +119,13 @@ export async function triggerSystemNotification(item: {
   // 1. Play notification sound chime
   playNotificationChime();
 
-  // 2. Check Notification API
+  // 2. Check Notification API & Permission (NEVER request permission automatically in background)
   if (!('Notification' in window)) {
-    console.warn('[CodeShastra Notification] Notification API not supported');
     return;
   }
 
-  let permission = Notification.permission;
-  if (permission === 'default') {
-    try {
-      permission = await Notification.requestPermission();
-    } catch {
-      permission = 'default';
-    }
-  }
-
-  if (permission !== 'granted') {
-    console.warn('[CodeShastra Notification] Permission not granted:', permission);
+  if (Notification.permission !== 'granted') {
+    // Only display if user previously granted permission via explicit user gesture
     return;
   }
 

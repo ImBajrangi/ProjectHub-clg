@@ -60,7 +60,7 @@ export default function FacultyDashboardPage() {
   const [guidedTeams, setGuidedTeams] = useState<any[]>([]);
   const [facultyTeamSearch, setFacultyTeamSearch] = useState('');
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
-  const [supTab, setSupTab] = useState<'roster' | 'problem' | 'meetings' | 'clearance'>('problem');
+  const [supTab, setSupTab] = useState<'roster' | 'problem' | 'meetings'>('problem');
   const [problemReviewText, setProblemReviewText] = useState('');
   const [reviewActionLoading, setReviewActionLoading] = useState(false);
   const [expandedMeetingIds, setExpandedMeetingIds] = useState<Set<string>>(new Set());
@@ -229,7 +229,7 @@ export default function FacultyDashboardPage() {
         setSelectedTeam((prev: any) => {
           if (!prev && teams.length > 0) return teams[0];
           if (prev) {
-            const fresh = teams.find((t: any) => t.id === prev.id);
+            const fresh = teams.find((t: any) => String(t.id) === String(prev.id));
             return fresh || teams[0] || null;
           }
           return null;
@@ -280,6 +280,35 @@ export default function FacultyDashboardPage() {
 
     // 2. Single fresh fetch on load/refresh
     loadFacultyData();
+
+    if (typeof window === 'undefined') return;
+
+    const handleUpdate = () => {
+      loadFacultyData();
+    };
+
+    window.addEventListener('codeshastra_notification_update', handleUpdate);
+
+    let bc: BroadcastChannel | null = null;
+    if ('BroadcastChannel' in window) {
+      try {
+        bc = new BroadcastChannel('codeshastra_notifications_channel');
+        bc.onmessage = (event) => {
+          if (event.data?.type === 'UPDATE' || event.data?.type === 'INSTANT_NOTIFICATION') {
+            loadFacultyData();
+          }
+        };
+      } catch {}
+    }
+
+    return () => {
+      window.removeEventListener('codeshastra_notification_update', handleUpdate);
+      if (bc) {
+        try {
+          bc.close();
+        } catch {}
+      }
+    };
   }, []);
 
   const handleReviewProblemStatement = async (action: 'approve' | 'revise') => {
@@ -1036,13 +1065,6 @@ export default function FacultyDashboardPage() {
                         style={{ flexShrink: 0 }}
                       >
                         Meetings ({selectedTeam.meetings?.length || 0})
-                      </button>
-                      <button
-                        className={`segmented-pill ${supTab === 'clearance' ? 'active' : ''}`}
-                        onClick={() => setSupTab('clearance')}
-                        style={{ flexShrink: 0 }}
-                      >
-                        Gatekeeper Permissions
                       </button>
                     </div>
 
@@ -1920,79 +1942,6 @@ export default function FacultyDashboardPage() {
                   </div>
                 )}
 
-                {/* SUB-TAB 3: GATEKEEPER CLEARANCES */}
-                {supTab === 'clearance' && (
-                  <div className="card">
-                    <div style={{ marginBottom: '16px' }}>
-                      <h3 style={{ fontSize: '16px', fontWeight: 700 }}>Phase Gatekeeper Permissions</h3>
-                      <p style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                        Per SRS Section 7: Panels cannot view or score any team without your approval.
-                      </p>
-                    </div>
-
-                    <div className="grid-cols-3">
-                      <div style={{ backgroundColor: 'var(--color-canvas-soft)', padding: '18px', borderRadius: 'var(--rounded-sm)' }}>
-                        <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '4px' }}>Phase 1 (PPT)</div>
-                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '14px' }}>
-                          Concept Pitch & Ideation
-                        </div>
-                        <button
-                          onClick={() => handleTogglePhaseClearance(1, selectedTeam.phase1_approved)}
-                          className={selectedTeam.phase1_approved ? 'btn btn-primary' : 'btn btn-outline'}
-                          style={{ width: '100%', fontSize: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                        >
-                          {selectedTeam.phase1_approved ? (
-                            <>
-                              <CheckCircle2 size={13} /> Approved (Revoke)
-                            </>
-                          ) : (
-                            'Grant Permission'
-                          )}
-                        </button>
-                      </div>
-
-                      <div style={{ backgroundColor: 'var(--color-canvas-soft)', padding: '18px', borderRadius: 'var(--rounded-sm)' }}>
-                        <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '4px' }}>Phase 2 (Demo)</div>
-                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '14px' }}>
-                          Working Prototype
-                        </div>
-                        <button
-                          onClick={() => handleTogglePhaseClearance(2, selectedTeam.phase2_approved)}
-                          className={selectedTeam.phase2_approved ? 'btn btn-primary' : 'btn btn-outline'}
-                          style={{ width: '100%', fontSize: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                        >
-                          {selectedTeam.phase2_approved ? (
-                            <>
-                              <CheckCircle2 size={13} /> Approved (Revoke)
-                            </>
-                          ) : (
-                            'Grant Permission'
-                          )}
-                        </button>
-                      </div>
-
-                      <div style={{ backgroundColor: 'var(--color-canvas-soft)', padding: '18px', borderRadius: 'var(--rounded-sm)' }}>
-                        <div style={{ fontSize: '14px', fontWeight: 700, marginBottom: '4px' }}>Phase 3 (Defense)</div>
-                        <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '14px' }}>
-                          Final Report & Paper
-                        </div>
-                        <button
-                          onClick={() => handleTogglePhaseClearance(3, selectedTeam.phase3_approved)}
-                          className={selectedTeam.phase3_approved ? 'btn btn-primary' : 'btn btn-outline'}
-                          style={{ width: '100%', fontSize: '12px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                        >
-                          {selectedTeam.phase3_approved ? (
-                            <>
-                              <CheckCircle2 size={13} /> Approved (Revoke)
-                            </>
-                          ) : (
-                            'Grant Permission'
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             ) : (
               <div className="card" style={{ textAlign: 'center', padding: '60px 20px' }}>

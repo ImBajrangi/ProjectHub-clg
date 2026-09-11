@@ -353,4 +353,71 @@ Security Notice:
 As per system security protocol, all active sessions on any connected devices have been terminated. You must log in again using your new password.`,
     signoff: `Sincerely,\nSystem Administrator\nCodeShastra ProjectHub`,
   }),
+
+  // Category F: Admin Governance & Authority Handover
+  adminAuthorityTransferredToUser: (params: {
+    userId: string;
+    userName: string;
+    assignedBy: string;
+    timestamp: string;
+    isPrimaryTransfer: boolean;
+  }): NotificationPayload => ({
+    userId: params.userId,
+    category: 'Admin Governance',
+    subject: params.isPrimaryTransfer
+      ? `System Governance: Primary Administrative Authority Transferred to You`
+      : `System Governance: Administrative Privileges Granted`,
+    salutation: `Dear ${params.userName},`,
+    body: `You have been officially appointed as a ${params.isPrimaryTransfer ? 'Primary System Administrator (Project Incharge)' : 'Co-Administrator'} for CodeShastra ProjectHub.
+
+Appointment Summary:
+- Authorization Conferred By: ${params.assignedBy}
+- Effective Timestamp: ${params.timestamp}
+- Platform Role: System Administrator (Project Incharge)
+- Privileges: Full master governance over all 102 project teams, faculty panels, schedules, score audits, and phase-wise approvals.
+
+You can now access the Master Administrative Operations Hub directly at /admin.`,
+    signoff: `Sincerely,\nDepartment Academic Operations\nCodeShastra ProjectHub`,
+  }),
+
+  adminAuthorityTransferredFromUser: (params: {
+    userId: string;
+    userName: string;
+    transferredToName: string;
+    timestamp: string;
+  }): NotificationPayload => ({
+    userId: params.userId,
+    category: 'Admin Governance',
+    subject: `System Governance: Administrative Handover Recorded`,
+    salutation: `Dear ${params.userName},`,
+    body: `Your handover of Primary Administrative Authority to ${params.transferredToName} has been successfully completed on ${params.timestamp}.
+
+Your account role has been smoothly transitioned to Faculty Supervisor. You retain full access to your supervised teams, meeting logs, and assigned presentation evaluation panels at /dashboard/faculty.`,
+    signoff: `Sincerely,\nDepartment Academic Operations\nCodeShastra ProjectHub`,
+  }),
+
+  newFacultyAccountCreated: (params: {
+    userId: string;
+    userName: string;
+    email: string;
+    employeeId: string;
+    role: string;
+    timestamp: string;
+  }): NotificationPayload => ({
+    userId: params.userId,
+    category: 'Account Provisioning',
+    subject: `Welcome to CodeShastra ProjectHub - Account Provisioned (${params.employeeId})`,
+    salutation: `Dear Prof. ${params.userName},`,
+    body: `Welcome to the CodeShastra ProjectHub platform. Your academic portal account has been provisioned.
+
+Account Profile:
+- Employee ID: ${params.employeeId}
+- Registered Email: ${params.email}
+- Assigned Role: ${params.role === 'admin' ? 'Project Incharge (System Administrator)' : 'Faculty Mentor / Supervisor'}
+- Provisioned At: ${params.timestamp}
+
+You can log in to your portal using your registered credentials.`,
+    signoff: `Sincerely,\nProject Incharge & Technical Administration\nCodeShastra ProjectHub`,
+  }),
 };
+

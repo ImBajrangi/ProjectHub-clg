@@ -47,6 +47,39 @@ export default function Navbar({
   onFacultyModeChange,
 }: NavbarProps) {
   const router = useRouter();
+  const [internalUser, setInternalUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (user !== undefined) return;
+    const cached = clientCache.get<any>(clientCache.keys.USER_ME);
+    if (cached) {
+      setInternalUser({
+        id: cached.id,
+        fullName: cached.full_name || cached.fullName,
+        email: cached.email,
+        role: cached.role,
+        isLeader: cached.is_leader ?? cached.isLeader,
+      });
+    }
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.authenticated && data?.user) {
+          setInternalUser({
+            id: data.user.id,
+            fullName: data.user.full_name,
+            email: data.user.email,
+            role: data.user.role,
+            isLeader: data.user.is_leader,
+          });
+          clientCache.set(clientCache.keys.USER_ME, data.user);
+        }
+      })
+      .catch(() => {});
+  }, [user]);
+
+  const activeUser = user !== undefined ? user : internalUser;
+
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -89,20 +122,23 @@ export default function Navbar({
   };
 
   const fetchNotifications = async (isManual = false) => {
-    if (!user || isFetchingRef.current) return;
+    if (!activeUser || isFetchingRef.current) return;
     isFetchingRef.current = true;
     try {
       const res = await fetch('/api/notifications');
       if (res.ok) {
         const data = await res.json();
-        const notifs: NotificationItem[] = data.notifications || [];
+        const rawNotifs: NotificationItem[] = data.notifications || [];
+        const notifs = activeUser?.id
+          ? rawNotifs.filter((n) => String(n.user_id) === String(activeUser.id))
+          : rawNotifs;
         const newUnread = data.unreadCount ?? notifs.filter((n) => !n.is_read).length;
         setUnreadCount(newUnread);
         setNotifications(notifs);
 
         // Store in client cache for 0ms future mounts
-        if (user.id) {
-          clientCache.set(clientCache.keys.NOTIFICATIONS(user.id), notifs);
+        if (activeUser?.id) {
+          clientCache.set(clientCache.keys.NOTIFICATIONS(activeUser.id), notifs);
         }
 
         if (isInitialFetchRef.current) {
@@ -133,10 +169,10 @@ export default function Navbar({
   };
 
   useEffect(() => {
-    if (user) {
+    if (activeUser) {
       // 1. Instant 0ms cache hydration
-      if (user.id) {
-        const cachedNotifs = clientCache.get<NotificationItem[]>(clientCache.keys.NOTIFICATIONS(user.id));
+      if (activeUser.id) {
+        const cachedNotifs = clientCache.get<NotificationItem[]>(clientCache.keys.NOTIFICATIONS(activeUser.id));
         if (cachedNotifs && cachedNotifs.length > 0) {
           setNotifications(cachedNotifs);
           setUnreadCount(cachedNotifs.filter((n) => !n.is_read).length);
@@ -148,12 +184,12 @@ export default function Navbar({
 
       // 3. Supabase Realtime WebSocket Subscription (0-polling real-time updates)
       let unsubRealtime: (() => void) | null = null;
-      if (user.id) {
-        unsubRealtime = subscribeToUserNotifications(user.id, (newNotif) => {
+      if (activeUser.id) {
+        unsubRealtime = subscribeToUserNotifications(activeUser.id, (newNotif) => {
           setNotifications((prev) => {
             const notifId = String(newNotif.id);
             const updated = [newNotif, ...prev.filter((n) => String(n.id) !== notifId)];
-            if (user.id) clientCache.set(clientCache.keys.NOTIFICATIONS(user.id), updated);
+            if (activeUser.id) clientCache.set(clientCache.keys.NOTIFICATIONS(activeUser.id), updated);
             return updated;
           });
           setUnreadCount((prev) => prev + 1);
@@ -167,11 +203,11 @@ export default function Navbar({
 
       const handleInstantNotif = (e: any) => {
         const item = e.detail?.notification;
-        if (item) {
+        if (item && activeUser?.id && String(item.user_id) === String(activeUser.id)) {
           const notifId = String(item.id);
           setNotifications((prev) => {
             const updated = [item, ...prev.filter((n) => String(n.id) !== notifId)];
-            if (user.id) clientCache.set(clientCache.keys.NOTIFICATIONS(user.id), updated);
+            if (activeUser.id) clientCache.set(clientCache.keys.NOTIFICATIONS(activeUser.id), updated);
             return updated;
           });
           setUnreadCount((prev) => prev + 1);
@@ -189,14 +225,16 @@ export default function Navbar({
           bc.onmessage = (event) => {
             if (event.data?.type === 'INSTANT_NOTIFICATION' && event.data?.notification) {
               const item = event.data.notification;
-              const notifId = String(item.id);
-              setNotifications((prev) => {
-                const updated = [item, ...prev.filter((n) => String(n.id) !== notifId)];
-                if (user.id) clientCache.set(clientCache.keys.NOTIFICATIONS(user.id), updated);
-                return updated;
-              });
-              setUnreadCount((prev) => prev + 1);
-              dispatchSingleNotification(item);
+              if (activeUser?.id && String(item.user_id) === String(activeUser.id)) {
+                const notifId = String(item.id);
+                setNotifications((prev) => {
+                  const updated = [item, ...prev.filter((n) => String(n.id) !== notifId)];
+                  if (activeUser.id) clientCache.set(clientCache.keys.NOTIFICATIONS(activeUser.id), updated);
+                  return updated;
+                });
+                setUnreadCount((prev) => prev + 1);
+                dispatchSingleNotification(item);
+              }
             } else {
               fetchNotifications(true);
             }
@@ -215,7 +253,7 @@ export default function Navbar({
         }
       };
     }
-  }, [user]);
+  }, [activeUser]);
 
   const handleMarkRead = async (id: string) => {
     // 1. Instant 0ms Optimistic UI update
@@ -280,32 +318,53 @@ export default function Navbar({
   const handleLogout = async () => {
     if (loggingOut) return;
     setLoggingOut(true);
-    setUserMenuOpen(false);
 
-    // 1. Immediately clear all client session, memory & cache storage (0ms instant response)
     try {
       clientCache.clear();
-      localStorage.removeItem('codeshastra_token');
+      localStorage.clear();
       sessionStorage.clear();
+      document.cookie = 'codeshastra_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0;';
     } catch {}
 
-    // 2. Dispatch background server logout with keepalive flag (guarantees completion)
+    // Safety fallback: Redirect after 1.5s regardless of network delays
+    const fallbackTimer = setTimeout(() => {
+      window.location.replace('/login');
+    }, 1500);
+
     try {
-      fetch('/api/auth/logout', {
+      await fetch('/api/auth/logout', {
         method: 'POST',
-        keepalive: true,
-      }).catch(() => {});
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+      });
     } catch {}
 
-    // 3. Instant clean navigation to login (resets all in-memory React states)
-    window.location.href = '/login';
+    clearTimeout(fallbackTimer);
+    window.location.replace('/login');
+  };
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'M';
+    const clean = name.replace(/^(dr\.|mr\.|mrs\.|ms\.|prof\.)\s+/i, '').trim();
+    const parts = clean.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return clean.slice(0, 2).toUpperCase() || 'M';
+  };
+
+  const getRoleLabel = (role?: string, mode?: string) => {
+    if (role === 'supervisor') return mode === 'panel' ? 'Panel Judge' : 'Faculty Mentor';
+    if (role === 'admin') return 'Project Incharge';
+    if (role === 'leader') return 'Team Leader';
+    return 'Student';
   };
 
   // Safe dashboard routing for logged in users when clicking CodeShastra logo
-  const homeHref = user
-    ? user.role === 'admin'
+  const homeHref = activeUser
+    ? activeUser.role === 'admin'
       ? '/admin'
-      : user.role === 'supervisor'
+      : activeUser.role === 'supervisor'
         ? '/dashboard/faculty'
         : '/dashboard/leader'
     : '/';
@@ -314,271 +373,289 @@ export default function Navbar({
     <>
       <div className="nav-pill-container">
         <header className="nav-pill">
-          {/* Logo & Identity: Navigates to user portal if logged in, avoids accidental logout */}
-          <Link
-            href={homeHref}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8.5px',
-              textDecoration: 'none',
-              transition: 'opacity 0.15s ease',
-            }}
-            className="brand-logo-link"
-          >
-            <div
-              style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '7px',
-                backgroundColor: '#0F172A',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.12)',
-                flexShrink: 0,
-                transition: 'transform 0.2s ease',
-              }}
-              className="logo-icon-box"
+          {/* 1. Left: Brand Identity */}
+          <div className="nav-left">
+            <Link
+              href={homeHref}
+              className="brand-logo-link"
+              title="CodeShastra Academic Platform"
             >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M8 7L3 12L8 17" stroke="#60A5FA" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M16 7L21 12L16 17" stroke="#60A5FA" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M14 4.5L10 19.5" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" />
-              </svg>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <span
-                className="logo-brand-text"
-                style={{
-                  fontWeight: 800,
-                  fontSize: '16px',
-                  color: 'var(--color-ink)',
-                  letterSpacing: '-0.025em',
-                  lineHeight: 1,
-                }}
-              >
+              <div className="logo-icon-box">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8 7L3 12L8 17" stroke="#60A5FA" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M16 7L21 12L16 17" stroke="#60A5FA" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M14 4.5L10 19.5" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" />
+                </svg>
+              </div>
+              <span className="logo-brand-text">
                 CodeShastra
               </span>
-            </div>
-          </Link>
+            </Link>
+          </div>
 
-          {/* Center: Faculty Mode Segmented Control */}
-          {user?.role === 'supervisor' && onFacultyModeChange && (
-            <div className="nav-faculty-toggle" role="group" aria-label="Faculty Portal Mode Switcher">
-              <button
-                type="button"
-                className={`nav-faculty-tab ${activeFacultyMode === 'supervisor' ? 'active' : ''}`}
-                onClick={() => onFacultyModeChange('supervisor')}
-              >
-                <Users size={13.5} strokeWidth={2.2} />
-                <span>Mentor</span>
-              </button>
-              <button
-                type="button"
-                className={`nav-faculty-tab ${activeFacultyMode === 'panel' ? 'active' : ''}`}
-                onClick={() => onFacultyModeChange('panel')}
-              >
-                <Award size={13.5} strokeWidth={2.2} />
-                <span>Judge</span>
-              </button>
+          {/* 2. Center: Faculty Mode Segmented Control (if applicable) */}
+          {activeUser?.role === 'supervisor' && onFacultyModeChange && (
+            <div className="nav-center">
+              <div className="nav-faculty-toggle" role="group" aria-label="Faculty Portal Mode Switcher">
+                <button
+                  type="button"
+                  className={`nav-faculty-tab ${activeFacultyMode === 'supervisor' ? 'active' : ''}`}
+                  onClick={() => onFacultyModeChange('supervisor')}
+                  title="Switch to Faculty Mentor Workspace"
+                >
+                  <Users size={13.5} strokeWidth={2.2} />
+                  <span>Mentor</span>
+                </button>
+                <button
+                  type="button"
+                  className={`nav-faculty-tab ${activeFacultyMode === 'panel' ? 'active' : ''}`}
+                  onClick={() => onFacultyModeChange('panel')}
+                  title="Switch to Panel Evaluation Console"
+                >
+                  <Award size={13.5} strokeWidth={2.2} />
+                  <span>Judge</span>
+                </button>
+              </div>
             </div>
           )}
 
-          {/* Right Controls */}
-          <div className="nav-right-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {user ? (
-              <>
-                {/* Role & Complete User Name on Desktop */}
-                <div style={{ display: 'none', alignItems: 'center' }} className="desktop-role-pill">
-                  {user.role === 'leader' && (
-                    <span className="nav-role-badge">
-                      <UserCheck size={13} style={{ color: 'var(--color-primary)' }} />
-                      <span>{user.fullName}</span>
-                      {teamCode && <span className="nav-role-team-tag">{teamCode}</span>}
-                    </span>
-                  )}
-                  {user.role === 'supervisor' && (
-                    <span className="nav-role-badge">
-                      <Compass size={13} style={{ color: 'var(--color-primary)' }} />
-                      <span>{user.fullName}</span>
-                      <span className="nav-role-team-tag">Mentor</span>
-                    </span>
-                  )}
-                  {user.role === 'admin' && (
-                    <span className="nav-role-badge">
-                      <Shield size={13} style={{ color: '#0F172A' }} />
-                      <span>{user.fullName || 'Project Incharge'}</span>
-                      <span className="nav-role-team-tag">Incharge</span>
-                    </span>
-                  )}
-                </div>
+          {/* 3. Right: User Controls & Session Dropdown */}
+          <div className="nav-right">
+            <div className="nav-right-controls">
+              {activeUser ? (
+                <>
+                  {/* Role & Complete User Name on Large Desktop */}
+                  <div className="desktop-role-pill">
+                    {activeUser.role === 'leader' && (
+                      <span className="nav-role-badge">
+                        <UserCheck size={13} style={{ color: 'var(--color-primary)' }} />
+                        <span>{activeUser.fullName}</span>
+                        {teamCode && <span className="nav-role-team-tag">{teamCode}</span>}
+                      </span>
+                    )}
+                    {activeUser.role === 'supervisor' && (
+                      <span className="nav-role-badge">
+                        <Compass size={13} style={{ color: 'var(--color-primary)' }} />
+                        <span>{activeUser.fullName}</span>
+                        <span className="nav-role-team-tag">{activeFacultyMode === 'panel' ? 'Judge' : 'Mentor'}</span>
+                      </span>
+                    )}
+                    {activeUser.role === 'admin' && (
+                      <span className="nav-role-badge">
+                        <Shield size={13} style={{ color: '#0F172A' }} />
+                        <span>{activeUser.fullName || 'Project Incharge'}</span>
+                        <span className="nav-role-team-tag">Incharge</span>
+                      </span>
+                    )}
+                  </div>
 
-                {/* Notification Bell */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    requestDeviceNotificationPermission();
-                    fetchNotifications();
-                    setDrawerOpen(true);
-                  }}
-                  className="nav-btn nav-btn-icon"
-                  title="Notifications & System Alerts"
-                >
-                  <Bell size={15} />
-                  {unreadCount > 0 && (
-                    <span className="nav-badge-count">
-                      {unreadCount}
-                    </span>
-                  )}
-                </button>
-
-                {/* Profile & Actions Dropdown */}
-                <div style={{ position: 'relative' }} ref={userMenuRef}>
+                  {/* Notification Bell */}
                   <button
                     type="button"
-                    onClick={() => setUserMenuOpen((prev) => !prev)}
-                    className="nav-profile-btn"
-                    title="Account & Menu"
-                    aria-label="Account & Menu"
-                    aria-expanded={userMenuOpen}
+                    onClick={() => {
+                      fetchNotifications();
+                      setDrawerOpen(true);
+                    }}
+                    className="nav-btn nav-btn-icon"
+                    title="Notifications & System Alerts"
+                    aria-label="Notifications"
                   >
-                    <div className="nav-avatar-circle">
-                      {user.fullName ? (
-                        user.fullName.trim().split(' ').length > 1
-                          ? (user.fullName.trim().split(' ')[0][0] + user.fullName.trim().split(' ').slice(-1)[0][0]).toUpperCase()
-                          : user.fullName.trim().slice(0, 2).toUpperCase()
-                      ) : 'U'}
-                    </div>
-                    <ChevronDown
-                      size={12}
-                      className="nav-avatar-chevron"
-                      style={{
-                        transform: userMenuOpen ? 'rotate(180deg)' : 'none',
-                        transition: 'transform 0.15s ease',
-                      }}
-                    />
+                    <Bell size={15} />
+                    {unreadCount > 0 && (
+                      <span className="nav-badge-count">
+                        {unreadCount}
+                      </span>
+                    )}
                   </button>
 
-                  {/* Dropdown Menu */}
-                  {userMenuOpen && (
-                    <div className="nav-dropdown-menu">
-                      {/* User Info Header */}
-                      <div className="nav-dropdown-header">
-                        <div className="nav-dropdown-avatar">
-                          {user.fullName ? (
-                            user.fullName.trim().split(' ').length > 1
-                              ? (user.fullName.trim().split(' ')[0][0] + user.fullName.trim().split(' ').slice(-1)[0][0]).toUpperCase()
-                              : user.fullName.trim().slice(0, 2).toUpperCase()
-                          ) : 'U'}
-                        </div>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {user.fullName}
-                          </div>
-                          <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
-                            <span style={{ textTransform: 'capitalize', fontWeight: 600, color: 'var(--color-primary)' }}>
-                              {user.role}
-                            </span>
-                            {teamCode && (
-                              <>
-                                <span>•</span>
-                                <span style={{ fontWeight: 600, color: 'var(--color-ink)' }}>{teamCode}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
+                  {/* Profile & Actions Dropdown */}
+                  <div style={{ position: 'relative' }} ref={userMenuRef}>
+                    <button
+                      type="button"
+                      onClick={() => setUserMenuOpen((prev) => !prev)}
+                      className="nav-profile-btn"
+                      title="Account & Menu"
+                      aria-label="Account & Menu"
+                      aria-expanded={userMenuOpen}
+                    >
+                      <div className="nav-avatar-circle">
+                        {getInitials(activeUser.fullName)}
                       </div>
-
-                      <div className="nav-dropdown-divider" />
-
-                      {/* Help & Guide */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          setHelpModalOpen(true);
-                        }}
-                        className="nav-dropdown-item"
-                      >
-                        <HelpCircle size={15} style={{ color: '#2563EB', flexShrink: 0 }} />
-                        <span>Help & Feature Guide</span>
-                      </button>
-
-                      {/* Desktop Notifications Toggle */}
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          setUserMenuOpen(false);
-                          const perm = await requestDeviceNotificationPermission();
-                          if (perm === 'granted') {
-                            triggerSystemNotification({
-                              id: 'system-test-' + Date.now(),
-                              subject: 'Desktop Alerts Active',
-                              body: 'System notifications are active and working on your device.',
-                            });
-                          } else {
-                            router.push('/notifications');
-                          }
-                        }}
-                        className="nav-dropdown-item"
-                      >
-                        <BellRing size={15} style={{ color: '#F59E0B', flexShrink: 0 }} />
-                        <span>Desktop & OS Alerts</span>
-                      </button>
-
-                      <div className="nav-dropdown-divider" />
-
-                      {/* Sign Out */}
-                      <button
-                        type="button"
-                        disabled={loggingOut}
-                        onClick={handleLogout}
-                        className="nav-dropdown-item nav-dropdown-item-danger"
+                      <ChevronDown
+                        size={12}
+                        className="nav-avatar-chevron"
                         style={{
-                          opacity: loggingOut ? 0.7 : 1,
-                          cursor: loggingOut ? 'wait' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
+                          transform: userMenuOpen ? 'rotate(180deg)' : 'none',
+                          transition: 'transform 0.15s ease',
                         }}
-                      >
-                        {loggingOut ? (
-                          <div
-                            style={{
-                              width: '14px',
-                              height: '14px',
-                              border: '2px solid rgba(239, 68, 68, 0.3)',
-                              borderTopColor: '#EF4444',
-                              borderRadius: '50%',
-                              animation: 'spin 0.6s linear infinite',
-                              flexShrink: 0,
-                            }}
-                          />
-                        ) : (
-                          <LogOut size={15} style={{ flexShrink: 0 }} />
-                        )}
-                        <span>{loggingOut ? 'Signing Out...' : 'Sign Out'}</span>
-                      </button>
-                    </div>
-                  )}
+                      />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {userMenuOpen && (
+                      <div className="nav-dropdown-menu">
+                        {/* User Info Header */}
+                        <div className="nav-dropdown-header">
+                          <div className="nav-dropdown-avatar">
+                            {getInitials(activeUser.fullName)}
+                          </div>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {activeUser.fullName}
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
+                              <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
+                                {getRoleLabel(activeUser.role, activeFacultyMode)}
+                              </span>
+                              {teamCode && (
+                                <>
+                                  <span>•</span>
+                                  <span style={{ fontWeight: 600, color: 'var(--color-ink)' }}>{teamCode}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="nav-dropdown-divider" />
+
+                        {/* Help & Guide */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUserMenuOpen(false);
+                            setHelpModalOpen(true);
+                          }}
+                          className="nav-dropdown-item"
+                        >
+                          <HelpCircle size={15} style={{ color: '#2563EB', flexShrink: 0 }} />
+                          <span>Help & Feature Guide</span>
+                        </button>
+
+                        {/* Desktop Notifications Toggle */}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setUserMenuOpen(false);
+                            const perm = await requestDeviceNotificationPermission();
+                            if (perm === 'granted') {
+                              triggerSystemNotification({
+                                id: 'system-test-' + Date.now(),
+                                subject: 'Desktop Alerts Active',
+                                body: 'System notifications are active and working on your device.',
+                              });
+                            } else {
+                              router.push('/notifications');
+                            }
+                          }}
+                          className="nav-dropdown-item"
+                        >
+                          <BellRing size={15} style={{ color: '#F59E0B', flexShrink: 0 }} />
+                          <span>Desktop & OS Alerts</span>
+                        </button>
+
+                        <div className="nav-dropdown-divider" />
+
+                        {/* Sign Out */}
+                        <button
+                          type="button"
+                          disabled={loggingOut}
+                          onClick={handleLogout}
+                          className="nav-dropdown-item nav-dropdown-item-danger"
+                          style={{
+                            opacity: loggingOut ? 0.7 : 1,
+                            cursor: loggingOut ? 'wait' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            width: '100%',
+                          }}
+                        >
+                          {loggingOut ? (
+                            <div
+                              style={{
+                                width: '14px',
+                                height: '14px',
+                                border: '2px solid rgba(239, 68, 68, 0.3)',
+                                borderTopColor: '#EF4444',
+                                borderRadius: '50%',
+                                animation: 'spin 0.6s linear infinite',
+                                flexShrink: 0,
+                              }}
+                            />
+                          ) : (
+                            <LogOut size={15} style={{ flexShrink: 0 }} />
+                          )}
+                          <span>{loggingOut ? 'Signing Out...' : 'Sign Out'}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Link href="/leader" className="btn btn-outline mobile-hide-btn" style={{ fontSize: '13px', padding: '6px 14px', whiteSpace: 'nowrap' }}>
+                    Elect Leader
+                  </Link>
+                  <Link href="/login" className="btn btn-primary" style={{ fontSize: '13px', padding: '6px 16px', whiteSpace: 'nowrap' }}>
+                    Log In
+                  </Link>
                 </div>
-              </>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Link href="/leader" className="btn btn-outline mobile-hide-btn" style={{ fontSize: '13px', padding: '6px 14px', whiteSpace: 'nowrap' }}>
-                  Elect Leader
-                </Link>
-                <Link href="/login" className="btn btn-primary" style={{ fontSize: '13px', padding: '6px 16px', whiteSpace: 'nowrap' }}>
-                  Log In
-                </Link>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </header>
       </div>
 
       <style jsx global>{`
+        .nav-left {
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          flex: 1 1 0;
+          min-width: 0;
+        }
+        .brand-logo-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 8.5px;
+          text-decoration: none;
+          flex-shrink: 0;
+          transition: opacity 0.15s ease;
+        }
+        .brand-logo-link:hover {
+          opacity: 0.88;
+        }
+        .logo-icon-box {
+          width: 28px;
+          height: 28px;
+          border-radius: 7px;
+          background-color: #0F172A;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+          flex-shrink: 0;
+          transition: transform 0.2s ease;
+        }
+        .logo-icon-box:hover {
+          opacity: 0.9;
+        }
+        .logo-brand-text {
+          font-weight: 800;
+          font-size: 16px;
+          color: var(--color-ink, #0F172A);
+          letter-spacing: -0.025em;
+          line-height: 1;
+          white-space: nowrap;
+        }
+        .nav-center {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex: 0 0 auto;
+          margin: 0 8px;
+        }
         .nav-faculty-toggle {
           background: #F1F5F9;
           border: 1px solid #E2E8F0;
@@ -620,6 +697,13 @@ export default function Navbar({
         }
         .nav-faculty-tab:active {
           transform: scale(0.97);
+        }
+        .nav-right {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          flex: 1 1 0;
+          min-width: 0;
         }
         .nav-right-controls {
           display: flex;
@@ -831,6 +915,41 @@ export default function Navbar({
           color: #B91C1C;
         }
 
+        .desktop-role-pill {
+          display: none;
+        }
+
+        @media (min-width: 1080px) {
+          .desktop-role-pill {
+            display: inline-flex !important;
+            max-width: 240px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+        }
+
+        /* Auto-hide brand text on compact & split viewports to prioritize action buttons */
+        @media (max-width: 768px) {
+          .logo-brand-text {
+            display: none !important;
+          }
+          .brand-logo-link {
+            gap: 0 !important;
+          }
+          .nav-left {
+            flex: 0 0 auto !important;
+          }
+          .nav-center {
+            flex: 1 1 auto !important;
+            justify-content: center !important;
+            margin: 0 6px !important;
+          }
+          .nav-right {
+            flex: 0 0 auto !important;
+          }
+        }
+
         @media (max-width: 639px) {
           .mobile-hide-btn {
             display: none !important;
@@ -839,16 +958,23 @@ export default function Navbar({
             display: none !important;
           }
           .nav-pill {
-            padding: 6px 10px !important;
-            box-sizing: border-box !important;
+            padding: 6px 0 !important;
+            gap: 6px !important;
+          }
+          .nav-center {
+            margin: 0 4px !important;
+          }
+          .nav-faculty-toggle {
+            padding: 2.5px !important;
+            gap: 2px !important;
           }
           .nav-faculty-tab {
-            padding: 4px 9px !important;
+            padding: 4px 7px !important;
             font-size: 11px !important;
-            gap: 4px !important;
+            gap: 3px !important;
           }
           .nav-right-controls {
-            gap: 5px !important;
+            gap: 4px !important;
           }
           .nav-btn {
             width: 32px !important;
@@ -859,29 +985,17 @@ export default function Navbar({
           }
           .nav-profile-btn {
             height: 32px !important;
-            padding: 2px 6px 2px 3px !important;
+            padding: 2px 4px 2px 2px !important;
           }
           .nav-avatar-circle {
-            width: 23px !important;
-            height: 23px !important;
+            width: 24px !important;
+            height: 24px !important;
             font-size: 10px !important;
           }
           .logo-icon-box {
-            width: 28px !important;
-            height: 28px !important;
-            border-radius: 7px !important;
-          }
-          .logo-brand-text {
-            font-size: 14px !important;
-          }
-          .logo-hub-badge {
-            font-size: 9.5px !important;
-            padding: 1px 4.5px !important;
-          }
-        }
-        @media (min-width: 640px) {
-          .desktop-role-pill {
-            display: flex !important;
+            width: 26px !important;
+            height: 26px !important;
+            border-radius: 6px !important;
           }
         }
         .logo-icon-box:hover {
@@ -897,7 +1011,7 @@ export default function Navbar({
         onMarkRead={handleMarkRead}
         onMarkAllRead={handleMarkAllRead}
         onRefresh={fetchNotifications}
-        userName={user?.fullName}
+        userName={activeUser?.fullName}
       />
 
       {/* Password Change Modal with Complete User Name */}
@@ -908,15 +1022,15 @@ export default function Navbar({
           setPasswordModalOpen(false);
           router.push('/login');
         }}
-        userName={user?.fullName}
+        userName={activeUser?.fullName}
       />
 
       {/* Role-Specific Help Modal with keyword search and counter */}
-      {user && (
+      {activeUser && (
         <HelpModal
           isOpen={helpModalOpen}
           onClose={() => setHelpModalOpen(false)}
-          userRole={user.role === 'supervisor' ? 'supervisor' : user.role === 'admin' ? 'admin' : 'leader'}
+          userRole={activeUser.role === 'supervisor' ? 'supervisor' : activeUser.role === 'admin' ? 'admin' : 'leader'}
         />
       )}
     </>

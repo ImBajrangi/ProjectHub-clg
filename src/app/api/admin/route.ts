@@ -15,7 +15,8 @@ export async function GET(req: NextRequest) {
     const store = await db.getStore();
     const teams = store.teams || [];
     const students = store.students || [];
-    const supervisors = (store.users || []).filter((u) => u.role === 'supervisor');
+    // Include all faculty members and administrators in supervisors directory
+    const supervisors = (store.users || []).filter((u) => u.role === 'supervisor' || u.role === 'admin');
     const problemStatements = store.problem_statements || [];
     const meetings = store.meetings || [];
     const evaluations = store.evaluations || [];
@@ -97,8 +98,11 @@ export async function GET(req: NextRequest) {
         name: s.full_name,
         email: s.email,
         phone: s.phone || 'N/A',
+        role: s.role,
+        isAdmin: s.role === 'admin',
+        employee_id: profile?.employee_id || (s.role === 'admin' ? 'ADM-001' : 'FAC-000'),
         department: profile?.department || 'Dept. of Computer Applications',
-        designation: profile?.designation || 'Faculty Mentor',
+        designation: profile?.designation || (s.role === 'admin' ? 'Project Incharge (Administrator)' : 'Faculty Mentor'),
         cabin: profile?.cabin_number || 'Academic Block AB10',
         assignedTeamsCount: assigned.length,
         assignedTeams: assigned.map((t) => ({
@@ -161,10 +165,17 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({
+      currentUser: {
+        id: sessionUser.id,
+        email: sessionUser.email,
+        fullName: sessionUser.full_name,
+        role: sessionUser.role,
+      },
       summary: {
         totalTeams: teams.length,
         totalStudents: students.length,
         totalSupervisors: supervisors.length,
+        totalAdmins: (store.users || []).filter((u) => u.role === 'admin').length,
         claimedLeaders: teams.filter((t) => t.leader_id).length,
         unclaimedLeaders: teams.filter((t) => !t.leader_id).length,
         approvedProblemStatements: problemStatements.filter((p) => p.status === 'approved').length,
@@ -182,3 +193,135 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch admin data' }, { status: 500 });
   }
 }
+
+export async function POST(req: NextRequest) {
+  try {
+    const token = req.cookies.get('codeshastra_token')?.value || req.headers.get('authorization')?.replace('Bearer ', '');
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const sessionUser = await auth.validateSession(token);
+    if (!sessionUser || sessionUser.role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized: Master Admin access required' }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { action } = body;
+
+    // Action 1: Transfer Admin Authority or Grant Co-Admin Rights
+    if (action === 'transfer_authority') {
+      const { targetUserId, demoteCurrentAdmin } = body;
+      if (!targetUserId) {
+        return NextResponse.json({ error: 'Target faculty member is required.' }, { status: 400 });
+      }
+
+      const isDemote = demoteCurrentAdmin !== false;
+      const result = await db.transferAdminAuthority({
+        targetUserId,
+        currentAdminId: sessionUser.id,
+        demoteCurrentAdmin: isDemote,
+        assignedByName: sessionUser.full_name,
+      });
+
+      if (!result.success) {
+        return NextResponse.json({ error: result.error || 'Failed to transfer admin authority' }, { status: 400 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: isDemote
+          ? `Administrative Authority has been successfully transferred to ${result.targetUser?.full_name}. Your account has transitioned to Faculty Supervisor.`
+          : `Administrative Co-Authority has been successfully granted to ${result.targetUser?.full_name}.`,
+        targetUser: result.targetUser,
+        currentAdminUser: result.currentAdminUser,
+        currentUserDemoted: isDemote && targetUserId !== sessionUser.id,
+      });
+    }
+
+    // Action 2: Set Role Directly (Grant or Revoke Admin)
+    if (action === 'set_role') {
+      const { targetUserId, role } = body;
+      if (!targetUserId || (role !== 'admin' && role !== 'supervisor')) {
+        return NextResponse.json({ error: 'Invalid user or role specified.' }, { status: 400 });
+      }
+
+      const result = await db.setFacultyAdminRole(targetUserId, role);
+      if (!result.success) {
+        return NextResponse.json({ error: result.error || 'Failed to update user role' }, { status: 400 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `User role successfully updated to ${role === 'admin' ? 'Administrator' : 'Faculty Supervisor'}.`,
+        user: result.user,
+      });
+    }
+
+    // Action 3: Create New Faculty Member / Admin directly
+    if (action === 'create_teacher_admin') {
+      const {
+        fullName,
+        email,
+        phone,
+        employeeId,
+        designation,
+        department,
+        cabinNumber,
+        role = 'supervisor',
+        password,
+        transferCurrentAdmin = false,
+      } = body;
+
+      if (!fullName || !fullName.trim()) {
+        return NextResponse.json({ error: 'Full name is required.' }, { status: 400 });
+      }
+      if (!email || !email.trim() || !email.includes('@')) {
+        return NextResponse.json({ error: 'Valid official email address is required.' }, { status: 400 });
+      }
+
+      const createResult = await db.createSupervisorOrAdmin({
+        fullName: fullName.trim(),
+        email: email.trim(),
+        phone: phone ? phone.trim() : undefined,
+        employeeId: employeeId ? employeeId.trim() : `FAC-${Math.floor(100 + Math.random() * 900)}`,
+        designation: designation ? designation.trim() : undefined,
+        department: department ? department.trim() : undefined,
+        cabinNumber: cabinNumber ? cabinNumber.trim() : undefined,
+        role: role === 'admin' ? 'admin' : 'supervisor',
+        password: password ? password.trim() : undefined,
+      });
+
+      if (!createResult.success || !createResult.user) {
+        return NextResponse.json({ error: createResult.error || 'Failed to create faculty account' }, { status: 400 });
+      }
+
+      let currentUserDemoted = false;
+
+      // If user was created as Admin and transferCurrentAdmin is requested
+      if (role === 'admin' && transferCurrentAdmin) {
+        await db.transferAdminAuthority({
+          targetUserId: createResult.user.id,
+          currentAdminId: sessionUser.id,
+          demoteCurrentAdmin: true,
+          assignedByName: sessionUser.full_name,
+        });
+        currentUserDemoted = true;
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: role === 'admin'
+          ? `New Administrator (${createResult.user.full_name}) successfully provisioned and appointed.`
+          : `New Faculty Mentor (${createResult.user.full_name}) successfully added to the portal.`,
+        user: createResult.user,
+        supervisor: createResult.supervisor,
+        currentUserDemoted,
+      });
+    }
+
+    return NextResponse.json({ error: 'Invalid action specified' }, { status: 400 });
+  } catch (error: any) {
+    console.error('Admin POST API error:', error);
+    return NextResponse.json({ error: error.message || 'Server error processing admin request' }, { status: 500 });
+  }
+}
+

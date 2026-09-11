@@ -40,7 +40,7 @@ export function subscribeToUserNotifications(
         event: 'INSERT',
         schema: 'public',
         table: 'notifications',
-        filter: `recipient_id=eq.${userId}`,
+        filter: `user_id=eq.${userId}`,
       },
       (payload) => {
         if (payload.new) {

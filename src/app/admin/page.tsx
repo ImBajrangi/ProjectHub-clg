@@ -40,10 +40,18 @@ import {
   Target,
   PlusCircle,
   Bookmark,
+  Crown,
+  Key,
+  UserPlus,
+  ArrowRightLeft,
+  ShieldAlert,
+  BadgeCheck,
+  Lock,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LoadingScreen from '@/components/LoadingScreen';
+import { clientCache } from '@/lib/clientCache';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -69,6 +77,34 @@ export default function AdminDashboardPage() {
   // Panels Directory State
   const [panelPhaseFilter, setPanelPhaseFilter] = useState<1 | 2 | 3>(1);
   const [panelSearch, setPanelSearch] = useState('');
+
+  // Admin Authority Governance & Creation State
+  const [authorityModalOpen, setAuthorityModalOpen] = useState(false);
+  const [authorityActiveTab, setAuthorityActiveTab] = useState<'transfer' | 'create'>('transfer');
+  const [selectedTeacherForTransfer, setSelectedTeacherForTransfer] = useState<string>('');
+  const [transferDemoteCurrent, setTransferDemoteCurrent] = useState(true);
+  const [transferConfirmOpen, setTransferConfirmOpen] = useState(false);
+  const [transferLoading, setTransferLoading] = useState(false);
+  const [transferMessage, setTransferMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+  const [demotedRedirectCountdown, setDemotedRedirectCountdown] = useState<number | null>(null);
+  const [teacherSearchInModal, setTeacherSearchInModal] = useState('');
+  const [copiedCreds, setCopiedCreds] = useState(false);
+
+  // New Faculty / Admin Form State
+  const [createTeacherForm, setCreateTeacherForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    employeeId: '',
+    designation: 'Faculty Mentor',
+    department: 'Dept. of Computer Applications',
+    cabinNumber: 'Academic Block AB10',
+    role: 'supervisor' as 'admin' | 'supervisor',
+    password: '',
+    transferCurrentAdmin: false,
+  });
+  const [createTeacherLoading, setCreateTeacherLoading] = useState(false);
+  const [createTeacherSuccess, setCreateTeacherSuccess] = useState<any | null>(null);
 
   // Interactive Visual Panel Builder State
   const [createPanelModalOpen, setCreatePanelModalOpen] = useState(false);
@@ -137,7 +173,7 @@ export default function AdminDashboardPage() {
 
   // Lock background scroll and handle Escape key to close modals
   useEffect(() => {
-    const isAnyModalOpen = jsonModalOpen || selectedTeamModal || createPanelModalOpen || scoreEditModalOpen || selectedSupervisorModal;
+    const isAnyModalOpen = jsonModalOpen || selectedTeamModal || createPanelModalOpen || scoreEditModalOpen || selectedSupervisorModal || authorityModalOpen;
     if (isAnyModalOpen) {
       document.body.style.overflow = 'hidden';
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -147,6 +183,7 @@ export default function AdminDashboardPage() {
           setJsonModalOpen(false);
           setCreatePanelModalOpen(false);
           setScoreEditModalOpen(false);
+          setAuthorityModalOpen(false);
         }
       };
       window.addEventListener('keydown', handleKeyDown);
@@ -160,7 +197,7 @@ export default function AdminDashboardPage() {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [jsonModalOpen, selectedTeamModal, createPanelModalOpen, scoreEditModalOpen, selectedSupervisorModal]);
+  }, [jsonModalOpen, selectedTeamModal, createPanelModalOpen, scoreEditModalOpen, selectedSupervisorModal, authorityModalOpen]);
 
   const loadAdminData = async () => {
     try {
@@ -396,6 +433,132 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // Authority Transfer Handlers
+  const handleTransferAuthority = async (targetUserId: string, demoteCurrent: boolean) => {
+    setTransferLoading(true);
+    setTransferMessage(null);
+
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'transfer_authority',
+          targetUserId,
+          demoteCurrentAdmin: demoteCurrent,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setTransferMessage({ type: 'error', text: data.error || 'Failed to transfer admin authority.' });
+        setTransferLoading(false);
+        return;
+      }
+
+      setTransferMessage({ type: 'success', text: data.message });
+      setTransferConfirmOpen(false);
+      clientCache.invalidate(clientCache.keys.ADMIN_DATA);
+
+      if (data.currentUserDemoted) {
+        clientCache.invalidate(clientCache.keys.USER_ME);
+        let count = 4;
+        setDemotedRedirectCountdown(count);
+        const timer = setInterval(() => {
+          count -= 1;
+          setDemotedRedirectCountdown(count);
+          if (count <= 0) {
+            clearInterval(timer);
+            router.push('/dashboard/faculty');
+          }
+        }, 1000);
+      } else {
+        await loadAdminData();
+      }
+    } catch (err: any) {
+      setTransferMessage({ type: 'error', text: err.message || 'Error occurred during authority transfer.' });
+    } finally {
+      setTransferLoading(false);
+    }
+  };
+
+  // Direct Role Toggle Handler
+  const handleQuickSetRole = async (targetUserId: string, role: 'admin' | 'supervisor') => {
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'set_role',
+          targetUserId,
+          role,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to update role');
+        return;
+      }
+      clientCache.invalidate(clientCache.keys.ADMIN_DATA);
+      await loadAdminData();
+    } catch (err: any) {
+      alert(err.message || 'Error updating role');
+    }
+  };
+
+  // Direct Teacher / Admin Creation Handler
+  const handleCreateTeacherSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateTeacherLoading(true);
+    setTransferMessage(null);
+
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create_teacher_admin',
+          ...createTeacherForm,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setTransferMessage({ type: 'error', text: data.error || 'Failed to create faculty account.' });
+        setCreateTeacherLoading(false);
+        return;
+      }
+
+      clientCache.invalidate(clientCache.keys.ADMIN_DATA);
+
+      if (data.currentUserDemoted) {
+        clientCache.invalidate(clientCache.keys.USER_ME);
+        let count = 4;
+        setDemotedRedirectCountdown(count);
+        const timer = setInterval(() => {
+          count -= 1;
+          setDemotedRedirectCountdown(count);
+          if (count <= 0) {
+            clearInterval(timer);
+            router.push('/dashboard/faculty');
+          }
+        }, 1000);
+      } else {
+        setCreateTeacherSuccess({
+          user: data.user,
+          supervisor: data.supervisor,
+          password: createTeacherForm.password || (createTeacherForm.role === 'admin' ? 'Admin@CodeShastra2026' : `CodeShastra@${createTeacherForm.phone ? createTeacherForm.phone.slice(-4) : '2026'}`),
+        });
+        await loadAdminData();
+      }
+    } catch (err: any) {
+      setTransferMessage({ type: 'error', text: err.message || 'Error creating teacher account.' });
+    } finally {
+      setCreateTeacherLoading(false);
+    }
+  };
+
   if (loading) {
     return <LoadingScreen label="Loading administration portal..." />;
   }
@@ -553,6 +716,28 @@ Output ONLY the raw valid JSON array.`;
 
             {/* Quick Actions (Responsive: Desktop side-by-side, Mobile 2-column grid) */}
             <div className="admin-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => {
+                  setAuthorityModalOpen(true);
+                  setAuthorityActiveTab('transfer');
+                  setTransferMessage(null);
+                  setCreateTeacherSuccess(null);
+                }}
+                className="btn btn-outline"
+                style={{
+                  padding: '9px 18px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  gap: '6px',
+                  borderRadius: '8px',
+                  borderColor: '#F59E0B',
+                  color: '#B45309',
+                  backgroundColor: '#FFFBEB',
+                }}
+              >
+                <Crown size={15} color="#D97706" /> Transfer Admin Authority
+              </button>
+
               <button
                 onClick={() => {
                   setCreatePanelModalOpen(true);
@@ -1235,7 +1420,7 @@ Output ONLY the raw valid JSON array.`;
         {/* =================================================================== */}
         {activeTab === 'supervisors' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* Search Bar */}
+            {/* Search Bar & Add Faculty Button */}
             <div className="card" style={{ padding: '16px 20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 <div className="search-input-wrapper" style={{ flex: '1 1 300px', minWidth: '260px' }}>
@@ -1261,8 +1446,23 @@ Output ONLY the raw valid JSON array.`;
                     </button>
                   )}
                 </div>
-                <div style={{ fontSize: '12.5px', color: 'var(--color-text-muted)' }}>
-                  Total <strong>{filteredSupervisors.length}</strong> Faculty Supervisors
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: '12.5px', color: 'var(--color-text-muted)' }}>
+                    Total <strong>{filteredSupervisors.length}</strong> Faculty Members
+                  </div>
+                  <button
+                    onClick={() => {
+                      setAuthorityModalOpen(true);
+                      setAuthorityActiveTab('create');
+                      setTransferMessage(null);
+                      setCreateTeacherSuccess(null);
+                    }}
+                    className="btn btn-primary"
+                    style={{ padding: '8px 16px', fontSize: '12.5px', fontWeight: 600, gap: '6px', borderRadius: '8px' }}
+                  >
+                    <UserPlus size={14} /> + Add New Faculty / Admin
+                  </button>
                 </div>
               </div>
             </div>
@@ -1280,8 +1480,30 @@ Output ONLY the raw valid JSON array.`;
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                       <div>
-                        <h4 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--color-ink)' }}>{s.name}</h4>
-                        <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)' }}>{s.designation}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <h4 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--color-ink)' }}>{s.name}</h4>
+                          {s.isAdmin && (
+                            <span
+                              className="badge"
+                              style={{
+                                fontSize: '10.5px',
+                                backgroundColor: '#FEF3C7',
+                                color: '#92400E',
+                                border: '1px solid #FCD34D',
+                                fontWeight: 700,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                padding: '2px 6px',
+                              }}
+                            >
+                              <Crown size={11} color="#D97706" /> Admin
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                          {s.designation} {s.employee_id ? `• ${s.employee_id}` : ''}
+                        </div>
                       </div>
                       <span className="badge badge-neutral" style={{ fontSize: '11px' }}>
                         {s.assignedTeamsCount} Teams
@@ -1309,35 +1531,86 @@ Output ONLY the raw valid JSON array.`;
                         Supervised Teams:
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                        {s.assignedTeams?.map((t: any) => (
-                          <span
-                            key={t.id}
-                            style={{
-                              fontSize: '10.5px',
-                              padding: '2px 7px',
-                              borderRadius: '4px',
-                              backgroundColor: 'var(--color-canvas-soft)',
-                              border: '1px solid var(--color-hairline)',
-                              color: 'var(--color-ink)',
-                            }}
-                          >
-                            {t.team_name}
+                        {s.assignedTeams?.length === 0 ? (
+                          <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                            No teams assigned yet
                           </span>
-                        ))}
+                        ) : (
+                          s.assignedTeams?.map((t: any) => (
+                            <span
+                              key={t.id}
+                              style={{
+                                fontSize: '10.5px',
+                                padding: '2px 7px',
+                                borderRadius: '4px',
+                                backgroundColor: 'var(--color-canvas-soft)',
+                                border: '1px solid var(--color-hairline)',
+                                color: 'var(--color-ink)',
+                              }}
+                            >
+                              {t.team_name}
+                            </span>
+                          ))
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedSupervisorModal(s);
-                    }}
-                    className="btn btn-outline"
-                    style={{ width: '100%', fontSize: '12px', padding: '6px 12px' }}
-                  >
-                    View Assigned Teams &amp; Panels
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '6px', alignItems: 'center' }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedSupervisorModal(s);
+                      }}
+                      className="btn btn-outline"
+                      style={{ flex: 1, fontSize: '12px', padding: '6px 12px' }}
+                    >
+                      View Details
+                    </button>
+                    {!s.isAdmin ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTeacherForTransfer(s.id);
+                          setAuthorityActiveTab('transfer');
+                          setAuthorityModalOpen(true);
+                          setTransferMessage(null);
+                        }}
+                        className="btn btn-outline"
+                        title="Make this teacher the Administrator"
+                        style={{
+                          fontSize: '12px',
+                          padding: '6px 12px',
+                          borderColor: '#FCD34D',
+                          color: '#B45309',
+                          backgroundColor: '#FFFBEB',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        <Crown size={13} color="#D97706" /> Set Admin
+                      </button>
+                    ) : (
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                          color: '#059669',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        <BadgeCheck size={13} /> Active Admin
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -2880,6 +3153,87 @@ Output ONLY the raw valid JSON array.`;
                 gap: '20px',
               }}
             >
+              {/* Authority & Role Governance */}
+              <div style={{ padding: '16px 18px', borderRadius: '12px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-canvas-soft)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '8px' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: 800, color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Shield size={16} color="var(--color-brand)" /> Authority &amp; Access Governance
+                  </h4>
+                  {selectedSupervisorModal.isAdmin ? (
+                    <span
+                      className="badge"
+                      style={{
+                        fontSize: '11px',
+                        backgroundColor: '#FEF3C7',
+                        color: '#92400E',
+                        border: '1px solid #FCD34D',
+                        fontWeight: 700,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      <Crown size={12} color="#D97706" /> System Administrator
+                    </span>
+                  ) : (
+                    <span className="badge badge-neutral" style={{ fontSize: '11px' }}>
+                      Faculty Supervisor
+                    </span>
+                  )}
+                </div>
+
+                <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '14px' }}>
+                  {selectedSupervisorModal.isAdmin
+                    ? 'This faculty member currently holds full administrative authority over all teams, evaluations, panels, and project timelines.'
+                    : 'This faculty member currently operates with Faculty Supervisor rights to guide assigned project teams and serve on examination panels.'}
+                </p>
+
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  {!selectedSupervisorModal.isAdmin ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedTeacherForTransfer(selectedSupervisorModal.id);
+                        setSelectedSupervisorModal(null);
+                        setAuthorityActiveTab('transfer');
+                        setAuthorityModalOpen(true);
+                        setTransferMessage(null);
+                      }}
+                      className="btn btn-primary"
+                      style={{
+                        fontSize: '12.5px',
+                        padding: '8px 16px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <Crown size={14} /> Transfer Admin Authority to {selectedSupervisorModal.name}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm(`Are you sure you want to demote ${selectedSupervisorModal.name} back to Faculty Supervisor?`)) {
+                          handleQuickSetRole(selectedSupervisorModal.id, 'supervisor');
+                          setSelectedSupervisorModal(null);
+                        }
+                      }}
+                      className="btn btn-outline"
+                      style={{
+                        fontSize: '12px',
+                        padding: '6px 14px',
+                        borderColor: '#EF4444',
+                        color: '#DC2626',
+                      }}
+                    >
+                      Revert to Faculty Mentor Role
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Assigned Teams */}
               <div>
                 <h4 style={{ fontSize: '15px', fontWeight: 800, marginBottom: '10px', color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -2896,20 +3250,28 @@ Output ONLY the raw valid JSON array.`;
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedSupervisorModal.assignedTeams?.map((t: any) => (
-                        <tr key={t.id}>
-                          <td><strong>{t.team_name}</strong></td>
-                          <td style={{ fontSize: '12px' }}>{t.leaderName}</td>
-                          <td style={{ fontSize: '12px' }}>{t.studentCount} Students</td>
-                          <td>
-                            <div style={{ display: 'flex', gap: '4px' }}>
-                              <span className={`badge ${t.phase1_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>P1</span>
-                              <span className={`badge ${t.phase2_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>P2</span>
-                              <span className={`badge ${t.phase3_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>P3</span>
-                            </div>
+                      {selectedSupervisorModal.assignedTeams?.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '16px' }}>
+                            No teams currently assigned.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        selectedSupervisorModal.assignedTeams?.map((t: any) => (
+                          <tr key={t.id}>
+                            <td><strong>{t.team_name}</strong></td>
+                            <td style={{ fontSize: '12px' }}>{t.leaderName}</td>
+                            <td style={{ fontSize: '12px' }}>{t.studentCount} Students</td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '4px' }}>
+                                <span className={`badge ${t.phase1_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>P1</span>
+                                <span className={`badge ${t.phase2_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>P2</span>
+                                <span className={`badge ${t.phase3_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>P3</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -2959,7 +3321,810 @@ Output ONLY the raw valid JSON array.`;
         </div>
       )}
 
+      {/* =================================================================== */}
+      {/* MODAL 6: ADMIN AUTHORITY TRANSFER & NEW TEACHER DIRECT CREATION    */}
+      {/* =================================================================== */}
+      {authorityModalOpen && (
+        <div
+          className="modal-overlay-responsive"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1350,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            padding: '32px 16px',
+            overflowY: 'auto',
+          }}
+          onClick={() => {
+            if (!transferLoading && !createTeacherLoading) {
+              setAuthorityModalOpen(false);
+            }
+          }}
+        >
+          <div
+            className="card animate-scale-in modal-card-responsive"
+            style={{
+              width: '100%',
+              maxWidth: '780px',
+              maxHeight: 'min(92vh, 780px)',
+              borderRadius: '16px',
+              backgroundColor: '#FFFFFF',
+              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.3)',
+              border: '1px solid var(--color-border)',
+              margin: 'auto 0',
+              padding: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              className="modal-header-responsive"
+              style={{
+                padding: '18px 24px',
+                borderBottom: '1px solid var(--color-hairline)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                gap: '12px',
+                backgroundColor: '#FFFFFF',
+                flexShrink: 0,
+              }}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <span
+                    className="badge"
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      backgroundColor: '#FEF3C7',
+                      color: '#92400E',
+                      border: '1px solid #FCD34D',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <Crown size={12} color="#D97706" /> Master Governance
+                  </span>
+                </div>
+                <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.02em', margin: '2px 0 4px 0' }}>
+                  Admin Authority &amp; Faculty Management
+                </h3>
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '12.5px', margin: 0 }}>
+                  Transfer system administrator authority to any registered faculty supervisor, or provision a new teacher/admin directly.
+                </p>
+              </div>
+              <button
+                onClick={() => setAuthorityModalOpen(false)}
+                disabled={transferLoading || createTeacherLoading}
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-canvas-soft)',
+                  cursor: 'pointer',
+                  color: 'var(--color-ink)',
+                  transition: 'all 0.15s ease',
+                  flexShrink: 0,
+                }}
+                className="btn-icon-hover"
+                aria-label="Close modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Segmented Tabs */}
+            <div style={{ padding: '12px 24px 0 24px', backgroundColor: '#FFFFFF', borderBottom: '1px solid var(--color-hairline)', flexShrink: 0 }}>
+              <div className="segmented-control" style={{ width: '100%', justifyContent: 'flex-start' }}>
+                <button
+                  className={`segmented-pill ${authorityActiveTab === 'transfer' ? 'active' : ''}`}
+                  onClick={() => {
+                    setAuthorityActiveTab('transfer');
+                    setTransferMessage(null);
+                    setCreateTeacherSuccess(null);
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
+                >
+                  <ArrowRightLeft size={14} /> Transfer Authority to Existing Teacher
+                </button>
+                <button
+                  className={`segmented-pill ${authorityActiveTab === 'create' ? 'active' : ''}`}
+                  onClick={() => {
+                    setAuthorityActiveTab('create');
+                    setTransferMessage(null);
+                    setCreateTeacherSuccess(null);
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
+                >
+                  <UserPlus size={14} /> + Create New Teacher / Admin Directly
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable Body */}
+            <div
+              className="modal-body-responsive"
+              style={{
+                padding: '20px 24px',
+                overflowY: 'auto',
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '18px',
+              }}
+            >
+              {/* Alert Feedback Banner */}
+              {transferMessage && (
+                <div
+                  className={`alert-banner ${transferMessage.type === 'error' ? 'alert-danger' : 'alert-success'}`}
+                  style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  {transferMessage.type === 'error' ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
+                  <span>{transferMessage.text}</span>
+                </div>
+              )}
+
+              {/* ============================================================= */}
+              {/* TAB 1: TRANSFER AUTHORITY TO EXISTING TEACHER                 */}
+              {/* ============================================================= */}
+              {authorityActiveTab === 'transfer' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* Current Active Admin Card */}
+                  <div style={{ padding: '14px 16px', borderRadius: '12px', border: '1px solid #FCD34D', backgroundColor: '#FFFBEB', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#FDE68A', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#B45309', fontWeight: 800 }}>
+                        <Crown size={20} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: '#B45309', letterSpacing: '0.04em' }}>
+                          Current Active Administrator
+                        </div>
+                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#78350F' }}>
+                          {currentUser?.fullName || 'Dr. Project Incharge'}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#92400E' }}>
+                          {currentUser?.email}
+                        </div>
+                      </div>
+                    </div>
+                    <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D', fontWeight: 700 }}>
+                      Active Authority
+                    </span>
+                  </div>
+
+                  {/* Step 1: Select Target Teacher */}
+                  <div>
+                    <label className="input-label" style={{ fontSize: '13px', fontWeight: 700, marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>1. Select Faculty Member to Grant Authority</span>
+                      <span style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', fontWeight: 400 }}>
+                        {supervisors.length} faculty members registered
+                      </span>
+                    </label>
+
+                    {/* Teacher Search Filter in Modal */}
+                    <div className="search-input-wrapper" style={{ marginBottom: '10px' }}>
+                      <input
+                        type="text"
+                        className="input-field"
+                        style={{ height: '38px', fontSize: '12.5px' }}
+                        placeholder="Type to filter teachers by name, email, or department..."
+                        value={teacherSearchInModal}
+                        onChange={(e) => setTeacherSearchInModal(e.target.value)}
+                      />
+                      <div className="search-icon">
+                        <Search size={14} />
+                      </div>
+                      {teacherSearchInModal && (
+                        <button
+                          type="button"
+                          onClick={() => setTeacherSearchInModal('')}
+                          className="clear-btn"
+                          aria-label="Clear filter"
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Teachers List Grid / Picker */}
+                    <div style={{ maxHeight: '220px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '6px', display: 'flex', flexDirection: 'column', gap: '6px', backgroundColor: 'var(--color-canvas-soft)' }}>
+                      {supervisors
+                        .filter((s: any) => {
+                          const q = teacherSearchInModal.toLowerCase().trim();
+                          return !q || s.name?.toLowerCase().includes(q) || s.email?.toLowerCase().includes(q) || s.employee_id?.toLowerCase().includes(q);
+                        })
+                        .map((s: any) => {
+                          const isSelected = selectedTeacherForTransfer === s.id;
+                          const isSelf = currentUser?.id === s.id;
+
+                          return (
+                            <div
+                              key={s.id}
+                              onClick={() => {
+                                if (!isSelf) setSelectedTeacherForTransfer(s.id);
+                              }}
+                              style={{
+                                padding: '10px 14px',
+                                borderRadius: '8px',
+                                border: isSelected ? '2px solid var(--color-primary, #2563eb)' : '1px solid var(--color-border)',
+                                backgroundColor: isSelected ? 'rgba(37, 99, 235, 0.06)' : '#FFFFFF',
+                                cursor: isSelf ? 'default' : 'pointer',
+                                opacity: isSelf ? 0.6 : 1,
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div
+                                  style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '8px',
+                                    backgroundColor: isSelected ? 'var(--color-primary, #2563eb)' : 'var(--color-canvas-soft)',
+                                    color: isSelected ? '#FFFFFF' : 'var(--color-ink)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '13px',
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  {s.name ? s.name.charAt(0) : 'T'}
+                                </div>
+                                <div>
+                                  <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {s.name} {isSelf && <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 400 }}>(You)</span>}
+                                    {s.isAdmin && (
+                                      <span className="badge badge-success" style={{ fontSize: '10px', padding: '1px 5px' }}>Admin</span>
+                                    )}
+                                  </div>
+                                  <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)' }}>
+                                    {s.email} • {s.employee_id} • {s.assignedTeamsCount} Teams
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                {isSelected ? (
+                                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-primary, #2563eb)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <CheckCircle size={15} /> Selected
+                                  </span>
+                                ) : (
+                                  <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                                    {isSelf ? 'Current Account' : 'Click to select'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+
+                  {/* Step 2: Authority Mode Option */}
+                  {selectedTeacherForTransfer && (
+                    <div style={{ padding: '16px', borderRadius: '12px', border: '1px solid var(--color-border)', backgroundColor: '#FFFFFF' }}>
+                      <label className="input-label" style={{ fontSize: '13px', fontWeight: 700, marginBottom: '10px' }}>
+                        2. Select Authority Handover Mode
+                      </label>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {/* Option 1: Full Authority Transfer (Handover) */}
+                        <label
+                          style={{
+                            padding: '12px 14px',
+                            borderRadius: '10px',
+                            border: transferDemoteCurrent ? '2px solid #F59E0B' : '1px solid var(--color-border)',
+                            backgroundColor: transferDemoteCurrent ? '#FFFBEB' : 'var(--color-canvas-soft)',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '12px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name="transferMode"
+                            checked={transferDemoteCurrent}
+                            onChange={() => setTransferDemoteCurrent(true)}
+                            style={{ marginTop: '3px', accentColor: '#D97706' }}
+                          />
+                          <div>
+                            <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#78350F', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span>👑 Transfer Full Administrative Authority (Handover)</span>
+                              <span className="badge badge-neutral" style={{ fontSize: '10px', backgroundColor: '#FDE68A', color: '#92400E' }}>Recommended</span>
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#92400E', marginTop: '3px', lineHeight: 1.4 }}>
+                              The selected teacher becomes the Primary System Administrator (Project Incharge). Your account will be transitioned to Faculty Supervisor with full mentoring access.
+                            </div>
+                          </div>
+                        </label>
+
+                        {/* Option 2: Co-Admin Elevation */}
+                        <label
+                          style={{
+                            padding: '12px 14px',
+                            borderRadius: '10px',
+                            border: !transferDemoteCurrent ? '2px solid var(--color-primary, #2563eb)' : '1px solid var(--color-border)',
+                            backgroundColor: !transferDemoteCurrent ? 'rgba(37, 99, 235, 0.05)' : 'var(--color-canvas-soft)',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '12px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name="transferMode"
+                            checked={!transferDemoteCurrent}
+                            onChange={() => setTransferDemoteCurrent(false)}
+                            style={{ marginTop: '3px', accentColor: 'var(--color-primary, #2563eb)' }}
+                          />
+                          <div>
+                            <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--color-ink)' }}>
+                              🛡️ Grant Co-Admin Rights (Joint Administration)
+                            </div>
+                            <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '3px', lineHeight: 1.4 }}>
+                              Elevate this teacher to Administrator without modifying your existing account. Both accounts will share full administrative governance.
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+
+                      {/* Safeguard Warning */}
+                      <div style={{ marginTop: '14px', padding: '10px 12px', borderRadius: '8px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#991B1B' }}>
+                        <ShieldAlert size={16} style={{ flexShrink: 0 }} />
+                        <span>
+                          {transferDemoteCurrent
+                            ? 'Warning: Upon confirmation, master authority will transfer immediately and an official notification letter will be issued to both accounts.'
+                            : 'Notice: Both administrators will possess unrestricted control over evaluations, panels, score edits, and phases.'}
+                        </span>
+                      </div>
+
+                      {/* Confirmation Checkbox */}
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', fontSize: '12.5px', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={transferConfirmOpen}
+                          onChange={(e) => setTransferConfirmOpen(e.target.checked)}
+                          style={{ width: '16px', height: '16px', accentColor: 'var(--color-primary, #2563eb)' }}
+                        />
+                        <span style={{ fontWeight: 600, color: 'var(--color-ink)' }}>
+                          I confirm and authorize this administrative governance update.
+                        </span>
+                      </label>
+                    </div>
+                  )}
+
+                  {/* Transfer Action Button */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '10px', borderTop: '1px solid var(--color-hairline)' }}>
+                    <button
+                      type="button"
+                      onClick={() => setAuthorityModalOpen(false)}
+                      className="btn btn-outline"
+                      disabled={transferLoading}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!selectedTeacherForTransfer) {
+                          alert('Please select a teacher from the list first.');
+                          return;
+                        }
+                        if (!transferConfirmOpen) {
+                          alert('Please check the confirmation box to authorize the transfer.');
+                          return;
+                        }
+                        handleTransferAuthority(selectedTeacherForTransfer, transferDemoteCurrent);
+                      }}
+                      className="btn btn-primary"
+                      disabled={!selectedTeacherForTransfer || !transferConfirmOpen || transferLoading}
+                      style={{
+                        padding: '9px 20px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        backgroundColor: transferDemoteCurrent ? '#D97706' : 'var(--color-primary, #2563eb)',
+                        borderColor: transferDemoteCurrent ? '#D97706' : 'var(--color-primary, #2563eb)',
+                      }}
+                    >
+                      {transferLoading ? 'Authorizing & Updating...' : transferDemoteCurrent ? '👑 Confirm Authority Transfer' : '🛡️ Grant Co-Admin Rights'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ============================================================= */}
+              {/* TAB 2: CREATE NEW TEACHER / ADMIN DIRECTLY                   */}
+              {/* ============================================================= */}
+              {authorityActiveTab === 'create' && (
+                <div>
+                  {createTeacherSuccess ? (
+                    /* Account Provisioned Success Slip */
+                    <div style={{ padding: '20px', borderRadius: '12px', border: '1px solid #86EFAC', backgroundColor: '#F0FDF4', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#22C55E', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Check size={20} />
+                        </div>
+                        <div>
+                          <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#14532D', margin: 0 }}>
+                            Account Successfully Provisioned!
+                          </h4>
+                          <p style={{ fontSize: '12px', color: '#166534', margin: 0 }}>
+                            The new faculty record has been saved and registered to the ProjectHub system.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Credentials Slip Card */}
+                      <div style={{ backgroundColor: '#FFFFFF', borderRadius: '10px', padding: '16px', border: '1px solid #BBF7D0', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-hairline)', paddingBottom: '6px' }}>
+                          <span style={{ color: 'var(--color-text-muted)' }}>Full Name:</span>
+                          <strong>{createTeacherSuccess.user.full_name}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-hairline)', paddingBottom: '6px' }}>
+                          <span style={{ color: 'var(--color-text-muted)' }}>Login Email:</span>
+                          <strong style={{ fontFamily: 'monospace' }}>{createTeacherSuccess.user.email}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-hairline)', paddingBottom: '6px' }}>
+                          <span style={{ color: 'var(--color-text-muted)' }}>Initial Password:</span>
+                          <strong style={{ fontFamily: 'monospace', color: 'var(--color-brand)' }}>{createTeacherSuccess.password}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--color-hairline)', paddingBottom: '6px' }}>
+                          <span style={{ color: 'var(--color-text-muted)' }}>Employee ID:</span>
+                          <strong>{createTeacherSuccess.supervisor?.employee_id || 'FAC-001'}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--color-text-muted)' }}>Assigned Role:</span>
+                          <span className={`badge ${createTeacherSuccess.user.role === 'admin' ? 'badge-success' : 'badge-neutral'}`}>
+                            {createTeacherSuccess.user.role === 'admin' ? '👑 Administrator' : '🎓 Faculty Supervisor'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const credsText = `CodeShastra ProjectHub Portal Credentials:\nName: ${createTeacherSuccess.user.full_name}\nEmail: ${createTeacherSuccess.user.email}\nPassword: ${createTeacherSuccess.password}\nRole: ${createTeacherSuccess.user.role === 'admin' ? 'System Administrator' : 'Faculty Supervisor'}\nEmployee ID: ${createTeacherSuccess.supervisor?.employee_id}\nPortal URL: ${window.location.origin}/login`;
+                            navigator.clipboard.writeText(credsText);
+                            setCopiedCreds(true);
+                            setTimeout(() => setCopiedCreds(false), 2500);
+                          }}
+                          className="btn btn-outline"
+                          style={{ flex: 1, fontSize: '12.5px', padding: '8px 14px', gap: '6px', justifyContent: 'center' }}
+                        >
+                          {copiedCreds ? <Check size={14} color="#16A34A" /> : <Copy size={14} />}
+                          {copiedCreds ? 'Credentials Copied!' : 'Copy Login Details'}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCreateTeacherSuccess(null);
+                            setCreateTeacherForm({
+                              fullName: '',
+                              email: '',
+                              phone: '',
+                              employeeId: '',
+                              designation: 'Faculty Mentor',
+                              department: 'Dept. of Computer Applications',
+                              cabinNumber: 'Academic Block AB10',
+                              role: 'supervisor',
+                              password: '',
+                              transferCurrentAdmin: false,
+                            });
+                          }}
+                          className="btn btn-primary"
+                          style={{ padding: '8px 18px', fontSize: '12.5px', fontWeight: 600 }}
+                        >
+                          + Add Another Teacher
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Creation Form */
+                    <form onSubmit={handleCreateTeacherSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+                        <div>
+                          <label className="input-label" style={{ fontSize: '12px', fontWeight: 700, marginBottom: '4px' }}>
+                            Full Name <span style={{ color: 'var(--color-danger)' }}>*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            className="input-field"
+                            placeholder="e.g. Dr. Rajesh Sharma"
+                            value={createTeacherForm.fullName}
+                            onChange={(e) => setCreateTeacherForm({ ...createTeacherForm, fullName: e.target.value })}
+                            style={{ fontSize: '13px' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="input-label" style={{ fontSize: '12px', fontWeight: 700, marginBottom: '4px' }}>
+                            Official Email <span style={{ color: 'var(--color-danger)' }}>*</span>
+                          </label>
+                          <input
+                            type="email"
+                            required
+                            className="input-field"
+                            placeholder="e.g. rajesh.sharma@college.edu"
+                            value={createTeacherForm.email}
+                            onChange={(e) => setCreateTeacherForm({ ...createTeacherForm, email: e.target.value })}
+                            style={{ fontSize: '13px' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="input-label" style={{ fontSize: '12px', fontWeight: 700, marginBottom: '4px' }}>
+                            Phone Number
+                          </label>
+                          <input
+                            type="text"
+                            className="input-field"
+                            placeholder="e.g. 9876543210"
+                            value={createTeacherForm.phone}
+                            onChange={(e) => setCreateTeacherForm({ ...createTeacherForm, phone: e.target.value })}
+                            style={{ fontSize: '13px' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="input-label" style={{ fontSize: '12px', fontWeight: 700, marginBottom: '4px' }}>
+                            Faculty Employee ID
+                          </label>
+                          <input
+                            type="text"
+                            className="input-field"
+                            placeholder="e.g. EMP125 (leave blank for auto)"
+                            value={createTeacherForm.employeeId}
+                            onChange={(e) => setCreateTeacherForm({ ...createTeacherForm, employeeId: e.target.value })}
+                            style={{ fontSize: '13px' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="input-label" style={{ fontSize: '12px', fontWeight: 700, marginBottom: '4px' }}>
+                            Designation
+                          </label>
+                          <input
+                            type="text"
+                            className="input-field"
+                            placeholder="e.g. Assistant Professor / Associate Professor"
+                            value={createTeacherForm.designation}
+                            onChange={(e) => setCreateTeacherForm({ ...createTeacherForm, designation: e.target.value })}
+                            style={{ fontSize: '13px' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="input-label" style={{ fontSize: '12px', fontWeight: 700, marginBottom: '4px' }}>
+                            Cabin / Office Location
+                          </label>
+                          <input
+                            type="text"
+                            className="input-field"
+                            placeholder="e.g. AB10 - Room 402"
+                            value={createTeacherForm.cabinNumber}
+                            onChange={(e) => setCreateTeacherForm({ ...createTeacherForm, cabinNumber: e.target.value })}
+                            style={{ fontSize: '13px' }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Role Selection */}
+                      <div style={{ marginTop: '6px' }}>
+                        <label className="input-label" style={{ fontSize: '12.5px', fontWeight: 700, marginBottom: '6px' }}>
+                          Role &amp; Privilege Level
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                          <label
+                            style={{
+                              padding: '10px 14px',
+                              borderRadius: '8px',
+                              border: createTeacherForm.role === 'supervisor' ? '2px solid var(--color-primary, #2563eb)' : '1px solid var(--color-border)',
+                              backgroundColor: createTeacherForm.role === 'supervisor' ? 'rgba(37, 99, 235, 0.05)' : '#FFFFFF',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                            }}
+                          >
+                            <input
+                              type="radio"
+                              name="createRole"
+                              checked={createTeacherForm.role === 'supervisor'}
+                              onChange={() => setCreateTeacherForm({ ...createTeacherForm, role: 'supervisor' })}
+                              style={{ accentColor: 'var(--color-primary, #2563eb)' }}
+                            />
+                            <div>
+                              <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-ink)' }}>🎓 Faculty Supervisor</div>
+                              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Project Mentor &amp; Panel Judge</div>
+                            </div>
+                          </label>
+
+                          <label
+                            style={{
+                              padding: '10px 14px',
+                              borderRadius: '8px',
+                              border: createTeacherForm.role === 'admin' ? '2px solid #F59E0B' : '1px solid var(--color-border)',
+                              backgroundColor: createTeacherForm.role === 'admin' ? '#FFFBEB' : '#FFFFFF',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                            }}
+                          >
+                            <input
+                              type="radio"
+                              name="createRole"
+                              checked={createTeacherForm.role === 'admin'}
+                              onChange={() => setCreateTeacherForm({ ...createTeacherForm, role: 'admin' })}
+                              style={{ accentColor: '#D97706' }}
+                            />
+                            <div>
+                              <div style={{ fontSize: '13px', fontWeight: 700, color: '#78350F' }}>👑 System Administrator</div>
+                              <div style={{ fontSize: '11px', color: '#92400E' }}>Project Incharge Authority</div>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* If creating as admin: Checkbox to transfer primary authority */}
+                      {createTeacherForm.role === 'admin' && (
+                        <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: '#FFFBEB', border: '1px solid #FCD34D' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={createTeacherForm.transferCurrentAdmin}
+                              onChange={(e) => setCreateTeacherForm({ ...createTeacherForm, transferCurrentAdmin: e.target.checked })}
+                              style={{ accentColor: '#D97706' }}
+                            />
+                            <span style={{ fontWeight: 600, color: '#78350F' }}>
+                              Transfer my primary admin authority to this new account (my account becomes Faculty Mentor).
+                            </span>
+                          </label>
+                        </div>
+                      )}
+
+                      {/* Custom Password Input */}
+                      <div>
+                        <label className="input-label" style={{ fontSize: '12px', fontWeight: 700, marginBottom: '4px' }}>
+                          Custom Password (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          className="input-field"
+                          placeholder={createTeacherForm.role === 'admin' ? 'Default: Admin@CodeShastra2026' : 'Default: CodeShastra@<Last4DigitsOfPhone>'}
+                          value={createTeacherForm.password}
+                          onChange={(e) => setCreateTeacherForm({ ...createTeacherForm, password: e.target.value })}
+                          style={{ fontSize: '13px', fontFamily: 'monospace' }}
+                        />
+                        <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '3px' }}>
+                          Leave empty to use automatic standard password format.
+                        </div>
+                      </div>
+
+                      {/* Form Actions */}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--color-hairline)' }}>
+                        <button
+                          type="button"
+                          onClick={() => setAuthorityModalOpen(false)}
+                          className="btn btn-outline"
+                          disabled={createTeacherLoading}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="btn btn-primary"
+                          disabled={createTeacherLoading}
+                          style={{ padding: '9px 20px', fontSize: '13px', fontWeight: 700 }}
+                        >
+                          {createTeacherLoading ? 'Provisioning Account...' : '+ Provision & Create Account'}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* TRANSITION SCREEN: GRACEFUL DEMOTION REDIRECT                      */}
+      {/* =================================================================== */}
+      {demotedRedirectCountdown !== null && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: 'rgba(15, 23, 42, 0.92)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            color: '#FFFFFF',
+            textAlign: 'center',
+          }}
+        >
+          <div
+            className="card animate-scale-in"
+            style={{
+              maxWidth: '480px',
+              padding: '32px 28px',
+              borderRadius: '20px',
+              backgroundColor: '#1E293B',
+              border: '1px solid #334155',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '16px',
+            }}
+          >
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                color: '#F59E0B',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Crown size={32} />
+            </div>
+
+            <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+              Authority Handover Complete
+            </h3>
+
+            <p style={{ fontSize: '14px', color: '#94A3B8', lineHeight: 1.5, margin: 0 }}>
+              Administrative authority has been officially transferred. Your account has transitioned to a <strong>Faculty Mentor</strong>.
+            </p>
+
+            <div style={{ padding: '10px 18px', borderRadius: '10px', backgroundColor: '#0F172A', border: '1px solid #334155', fontSize: '13px', color: '#38BDF8' }}>
+              Redirecting to Faculty Dashboard in <strong>{demotedRedirectCountdown}s</strong>...
+            </div>
+
+            <button
+              onClick={() => router.push('/dashboard/faculty')}
+              className="btn btn-primary"
+              style={{ width: '100%', marginTop: '8px', padding: '10px', fontWeight: 700 }}
+            >
+              Go to Faculty Dashboard Now
+            </button>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </div>
   );
 }
+

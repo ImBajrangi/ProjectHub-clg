@@ -91,7 +91,10 @@ export default function NotificationsPage() {
 
       if (notifRes.ok) {
         const notifData = await notifRes.json();
-        const notifs = notifData.notifications || [];
+        const rawNotifs: NotificationItem[] = notifData.notifications || [];
+        const notifs = loggedInUser?.id
+          ? rawNotifs.filter((n) => String(n.user_id) === String(loggedInUser.id))
+          : rawNotifs;
         setNotifications(notifs);
 
         if (loggedInUser?.id) {
@@ -221,6 +224,11 @@ export default function NotificationsPage() {
 
   const filteredNotifications = useMemo(() => {
     return notifications.filter((n) => {
+      // Safety filter: ensure notification belongs to current user
+      if (currentUser?.id && n.user_id && String(n.user_id) !== String(currentUser.id)) {
+        return false;
+      }
+
       // Tab filter
       if (activeTab === 'unread' && n.is_read) return false;
       const text = `${n.subject || ''} ${n.body || ''} ${n.category || ''}`.toLowerCase();
@@ -272,7 +280,19 @@ export default function NotificationsPage() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--color-canvas)', display: 'flex', flexDirection: 'column' }}>
-      <Navbar />
+      <Navbar
+        user={
+          currentUser
+            ? {
+                id: currentUser.id,
+                fullName: currentUser.full_name,
+                email: currentUser.email,
+                role: currentUser.role,
+                isLeader: currentUser.is_leader,
+              }
+            : null
+        }
+      />
 
       <main style={{ flex: 1, maxWidth: '1080px', width: '100%', margin: '0 auto', padding: '24px 16px 60px' }}>
         {/* Breadcrumb & Navigation */}

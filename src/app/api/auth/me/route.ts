@@ -21,20 +21,38 @@ export async function GET(req: NextRequest) {
 
     const unreadNotifications = (await db.getNotificationsByUser(user.id)).filter((n) => !n.is_read).length;
 
-    return NextResponse.json({
-      authenticated: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.full_name,
-        role: user.role,
-        phone: user.phone,
-        isLeader: user.is_leader,
+    return NextResponse.json(
+      {
+        authenticated: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.full_name,
+          role: user.role,
+          phone: user.phone,
+          isLeader: user.is_leader,
+        },
+        team,
+        unreadNotifications,
       },
-      team,
-      unreadNotifications,
-    });
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      }
+    );
   } catch (error) {
-    return NextResponse.json({ authenticated: false, error: 'Auth check failed' }, { status: 500 });
+    return NextResponse.json(
+      { authenticated: false, error: 'Auth check failed' },
+      {
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        },
+      }
+    );
   }
 }

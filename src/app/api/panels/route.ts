@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     if (phaseNumber) {
       panels = panels.filter((p) => p.phase_number === phaseNumber);
     }
-    const allSupervisors = store.users.filter((u) => u.role === 'supervisor');
+    const allSupervisors = store.users.filter((u) => u.role === 'supervisor' || u.role === 'admin');
     const allTeams = store.teams;
     const phases = store.evaluation_phases;
 
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
     });
 
     // If faculty in Panel Mode: filter to panels where this user is assigned as judge
-    if (sessionUser.role === 'supervisor') {
+    if (sessionUser.role === 'supervisor' || sessionUser.role === 'admin') {
       const myPanels = enrichedPanels.filter((p) =>
         p.judges.some((j: any) => j.id === sessionUser.id)
       );
@@ -88,7 +88,9 @@ export async function GET(req: NextRequest) {
         };
       });
 
-      return NextResponse.json({ panels: panelEvaluations });
+      if (sessionUser.role === 'supervisor') {
+        return NextResponse.json({ panels: panelEvaluations });
+      }
     }
 
     return NextResponse.json({ panels: enrichedPanels });
@@ -113,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     const allTeams = await db.getTeams();
     const allUsers = (await db.getStore()).users;
-    const supervisors = allUsers.filter((u) => u.role === 'supervisor');
+    const supervisors = allUsers.filter((u) => u.role === 'supervisor' || u.role === 'admin');
 
     // -------------------------------------------------------------------------
     // ACTION 1: UNIFIED DIRECT BULK JSON PANEL MAPPING (Employee IDs, Rooms, Shifts, Teams)

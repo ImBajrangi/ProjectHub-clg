@@ -390,19 +390,21 @@ export default function LeaderDashboardPage() {
 
   const handleWantToMeet = async () => {
     setRequestingMeeting(true);
-    const supervisorName = teamData?.supervisor?.full_name || 'Supervisor';
+    const rawSupervisorName = teamData?.supervisor?.full_name || 'Assigned Supervisor';
+    const cleanSupervisorName = rawSupervisorName.replace(/^(dr\.|mr\.|mrs\.|ms\.|prof\.)\s+/i, '').trim();
+    const mentorDisplayName = rawSupervisorName.match(/^(dr\.|mr\.|mrs\.|ms\.|prof\.)/i) ? rawSupervisorName : `Prof. ${cleanSupervisorName}`;
     const nextMeetIdx = (teamData?.meetings?.length || 0) + 1;
 
     // Set dedicated in-software confirmation state
     setMeetingConfirmation({
       show: true,
       title: `Meeting Request Dispatched (Meet ${nextMeetIdx})`,
-      message: `Your milestone review request has been recorded and transmitted to Prof. ${supervisorName}. An official notification is now active in their mentor console in real time.`,
-      mentorName: supervisorName,
+      message: `Your milestone review request has been recorded and transmitted to ${mentorDisplayName}. An official notification is now active in their mentor console in real time.`,
+      mentorName: mentorDisplayName,
       meetIndex: nextMeetIdx,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     });
-    setMeetingMessage(`Milestone review request for Meet ${nextMeetIdx} submitted to Prof. ${supervisorName}.`);
+    setMeetingMessage(`Milestone review request for Meet ${nextMeetIdx} submitted to ${mentorDisplayName}.`);
 
     // 1. Instant 0ms Notification Dispatch
     const optimisticNotif = {
@@ -466,11 +468,16 @@ export default function LeaderDashboardPage() {
       } else if (data.meeting) {
         setTeamData((prev: any) => {
           if (!prev) return prev;
-          const filtered = (prev.meetings || []).filter((m: any) => !m.id.startsWith('temp-'));
-          return {
+          const filtered = (prev.meetings || []).filter((m: any) => !String(m.id).startsWith('temp-'));
+          const updatedMeetings = [...filtered.filter((m: any) => String(m.id) !== String(data.meeting.id)), data.meeting];
+          const nextState = {
             ...prev,
-            meetings: [...filtered, data.meeting],
+            meetings: updatedMeetings,
           };
+          if (currentUser?.id) {
+            clientCache.set(clientCache.keys.LEADER_TEAM(currentUser.id), nextState);
+          }
+          return nextState;
         });
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new Event('codeshastra_notification_update'));
@@ -1148,58 +1155,61 @@ export default function LeaderDashboardPage() {
               <div
                 id="meeting-confirmation-bar"
                 style={{
-                  padding: '16px 18px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
-                  border: '1.5px solid #86EFAC',
-                  boxShadow: '0 4px 16px -2px rgba(16, 185, 129, 0.14), 0 2px 6px -1px rgba(0, 0, 0, 0.04)',
+                  padding: '14px 16px',
+                  borderRadius: '10px',
+                  background: '#FFFFFF',
+                  border: '1px solid #E2E8F0',
+                  borderLeft: '4px solid #2563EB',
+                  boxShadow: '0 4px 14px -2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04)',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '10px',
-                  animation: 'fadeIn 0.25s ease-out',
+                  gap: '8px',
+                  marginBottom: '16px',
+                  animation: 'fadeIn 0.22s ease-out',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                     <div
                       style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '10px',
-                        backgroundColor: '#16A34A',
-                        color: '#FFFFFF',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '8px',
+                        backgroundColor: '#EFF6FF',
+                        color: '#2563EB',
+                        border: '1px solid #DBEAFE',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         flexShrink: 0,
-                        boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)',
                       }}
                     >
-                      <CheckCircle2 size={20} />
+                      <CheckCircle2 size={17} />
                     </div>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                        <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#14532D' }}>
+                        <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 700, color: 'var(--color-ink, #0F172A)' }}>
                           {meetingConfirmation.title}
                         </h4>
                         <span
                           style={{
                             fontSize: '11px',
                             fontWeight: 600,
-                            color: '#15803D',
-                            backgroundColor: '#BBF7D0',
-                            padding: '2px 8px',
-                            borderRadius: '12px',
+                            color: '#1D4ED8',
+                            backgroundColor: '#EFF6FF',
+                            border: '1px solid #DBEAFE',
+                            padding: '1.5px 7px',
+                            borderRadius: '6px',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '5px',
+                            gap: '4.5px',
                           }}
                         >
-                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#16A34A' }} />
+                          <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#2563EB' }} />
                           Live Transmitted • {meetingConfirmation.timestamp}
                         </span>
                       </div>
-                      <p style={{ margin: 0, fontSize: '13px', color: '#166534', lineHeight: 1.5 }}>
+                      <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--color-text-muted, #64748B)', lineHeight: 1.5 }}>
                         {meetingConfirmation.message}
                       </p>
                     </div>
@@ -1210,20 +1220,20 @@ export default function LeaderDashboardPage() {
                     style={{
                       background: 'transparent',
                       border: 'none',
-                      color: '#15803D',
+                      color: 'var(--color-text-muted, #64748B)',
                       cursor: 'pointer',
                       padding: '4px',
                       borderRadius: '6px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      opacity: 0.75,
-                      transition: 'opacity 0.15s ease',
+                      opacity: 0.8,
+                      transition: 'opacity 0.15s ease, color 0.15s ease',
                     }}
                     title="Dismiss confirmation bar"
                     aria-label="Dismiss confirmation bar"
                   >
-                    <X size={18} />
+                    <X size={16} />
                   </button>
                 </div>
               </div>

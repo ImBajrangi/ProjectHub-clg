@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 
-export async function POST(req: NextRequest) {
+async function performLogout(req: NextRequest) {
   try {
     const token = req.cookies.get('codeshastra_token')?.value || req.headers.get('authorization')?.replace('Bearer ', '');
     if (token) {
@@ -10,11 +10,40 @@ export async function POST(req: NextRequest) {
         await auth.logoutUser(session.userId);
       }
     }
-
-    const res = NextResponse.json({ success: true, message: 'Logged out successfully' });
-    res.cookies.delete('codeshastra_token');
-    return res;
-  } catch (error) {
-    return NextResponse.json({ success: false, error: 'Failed to logout' }, { status: 500 });
+  } catch (err) {
+    console.warn('Logout session invalidation warning:', err);
   }
+
+  const res = NextResponse.json(
+    { success: true, message: 'Logged out successfully' },
+    {
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        Pragma: 'no-cache',
+        Expires: '0',
+      },
+    }
+  );
+
+  // Expire cookie explicitly
+  res.cookies.set('codeshastra_token', '', {
+    path: '/',
+    maxAge: 0,
+    expires: new Date(0),
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  });
+  res.cookies.delete('codeshastra_token');
+
+  return res;
+}
+
+export async function POST(req: NextRequest) {
+  return performLogout(req);
+}
+
+export async function GET(req: NextRequest) {
+  return performLogout(req);
 }

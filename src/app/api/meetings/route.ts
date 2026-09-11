@@ -3,6 +3,9 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { NotificationTemplates } from '@/lib/notifications';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const token = req.cookies.get('codeshastra_token')?.value || req.headers.get('authorization')?.replace('Bearer ', '');
@@ -14,24 +17,26 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const meetingId = searchParams.get('meetingId');
 
+    const headers = { 'Cache-Control': 'no-store, no-cache, must-revalidate' };
+
     if (meetingId) {
       const attendance = await db.getMeetingAttendance(meetingId);
-      return NextResponse.json({ attendance });
+      return NextResponse.json({ attendance }, { headers });
     }
 
     if (sessionUser.role === 'leader') {
       const team = await db.getTeamByLeaderId(sessionUser.id);
-      if (!team) return NextResponse.json({ error: 'Team not found' }, { status: 404 });
+      if (!team) return NextResponse.json({ error: 'Team not found' }, { status: 404, headers });
       const meetings = await db.getMeetingsByTeam(team.id);
-      return NextResponse.json({ meetings });
+      return NextResponse.json({ meetings }, { headers });
     }
 
     if (sessionUser.role === 'supervisor') {
       const meetings = await db.getMeetingsBySupervisor(sessionUser.id);
-      return NextResponse.json({ meetings });
+      return NextResponse.json({ meetings }, { headers });
     }
 
-    return NextResponse.json({ meetings: [] });
+    return NextResponse.json({ meetings: [] }, { headers });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch meetings' }, { status: 500 });
   }

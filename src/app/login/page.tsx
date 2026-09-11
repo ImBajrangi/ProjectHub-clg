@@ -129,10 +129,10 @@ function LoginForm() {
   useEffect(() => {
     async function checkSession() {
       try {
-        const res = await fetch('/api/auth/me');
+        const res = await fetch('/api/auth/me', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
-          if (data.user) {
+          if (data.authenticated && data.user) {
             if (data.user.role === 'admin') router.push('/admin');
             else if (data.user.role === 'supervisor') router.push('/dashboard/faculty');
             else router.push('/dashboard/leader');
@@ -192,13 +192,6 @@ function LoginForm() {
         clientCache.clear();
         if (data.user) {
           clientCache.set(clientCache.keys.USER_ME, data.user);
-        }
-
-        // Proactively request native OS desktop notification permission on login user gesture
-        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
-          try {
-            await requestDeviceNotificationPermission();
-          } catch {}
         }
 
         const role = data.user?.role;
