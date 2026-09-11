@@ -64,6 +64,24 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: result.error }, { status: 400 });
       }
 
+      // Notify Supervisor when problem statement is submitted/updated from leader portal
+      if (team.supervisor_id) {
+        const supervisor = await db.getUserById(team.supervisor_id);
+        if (supervisor) {
+          const nowStr = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+          const notif = NotificationTemplates.problemStatementSubmittedForSupervisor({
+            supervisorUserId: supervisor.id,
+            supervisorName: supervisor.full_name,
+            teamName: team.team_name,
+            leaderName: sessionUser.full_name,
+            title,
+            timestamp: nowStr,
+            isUpdate: !!result.problemStatement?.updated_at,
+          });
+          await db.createNotification(notif);
+        }
+      }
+
       return NextResponse.json({
         success: true,
         message: 'Problem statement submitted for supervisor review.',

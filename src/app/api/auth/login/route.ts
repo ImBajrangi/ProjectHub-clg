@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { NotificationTemplates } from '@/lib/notifications';
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,6 +17,29 @@ export async function POST(req: NextRequest) {
 
     if (!result.success) {
       return NextResponse.json({ error: result.error }, { status: 401 });
+    }
+
+    // Notify supervisor on leader login
+    if (result.user && result.user.role === 'leader') {
+      try {
+        const team = await db.getTeamByLeaderId(result.user.id);
+        if (team && team.supervisor_id) {
+          const supervisor = await db.getUserById(team.supervisor_id);
+          if (supervisor) {
+            const nowStr = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+            const notif = NotificationTemplates.teamLeaderLoggedInNotice({
+              supervisorUserId: supervisor.id,
+              supervisorName: supervisor.full_name,
+              teamName: team.team_name,
+              leaderName: result.user.fullName,
+              timestamp: nowStr,
+            });
+            await db.createNotification(notif);
+          }
+        }
+      } catch (err) {
+        console.warn('Leader login notification error:', err);
+      }
     }
 
     const res = NextResponse.json({

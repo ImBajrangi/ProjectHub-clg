@@ -39,6 +39,30 @@ Your problem statement is now locked in the portal. You may proceed with phase-w
     signoff: DEFAULT_SIGNOFF,
   }),
 
+  problemStatementSubmittedForSupervisor: (params: {
+    supervisorUserId: string;
+    supervisorName: string;
+    teamName: string;
+    leaderName: string;
+    title: string;
+    timestamp: string;
+    isUpdate?: boolean;
+  }): NotificationPayload => ({
+    userId: params.supervisorUserId,
+    category: 'Problem Statement Submitted',
+    subject: `Problem Statement ${params.isUpdate ? 'Updated' : 'Submitted'}: ${params.teamName}`,
+    salutation: `Dear Prof. ${params.supervisorName},`,
+    body: `${params.teamName} (Leader: ${params.leaderName}) has ${params.isUpdate ? 'updated and re-submitted' : 'submitted'} their Project Problem Statement for your review.
+
+Submission Summary:
+- Team: ${params.teamName}
+- Project Title: ${params.title}
+- Submission Timestamp: ${params.timestamp}
+
+Please review the scope in your Supervisor Portal to approve or request revision.`,
+    signoff: DEFAULT_SIGNOFF,
+  }),
+
   problemStatementRevisionRequested: (params: {
     userId: string;
     leaderName: string;
@@ -294,6 +318,21 @@ Registration Details:
 - Leader Phone: ${params.leaderPhone}
 
 The student has been highlighted as Team Leader in your roster dashboard.`,
+    signoff: DEFAULT_SIGNOFF,
+  }),
+
+  teamLeaderLoggedInNotice: (params: {
+    supervisorUserId: string;
+    supervisorName: string;
+    teamName: string;
+    leaderName: string;
+    timestamp: string;
+  }): NotificationPayload => ({
+    userId: params.supervisorUserId,
+    category: 'Leader Activity',
+    subject: `Team Leader Logged In: ${params.teamName}`,
+    salutation: `Dear Prof. ${params.supervisorName},`,
+    body: `${params.leaderName}, elected leader of ${params.teamName}, has signed in to the CodeShastra ProjectHub at ${params.timestamp}.`,
     signoff: DEFAULT_SIGNOFF,
   }),
 
