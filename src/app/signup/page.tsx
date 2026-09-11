@@ -8,6 +8,9 @@ import {
   CheckCircle2,
   AlertCircle,
   ChevronDown,
+  ChevronUp,
+  Search,
+  X,
   ExternalLink,
 } from 'lucide-react';
 import LoadingScreen from '@/components/LoadingScreen';
@@ -120,6 +123,55 @@ function SignUpForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Team search & dropdown state
+  const [teamSearchQuery, setTeamSearchQuery] = useState('');
+  const [teamDropdownOpen, setTeamDropdownOpen] = useState(false);
+  const teamDropdownRef = React.useRef<HTMLDivElement>(null);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Close team dropdown on outside click or Escape key
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (teamDropdownRef.current && !teamDropdownRef.current.contains(e.target as Node)) {
+        setTeamDropdownOpen(false);
+      }
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setTeamDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  // Auto-focus search input when dropdown opens
+  useEffect(() => {
+    if (teamDropdownOpen) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+    } else {
+      setTeamSearchQuery('');
+    }
+  }, [teamDropdownOpen]);
+
+  const selectedTeamObj = teams.find((t) => t.id === selectedTeamId);
+
+  const filteredTeams = teams.filter((t) => {
+    if (!teamSearchQuery.trim()) return true;
+    const q = teamSearchQuery.toLowerCase().trim();
+    return (
+      (t.team_name || '').toLowerCase().includes(q) ||
+      (t.team_code || '').toLowerCase().includes(q) ||
+      (t.program || '').toLowerCase().includes(q)
+    );
+  });
 
   // Check if session exists
   useEffect(() => {
@@ -315,31 +367,250 @@ function SignUpForm() {
           <form onSubmit={handleSubmit} className="cohere-form">
             {/* Signature Cohere Stacked Compartment Box */}
             <div className="cohere-stacked-box">
-              {/* Team Selector Compartment */}
-              <div className="cohere-compartment">
-                <label htmlFor="cohere-team-select" className="cohere-comp-label">
-                  PROJECT TEAM
-                </label>
-                <div className="cohere-select-wrapper">
-                  <select
-                    id="cohere-team-select"
-                    className="cohere-comp-select mono"
-                    value={selectedTeamId}
-                    onChange={(e) => setSelectedTeamId(e.target.value)}
-                    disabled={loadingTeams || submitting}
-                    required
-                  >
-                    <option value="">
-                      {loadingTeams ? 'Loading eligible teams...' : '-- Choose your project team --'}
-                    </option>
-                    {teams.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.team_name} ({t.program})
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown size={15} className="cohere-select-chevron" />
+              {/* Team Selector Compartment with Search Team Bar */}
+              <div className="cohere-compartment" ref={teamDropdownRef} style={{ position: 'relative' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label htmlFor="cohere-team-select-trigger" className="cohere-comp-label">
+                    PROJECT TEAM
+                  </label>
+                  {teams.length > 0 && (
+                    <span style={{ fontSize: '10.5px', color: '#64748B', fontFamily: 'monospace' }}>
+                      {teams.length} teams
+                    </span>
+                  )}
                 </div>
+
+                {/* Searchable Combobox Trigger */}
+                <div
+                  id="cohere-team-select-trigger"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => !loadingTeams && !submitting && setTeamDropdownOpen((prev) => !prev)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      if (!loadingTeams && !submitting) setTeamDropdownOpen((prev) => !prev);
+                    }
+                  }}
+                  className="cohere-select-wrapper"
+                  style={{
+                    cursor: loadingTeams || submitting ? 'not-allowed' : 'pointer',
+                    padding: '3px 0 1px 0',
+                    userSelect: 'none',
+                  }}
+                >
+                  <div
+                    className="mono"
+                    style={{
+                      fontSize: '14.5px',
+                      color: selectedTeamObj ? '#111827' : '#6B7280',
+                      fontWeight: selectedTeamObj ? 600 : 400,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      width: '100%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      paddingRight: '24px',
+                    }}
+                  >
+                    {loadingTeams ? (
+                      'Loading eligible teams...'
+                    ) : selectedTeamObj ? (
+                      <>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedTeamObj.team_name}</span>
+                        <span
+                          style={{
+                            fontSize: '10.5px',
+                            color: '#475569',
+                            fontWeight: 600,
+                            backgroundColor: '#F1F5F9',
+                            border: '1px solid #E2E8F0',
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {selectedTeamObj.program}
+                        </span>
+                      </>
+                    ) : (
+                      '-- Choose your project team --'
+                    )}
+                  </div>
+                  <div className="cohere-select-chevron" style={{ color: '#6B7280' }}>
+                    {teamDropdownOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                  </div>
+                </div>
+
+                {/* Hidden input to ensure HTML form validity */}
+                <input type="hidden" name="teamId" value={selectedTeamId} required />
+
+                {/* Searchable Dropdown Menu with Search Team Bar */}
+                {teamDropdownOpen && (
+                  <div
+                    className="team-search-dropdown-popup"
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 4px)',
+                      left: '-1px',
+                      right: '-1px',
+                      zIndex: 100,
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '10px',
+                      border: '1px solid #111827',
+                      boxShadow: '0 12px 28px -4px rgba(15, 23, 42, 0.14), 0 4px 10px -2px rgba(15, 23, 42, 0.06)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {/* Search Team Bar Header */}
+                    <div
+                      style={{
+                        padding: '8px 12px',
+                        borderBottom: '1px solid #E2E8F0',
+                        backgroundColor: '#F8FAFC',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <Search size={14} style={{ color: '#64748B', flexShrink: 0 }} />
+                      <input
+                        ref={searchInputRef}
+                        type="text"
+                        value={teamSearchQuery}
+                        onChange={(e) => setTeamSearchQuery(e.target.value)}
+                        placeholder="Search team name, code, program..."
+                        className="cohere-team-search-input"
+                        style={{
+                          border: 'none',
+                          outline: 'none',
+                          boxShadow: 'none',
+                          WebkitBoxShadow: 'none',
+                          background: 'transparent',
+                          fontSize: '13px',
+                          color: '#111827',
+                          width: '100%',
+                          fontFamily: 'inherit',
+                          padding: '2px 0',
+                          lineHeight: '1.4',
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      {teamSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTeamSearchQuery('');
+                            searchInputRef.current?.focus();
+                          }}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            color: '#94A3B8',
+                            cursor: 'pointer',
+                            padding: '2px',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                          aria-label="Clear search"
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Filtered Team List */}
+                    <div
+                      style={{
+                        maxHeight: '230px',
+                        overflowY: 'auto',
+                        padding: '4px',
+                      }}
+                    >
+                      {filteredTeams.length === 0 ? (
+                        <div style={{ padding: '20px 14px', textAlign: 'center' }}>
+                          <p style={{ margin: '0 0 6px 0', fontSize: '13px', color: '#64748B' }}>
+                            No teams match &ldquo;<strong>{teamSearchQuery}</strong>&rdquo;
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTeamSearchQuery('');
+                              searchInputRef.current?.focus();
+                            }}
+                            style={{
+                              fontSize: '12px',
+                              color: '#2563EB',
+                              background: 'transparent',
+                              border: 'none',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              padding: '2px 6px',
+                            }}
+                          >
+                            Clear search filter
+                          </button>
+                        </div>
+                      ) : (
+                        filteredTeams.map((t) => {
+                          const isSelected = t.id === selectedTeamId;
+                          return (
+                            <div
+                              key={t.id}
+                              onClick={() => {
+                                setSelectedTeamId(t.id);
+                                setTeamDropdownOpen(false);
+                              }}
+                              style={{
+                                padding: '9px 12px',
+                                borderRadius: '6px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '8px',
+                                cursor: 'pointer',
+                                backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
+                                transition: 'background-color 0.12s ease',
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isSelected) e.currentTarget.style.backgroundColor = '#F1F5F9';
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                            >
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
+                                <span
+                                  style={{
+                                    fontSize: '13.5px',
+                                    fontWeight: isSelected ? 700 : 500,
+                                    color: isSelected ? '#1D4ED8' : '#111827',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {t.team_name}
+                                </span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#64748B' }}>
+                                  <span style={{ fontFamily: 'monospace' }}>{t.team_code}</span>
+                                  <span>•</span>
+                                  <span>{t.program}</span>
+                                </div>
+                              </div>
+                              {isSelected && (
+                                <CheckCircle2 size={16} style={{ color: '#2563EB', flexShrink: 0 }} />
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Compartment Divider */}
@@ -708,6 +979,24 @@ function SignUpForm() {
           border: none !important;
           outline: none !important;
           box-shadow: none !important;
+        }
+
+        .cohere-team-search-input {
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
+          -webkit-box-shadow: none !important;
+          -webkit-appearance: none !important;
+          background: transparent !important;
+        }
+
+        .cohere-team-search-input:focus,
+        .cohere-team-search-input:focus-visible,
+        .cohere-team-search-input:active {
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
+          -webkit-box-shadow: none !important;
         }
 
         .cohere-comp-select.mono {

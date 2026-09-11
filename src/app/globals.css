@@ -254,6 +254,24 @@ button > *,
   pointer-events: none;
 }
 
+/* Zero intrusive focus outlines on search dropdown inputs */
+.cohere-team-search-input,
+.cohere-team-search-input:focus,
+.cohere-team-search-input:focus-visible,
+.cohere-team-search-input:active,
+.team-search-dropdown-popup input,
+.team-search-dropdown-popup input:focus,
+.team-search-dropdown-popup input:focus-visible,
+.team-search-dropdown-popup input:active {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  border: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

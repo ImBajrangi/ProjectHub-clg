@@ -29,6 +29,7 @@ import {
   Target,
   GraduationCap,
   ArrowLeft,
+  Search,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -44,6 +45,7 @@ export default function FacultyDashboardPage() {
 
   // Supervisor Mode State
   const [guidedTeams, setGuidedTeams] = useState<any[]>([]);
+  const [facultyTeamSearch, setFacultyTeamSearch] = useState('');
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [supTab, setSupTab] = useState<'roster' | 'problem' | 'meetings' | 'clearance'>('problem');
   const [problemReviewText, setProblemReviewText] = useState('');
@@ -713,11 +715,61 @@ export default function FacultyDashboardPage() {
           <div className="faculty-split-layout">
             {/* Left Column: Team Selector List */}
             <div className={`faculty-list-col ${mobileView === 'detail' && selectedTeam ? 'mobile-hidden' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Your Assigned Teams ({guidedTeams.length})
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Your Assigned Teams ({guidedTeams.length})
+                </div>
               </div>
 
-              {guidedTeams.map((t) => {
+              {/* Search Team Bar */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '7px 12px',
+                  backgroundColor: 'var(--color-canvas)',
+                  border: '1px solid var(--color-hairline)',
+                  borderRadius: 'var(--rounded-sm)',
+                }}
+              >
+                <Search size={14} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+                <input
+                  type="text"
+                  value={facultyTeamSearch}
+                  onChange={(e) => setFacultyTeamSearch(e.target.value)}
+                  placeholder="Search team or leader..."
+                  style={{
+                    border: 'none',
+                    outline: 'none',
+                    background: 'transparent',
+                    fontSize: '12.5px',
+                    color: 'var(--color-ink)',
+                    width: '100%',
+                  }}
+                />
+                {facultyTeamSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setFacultyTeamSearch('')}
+                    style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-text-muted)', padding: '2px' }}
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+
+              {guidedTeams
+                .filter((t) => {
+                  if (!facultyTeamSearch.trim()) return true;
+                  const q = facultyTeamSearch.toLowerCase().trim();
+                  return (
+                    (t.team_name || '').toLowerCase().includes(q) ||
+                    (t.program || '').toLowerCase().includes(q) ||
+                    (t.leader?.fullName || '').toLowerCase().includes(q)
+                  );
+                })
+                .map((t) => {
                 const isSelected = selectedTeam?.id === t.id;
                 const hasLeader = Boolean(t.leader_id);
 
