@@ -54,7 +54,8 @@ export async function POST(req: NextRequest) {
 
       const savedEvaluations = [];
       for (const item of scores) {
-        const isAbsent = Boolean(item.isAbsent);
+        const attendanceStatus = item.attendanceStatus as ('present' | 'absent' | 'next_shift' | undefined);
+        const isAbsent = Boolean(item.isAbsent) || attendanceStatus === 'absent' || attendanceStatus === 'next_shift';
         const parsedScore = !isAbsent && item.score !== undefined && item.score !== null && item.score !== '' && !isNaN(Number(item.score))
           ? Number(item.score)
           : null;
@@ -66,7 +67,8 @@ export async function POST(req: NextRequest) {
           sessionUser.id,
           parsedScore,
           isAbsent,
-          item.remarks
+          item.remarks,
+          attendanceStatus
         );
         savedEvaluations.push(ev);
       }
@@ -92,13 +94,46 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 3. Admin Direct Score Override / Edit
+    // 3. Admin Direct Attendance Segregation (Shift to Next Shift / Mark Absent)
+    if (action === 'segregate_attendance') {
+      if (sessionUser.role !== 'admin') {
+        return NextResponse.json({ error: 'Institutional Admin privilege required.' }, { status: 403 });
+      }
+
+      const { phaseNumber, teamId, studentId, attendanceStatus, remarks } = body;
+      if (!phaseNumber || !teamId || !studentId || !attendanceStatus) {
+        return NextResponse.json({ error: 'Missing phaseNumber, teamId, studentId, or attendanceStatus.' }, { status: 400 });
+      }
+
+      if (attendanceStatus !== 'next_shift' && attendanceStatus !== 'absent' && attendanceStatus !== 'present') {
+        return NextResponse.json({ error: 'Invalid attendance status.' }, { status: 400 });
+      }
+
+      const ev = await db.saveEvaluation(
+        phaseNumber,
+        teamId,
+        studentId,
+        sessionUser.id,
+        null,
+        attendanceStatus !== 'present',
+        remarks || (attendanceStatus === 'next_shift' ? 'Moved to Next Shift' : 'Marked Absent'),
+        attendanceStatus
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: `Student attendance segregated to ${attendanceStatus === 'next_shift' ? 'Next Shift' : 'Absent'} successfully.`,
+        evaluation: ev,
+      });
+    }
+
+    // 4. Admin Direct Score Override / Edit (Legacy fallback)
     if (action === 'admin_edit_score') {
       if (sessionUser.role !== 'admin') {
         return NextResponse.json({ error: 'Institutional Admin privilege required.' }, { status: 403 });
       }
 
-      const { phaseNumber, teamId, studentId, score, isAbsent, remarks } = body;
+      const { phaseNumber, teamId, studentId, score, isAbsent, attendanceStatus, remarks } = body;
       if (!phaseNumber || !teamId || !studentId) {
         return NextResponse.json({ error: 'Missing phaseNumber, teamId, or studentId.' }, { status: 400 });
       }
@@ -115,7 +150,8 @@ export async function POST(req: NextRequest) {
         sessionUser.id,
         parsedScore,
         isAbsentBool,
-        remarks || 'Admin Updated'
+        remarks || 'Admin Updated',
+        attendanceStatus
       );
 
       return NextResponse.json({

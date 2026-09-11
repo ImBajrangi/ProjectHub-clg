@@ -38,6 +38,8 @@ export default function NotificationsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>('default');
   const [actionLoading, setActionLoading] = useState(false);
+  const [confirmClearAllOpen, setConfirmClearAllOpen] = useState(false);
+
 
   const scrollToCenter = (elementId: string) => {
     setTimeout(() => {
@@ -196,9 +198,9 @@ export default function NotificationsPage() {
   };
 
   const handleClearAll = async () => {
-    if (!confirm('Are you sure you want to clear all notifications?')) return;
     setActionLoading(true);
     setNotifications([]);
+    setConfirmClearAllOpen(false);
     try {
       await fetch('/api/notifications', {
         method: 'POST',
@@ -398,7 +400,7 @@ export default function NotificationsPage() {
               )}
               {notifications.length > 0 && (
                 <button
-                  onClick={handleClearAll}
+                  onClick={() => setConfirmClearAllOpen(true)}
                   disabled={actionLoading}
                   className="btn btn-outline"
                   style={{ fontSize: '12.5px', padding: '6px 12px', color: 'var(--color-danger)' }}
@@ -651,6 +653,95 @@ export default function NotificationsPage() {
           </div>
         )}
       </main>
+
+      {/* In-Software Clear All Confirmation Modal */}
+      {confirmClearAllOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(5px)',
+            WebkitBackdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '16px',
+            animation: 'fadeIn 0.15s ease',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '420px',
+              padding: '24px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.08)',
+              border: '1px solid #E2E8F0',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+              <div
+                style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
+                  backgroundColor: '#FEE2E2',
+                  color: '#DC2626',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <Trash2 size={20} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3 style={{ fontSize: '16.5px', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                  Clear All Notifications?
+                </h3>
+                <p style={{ fontSize: '13px', color: '#64748B', marginTop: '6px', marginBottom: 0, lineHeight: 1.5 }}>
+                  Are you sure you want to dismiss all notification items? This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setConfirmClearAllOpen(false)}
+                className="btn btn-outline"
+                style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 600 }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleClearAll}
+                disabled={actionLoading}
+                style={{
+                  padding: '8px 18px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#DC2626',
+                  color: '#FFFFFF',
+                  cursor: actionLoading ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                }}
+              >
+                {actionLoading ? 'Clearing...' : 'Clear All'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

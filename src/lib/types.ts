@@ -152,6 +152,7 @@ export interface Evaluation {
   criteria_scores?: any;
   locked?: boolean;
   is_absent: boolean;
+  attendance_status?: 'present' | 'absent' | 'next_shift';
   remarks?: string | null;
   submitted_at?: string;
   updated_at?: string;

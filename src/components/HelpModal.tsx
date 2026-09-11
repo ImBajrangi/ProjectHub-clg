@@ -146,7 +146,7 @@ export default function HelpModal({ isOpen, onClose, userRole }: HelpModalProps)
           ],
           bulletPoints: [
             'Mentor Mode: Guide, review problem statements, schedule meetings, and control phase clearances.',
-            'Judge Mode: Evaluate presentations, enter scores out of 10, mark absences, and approve Phase 3 papers.',
+            'Judge Mode: Evaluate presentations, enter evaluation marks per round criteria, mark absences, and approve Phase 3 papers.',
           ],
         },
         {

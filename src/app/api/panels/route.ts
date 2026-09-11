@@ -398,8 +398,11 @@ export async function POST(req: NextRequest) {
         const updated = await db.updatePanelSchedule(pIndex, phaseNumber, {
           date: targetDate,
           timeWindow: targetShift,
-          academicBlock: 'Academic Block AB10', // FIXED VENUE PER USER REQUIREMENT
-          roomNumber: targetRoom.startsWith('Room') ? targetRoom : `Room ${targetRoom}`,
+          academicBlock: 'Academic Block AB10',
+          roomNumber:
+            targetRoom.startsWith('Room') || targetRoom.startsWith('Lab') || targetRoom.startsWith('Seminar') || targetRoom.startsWith('Hall') || isNaN(Number(String(targetRoom).trim()))
+              ? String(targetRoom).trim()
+              : `Room ${String(targetRoom).trim()}`,
         });
 
         if (updated) updatedCount++;

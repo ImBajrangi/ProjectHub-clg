@@ -38,7 +38,7 @@ export default function LeaderDashboardPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [teamData, setTeamData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
   // 4 Tabs: overview, problem, meetings, schedule (PDF uploads removed per user request)
   const [activeTab, setActiveTab] = useState<'overview' | 'problem' | 'meetings' | 'schedule'>('overview');

@@ -108,6 +108,22 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // 3. Admin Updates Max Marks / Evaluation Weightage for a Round/Phase
+    if (action === 'update_marks' && sessionUser.role === 'admin') {
+      const { phaseNumber, marksWeightage } = body;
+      const parsedMarks = Number(marksWeightage);
+      if (!phaseNumber || isNaN(parsedMarks) || parsedMarks <= 0) {
+        return NextResponse.json({ error: 'Valid phase number and positive marks weightage are required' }, { status: 400 });
+      }
+
+      const updatedPhase = await db.updatePhaseMarks(phaseNumber as 1 | 2 | 3, parsedMarks);
+      return NextResponse.json({
+        success: true,
+        message: `Phase ${phaseNumber} maximum marks successfully updated to ${parsedMarks}`,
+        phase: updatedPhase,
+      });
+    }
+
     return NextResponse.json({ error: 'Invalid action or insufficient permissions' }, { status: 400 });
   } catch (error) {
     console.error('Phase API error:', error);

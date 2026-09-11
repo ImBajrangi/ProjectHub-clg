@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   Bell,
   LogOut,
@@ -47,6 +47,7 @@ export default function Navbar({
   onFacultyModeChange,
 }: NavbarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [currentUser, setCurrentUser] = useState<any>(initialUser || null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -55,6 +56,11 @@ export default function Navbar({
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [switchingPortal, setSwitchingPortal] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSwitchingPortal(null);
+  }, [pathname]);
 
   const userMenuRef = React.useRef<HTMLDivElement>(null);
   const notifiedIdsRef = React.useRef<Set<string>>(new Set());
@@ -365,6 +371,13 @@ export default function Navbar({
     return clean.slice(0, 2).toUpperCase() || 'M';
   };
 
+  const getShortDisplayName = (name?: string) => {
+    if (!name) return 'User';
+    // Remove parenthesized annotations like (Head Administrator) for clean navbar display
+    const clean = name.replace(/\s*\([^)]*\)/g, '').trim();
+    return clean || name;
+  };
+
   const getRoleLabel = (role?: string, mode?: string) => {
     if (role === 'supervisor') return mode === 'panel' ? 'Panel Judge' : 'Faculty Mentor';
     if (role === 'admin') return 'Project Incharge';
@@ -406,7 +419,7 @@ export default function Navbar({
           </div>
 
           {/* 2. Center: Faculty Mode Segmented Control (if applicable) */}
-          {activeUser?.role === 'supervisor' && onFacultyModeChange && (
+          {(activeUser?.role === 'supervisor' || activeUser?.role === 'admin') && onFacultyModeChange && (
             <div className="nav-center">
               <div className="nav-faculty-toggle" role="group" aria-label="Faculty Portal Mode Switcher">
                 <button
@@ -440,24 +453,30 @@ export default function Navbar({
                   <div className="desktop-role-pill">
                     {activeUser.role === 'leader' && (
                       <span className="nav-role-badge">
-                        <UserCheck size={13} style={{ color: 'var(--color-primary)' }} />
-                        <span>{activeUser.fullName}</span>
+                        <UserCheck size={13} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+                        <span className="nav-role-name">{getShortDisplayName(activeUser.fullName)}</span>
                         {teamCode && <span className="nav-role-team-tag">{teamCode}</span>}
                       </span>
                     )}
                     {activeUser.role === 'supervisor' && (
                       <span className="nav-role-badge">
-                        <Compass size={13} style={{ color: 'var(--color-primary)' }} />
-                        <span>{activeUser.fullName}</span>
+                        <Compass size={13} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+                        <span className="nav-role-name">{getShortDisplayName(activeUser.fullName)}</span>
                         <span className="nav-role-team-tag">{activeFacultyMode === 'panel' ? 'Judge' : 'Mentor'}</span>
                       </span>
                     )}
                     {activeUser.role === 'admin' && (
-                      <span className="nav-role-badge">
-                        <Shield size={13} style={{ color: '#0F172A' }} />
-                        <span>{activeUser.fullName || 'Project Incharge'}</span>
-                        <span className="nav-role-team-tag">Incharge</span>
-                      </span>
+                      <Link
+                        href="/admin"
+                        className="nav-role-badge nav-role-badge-link"
+                        title="Click to open Master Administrator Operations Console"
+                      >
+                        <Shield size={13} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+                        <span className="nav-role-name">{getShortDisplayName(activeUser.fullName)}</span>
+                        <span className="nav-role-team-tag nav-role-tag-admin">
+                          Admin Access ↗
+                        </span>
+                      </Link>
                     )}
                   </div>
 
@@ -530,6 +549,98 @@ export default function Navbar({
                         </div>
 
                         <div className="nav-dropdown-divider" />
+
+                        {/* Admin / Co-Admin Portal Switcher */}
+                        {activeUser.role === 'admin' && (
+                          <div style={{ padding: '4px 6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (pathname === '/admin') {
+                                  setUserMenuOpen(false);
+                                  return;
+                                }
+                                setSwitchingPortal('Admin Console');
+                                setUserMenuOpen(false);
+                                router.push('/admin');
+                              }}
+                              className="nav-dropdown-item"
+                              style={{
+                                backgroundColor: pathname === '/admin' ? 'rgba(245, 158, 11, 0.12)' : 'rgba(245, 158, 11, 0.05)',
+                                border: '1px solid rgba(245, 158, 11, 0.25)',
+                                borderRadius: '8px',
+                                color: 'var(--color-ink)',
+                                padding: '8px 10px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                width: '100%',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <Shield size={15} style={{ color: '#D97706', flexShrink: 0 }} />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '12.5px', fontWeight: 700, lineHeight: 1.2, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span>Use Admin Access</span>
+                                  {pathname === '/admin' && (
+                                    <span style={{ fontSize: '9.5px', fontWeight: 700, color: '#B45309', backgroundColor: '#FEF3C7', padding: '1px 5px', borderRadius: '4px' }}>
+                                      Active
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ fontSize: '10.5px', color: 'var(--color-text-muted)' }}>
+                                  Full academic &amp; evaluation console
+                                </div>
+                              </div>
+                            </button>
+
+                            {/* Faculty Mentor Portal only visible to Co-Admin faculty, NOT master admin admin@codeshastra.edu */}
+                            {activeUser.email?.toLowerCase() !== 'admin@codeshastra.edu' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (pathname === '/dashboard/faculty') {
+                                    setUserMenuOpen(false);
+                                    return;
+                                  }
+                                  setSwitchingPortal('Faculty Mentor Portal');
+                                  setUserMenuOpen(false);
+                                  router.push('/dashboard/faculty');
+                                }}
+                                className="nav-dropdown-item"
+                                style={{
+                                  backgroundColor: pathname === '/dashboard/faculty' ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
+                                  borderRadius: '8px',
+                                  color: 'var(--color-ink)',
+                                  padding: '8px 10px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  width: '100%',
+                                  textAlign: 'left',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <Users size={15} style={{ color: '#2563EB', flexShrink: 0 }} />
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: '12.5px', fontWeight: 600, lineHeight: 1.2, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span>Faculty Mentor Portal</span>
+                                    {pathname === '/dashboard/faculty' && (
+                                      <span style={{ fontSize: '9.5px', fontWeight: 700, color: '#1D4ED8', backgroundColor: '#EFF6FF', padding: '1px 5px', borderRadius: '4px' }}>
+                                        Active
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div style={{ fontSize: '10.5px', color: 'var(--color-text-muted)' }}>
+                                    Mentor &amp; judge workspace
+                                  </div>
+                                </div>
+                              </button>
+                            )}
+                            <div className="nav-dropdown-divider" style={{ margin: '4px 0' }} />
+                          </div>
+                        )}
 
                         {/* Help & Guide */}
                         <button
@@ -934,11 +1045,43 @@ export default function Navbar({
         @media (min-width: 1080px) {
           .desktop-role-pill {
             display: inline-flex !important;
-            max-width: 240px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            align-items: center;
           }
+        }
+
+        .nav-role-name {
+          max-width: 140px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          display: inline-block;
+          vertical-align: middle;
+        }
+
+        .nav-role-badge-link {
+          text-decoration: none;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+
+        .nav-role-badge-link:hover {
+          background-color: #F8FAFC;
+          border-color: #CBD5E1;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+        }
+
+        .nav-role-tag-admin {
+          color: #2563EB !important;
+          background-color: #EFF6FF !important;
+          border: 1px solid #DBEAFE !important;
+          font-weight: 700;
+          letter-spacing: 0.01em;
+          flex-shrink: 0;
+        }
+
+        .nav-role-badge-link:hover .nav-role-tag-admin {
+          background-color: #DBEAFE !important;
+          border-color: #BFDBFE !important;
         }
 
         /* Auto-hide brand text on compact & split viewports to prioritize action buttons */
@@ -1044,6 +1187,45 @@ export default function Navbar({
           onClose={() => setHelpModalOpen(false)}
           userRole={activeUser.role === 'supervisor' ? 'supervisor' : activeUser.role === 'admin' ? 'admin' : 'leader'}
         />
+      )}
+
+      {/* Instant Portal Transition Indicator */}
+      {switchingPortal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 999999,
+            backgroundColor: '#0F172A',
+            color: '#FFFFFF',
+            padding: '9px 20px',
+            borderRadius: '30px',
+            boxShadow: '0 10px 35px rgba(0,0,0,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontSize: '13px',
+            fontWeight: 700,
+            letterSpacing: '-0.01em',
+            border: '1px solid rgba(255,255,255,0.18)',
+            pointerEvents: 'none',
+          }}
+        >
+          <span
+            style={{
+              width: '14px',
+              height: '14px',
+              border: '2px solid rgba(255,255,255,0.3)',
+              borderTopColor: '#38BDF8',
+              borderRadius: '50%',
+              display: 'inline-block',
+              animation: 'spin 0.6s linear infinite',
+            }}
+          />
+          <span>Switching to {switchingPortal}...</span>
+        </div>
       )}
     </>
   );

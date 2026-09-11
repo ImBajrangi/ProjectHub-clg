@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const token = req.cookies.get('codeshastra_token')?.value || req.headers.get('authorization')?.replace('Bearer ', '');
@@ -16,10 +19,20 @@ export async function GET(req: NextRequest) {
 
     let team = null;
     if (user.role === 'leader') {
-      team = await db.getTeamByLeaderId(user.id);
+      try {
+        team = await db.getTeamByLeaderId(user.id);
+      } catch (err) {
+        console.error('Error fetching team for leader in /api/auth/me:', err);
+      }
     }
 
-    const unreadNotifications = (await db.getNotificationsByUser(user.id)).filter((n) => !n.is_read).length;
+    let unreadNotifications = 0;
+    try {
+      const userNotifs = await db.getNotificationsByUser(user.id);
+      unreadNotifications = (userNotifs || []).filter((n) => n && !n.is_read).length;
+    } catch (err) {
+      console.error('Error fetching notifications in /api/auth/me:', err);
+    }
 
     return NextResponse.json(
       {
@@ -45,10 +58,11 @@ export async function GET(req: NextRequest) {
       }
     );
   } catch (error) {
+    console.error('/api/auth/me exception:', error);
     return NextResponse.json(
-      { authenticated: false, error: 'Auth check failed' },
+      { authenticated: false, user: null, error: 'Auth check failed' },
       {
-        status: 500,
+        status: 200,
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
         },

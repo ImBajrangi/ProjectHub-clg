@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const token = req.cookies.get('codeshastra_token')?.value || req.headers.get('authorization')?.replace('Bearer ', '');
@@ -41,13 +44,25 @@ export async function GET(req: NextRequest) {
         const p2Eval = studentEvals.find((ev) => ev.phase_number === 2);
         const p3Eval = studentEvals.find((ev) => ev.phase_number === 3);
 
+        const formatEval = (ev: any) => {
+          if (!ev) return null;
+          const status = ev.attendance_status || (ev.is_absent ? (ev.remarks?.toLowerCase().includes('next shift') ? 'next_shift' : 'absent') : 'present');
+          return {
+            score: ev.score,
+            isAbsent: ev.is_absent,
+            attendanceStatus: status,
+            remarks: ev.remarks,
+            submittedAt: ev.submitted_at,
+          };
+        };
+
         return {
           ...st,
           isLeader: t.leader_id === st.id,
           evaluations: studentEvals,
-          phase1: p1Eval ? { score: p1Eval.score, isAbsent: p1Eval.is_absent, remarks: p1Eval.remarks, submittedAt: p1Eval.submitted_at } : null,
-          phase2: p2Eval ? { score: p2Eval.score, isAbsent: p2Eval.is_absent, remarks: p2Eval.remarks, submittedAt: p2Eval.submitted_at } : null,
-          phase3: p3Eval ? { score: p3Eval.score, isAbsent: p3Eval.is_absent, remarks: p3Eval.remarks, submittedAt: p3Eval.submitted_at } : null,
+          phase1: formatEval(p1Eval),
+          phase2: formatEval(p2Eval),
+          phase3: formatEval(p3Eval),
         };
       });
 
@@ -118,34 +133,34 @@ export async function GET(req: NextRequest) {
           leaderName: t.leader?.name || 'Not Designated',
         })),
         assignedPanels: panelAssigned.map((p: any) => ({
-          id: p.id,
-          panel_name: p.panel_name,
-          phase_number: p.phase_number,
-          time_window: p.time_window,
-          room_number: p.room_number,
-          date: p.date,
-          range: `Teams #${p.team_range_start} - #${p.team_range_end}`,
+          id: p?.id || '',
+          panel_name: p?.panel_name || 'Panel',
+          phase_number: p?.phase_number || 1,
+          time_window: p?.time_window || '',
+          room_number: p?.room_number || '',
+          date: p?.date || '',
+          range: `Teams #${p?.team_range_start ?? 1} - #${p?.team_range_end ?? 1}`,
         })),
       };
     });
 
     // Enriched panels
-    const enrichedPanels = panels.map((p) => {
-      const members = panelMembers.filter((pm) => pm.panel_id === p.id);
+    const enrichedPanels = panels.map((p: any) => {
+      const members = panelMembers.filter((pm) => pm && pm.panel_id === p?.id);
       const judgeUsers = members
         .map((m) => supervisors.find((s) => s.id === m.supervisor_id))
         .filter(Boolean)
         .map((u: any) => ({
-          id: u.id,
-          full_name: u.full_name,
-          email: u.email,
-          phone: u.phone,
+          id: u?.id || '',
+          full_name: u?.full_name || 'Faculty Judge',
+          email: u?.email || '',
+          phone: u?.phone || '',
         }));
 
       const matchingTeams = auditTeams.filter(
         (t) =>
-          t.team_number >= (p.team_range_start || 0) &&
-          t.team_number <= (p.team_range_end || 999)
+          t.team_number >= (p?.team_range_start || 0) &&
+          t.team_number <= (p?.team_range_end || 999)
       );
 
       return {

@@ -97,6 +97,8 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scrollbar-gutter: stable;
   -webkit-tap-highlight-color: transparent !important;
   -webkit-overflow-scrolling: touch;
 }
@@ -167,9 +169,10 @@ a:hover {
   color: var(--color-accent-hover);
 }
 
-/* Snappy Smooth Page Transitions (No transform retention to avoid trapping position:fixed modals) */
+/* Snappy Smooth Page Transitions (Anti-jitter & Hardware Accelerated) */
 .page-fade-in {
-  animation: pageFadeIn 0.16s cubic-bezier(0.16, 1, 0.3, 1) ease-out;
+  animation: pageFadeIn 0.12s cubic-bezier(0, 0, 0.2, 1) forwards;
+  will-change: opacity;
 }
 
 @keyframes pageFadeIn {
@@ -183,6 +186,17 @@ a:hover {
 
 .animate-fade-in {
   opacity: 1;
+}
+
+/* Layout Stability & Anti-Jitter Utilities */
+.table-container {
+  contain: layout style;
+  min-height: 240px;
+}
+
+.tab-pane-container {
+  contain: layout style;
+  min-height: 400px;
 }
 
 /* Navigation Header - Fixed & Solid at Top (No Relocating / Gaps on Scroll) */
@@ -1249,8 +1263,16 @@ textarea {
 .admin-header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
+}
+
+.admin-header-actions > * {
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 /* Vertically Centered Search Input Wrapper */
@@ -1455,17 +1477,19 @@ textarea {
     width: 100% !important;
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
-    gap: 10px !important;
-    margin-top: 6px !important;
+    gap: 8px !important;
+    margin-top: 8px !important;
     box-sizing: border-box !important;
   }
 
-  .admin-header-actions button {
+  .admin-header-actions > * {
     width: 100% !important;
+    height: 40px !important;
     justify-content: center !important;
-    padding: 10px 12px !important;
-    font-size: 12.5px !important;
+    padding: 8px 10px !important;
+    font-size: 12px !important;
     box-sizing: border-box !important;
+    text-align: center !important;
   }
 
   .panels-actions-group {

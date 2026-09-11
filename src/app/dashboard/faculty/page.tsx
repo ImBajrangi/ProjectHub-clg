@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Compass,
@@ -52,14 +53,15 @@ import { clientCache } from '@/lib/clientCache';
 export default function FacultyDashboardPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [guidedTeams, setGuidedTeams] = useState<any[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState<any>(null);
+  const [panelData, setPanelData] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [mode, setMode] = useState<'supervisor' | 'panel'>('supervisor');
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
 
   // Supervisor Mode State
-  const [guidedTeams, setGuidedTeams] = useState<any[]>([]);
   const [facultyTeamSearch, setFacultyTeamSearch] = useState('');
-  const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [supTab, setSupTab] = useState<'roster' | 'problem' | 'meetings'>('problem');
   const [problemReviewText, setProblemReviewText] = useState('');
   const [reviewActionLoading, setReviewActionLoading] = useState(false);
@@ -116,13 +118,12 @@ export default function FacultyDashboardPage() {
   const [attendanceList, setAttendanceList] = useState<{ studentId: string; name: string; roll: string; isPresent: boolean }[]>([]);
 
   // Panel Mode State
-  const [panelData, setPanelData] = useState<any[]>([]);
   const [panelTeamSearch, setPanelTeamSearch] = useState('');
   const [panelTeamLoading, setPanelTeamLoading] = useState(false);
   const [selectedPanelTeam, setSelectedPanelTeam] = useState<any>(null);
   const [selectedPanelPhase, setSelectedPanelPhase] = useState<number>(1);
   const [panelTeamMembers, setPanelTeamMembers] = useState<any[]>([]);
-  const [studentScores, setStudentScores] = useState<Record<string, { score: string; isAbsent: boolean; remarks: string }>>({});
+  const [studentScores, setStudentScores] = useState<Record<string, { score: string; isAbsent: boolean; attendanceStatus?: 'present' | 'absent' | 'next_shift'; remarks: string }>>({});
   const [scoringLoading, setScoringLoading] = useState(false);
   const [savingStudentId, setSavingStudentId] = useState<string | null>(null);
   const [evaluationPhases, setEvaluationPhases] = useState<any[]>([]);
@@ -211,6 +212,10 @@ export default function FacultyDashboardPage() {
         }
         if (authData.user.role !== 'supervisor' && authData.user.role !== 'admin') {
           router.push('/dashboard/leader');
+          return;
+        }
+        if (authData.user.email?.toLowerCase() === 'admin@codeshastra.edu') {
+          router.push('/admin');
           return;
         }
         loggedInUser = authData.user;
@@ -639,12 +644,15 @@ export default function FacultyDashboardPage() {
       students.forEach((s: any) => {
         const existing = evals.find((e: any) => e.student_id === s.id);
         const hasScore = existing?.score !== null && existing?.score !== undefined && String(existing?.score) !== '';
+        const status: 'present' | 'absent' | 'next_shift' = existing?.attendance_status || (existing?.is_absent ? (existing?.remarks?.toLowerCase().includes('next shift') ? 'next_shift' : 'absent') : 'present');
+        const isAbsent = status !== 'present';
         initialScores[s.id] = {
           score: hasScore ? String(existing.score) : '',
-          isAbsent: existing ? existing.is_absent : false,
+          isAbsent,
+          attendanceStatus: status,
           remarks: existing?.remarks || '',
         };
-        if (hasScore || existing?.is_absent) {
+        if (hasScore || isAbsent) {
           initialSubmitted.add(s.id);
         } else {
           initialEditing.add(s.id);
@@ -670,6 +678,7 @@ export default function FacultyDashboardPage() {
       studentId,
       score: item.isAbsent ? null : item.score !== '' ? parseFloat(item.score) : null,
       isAbsent: item.isAbsent,
+      attendanceStatus: item.attendanceStatus || (item.isAbsent ? 'absent' : 'present'),
       remarks: item.remarks,
     }));
 
@@ -740,6 +749,7 @@ export default function FacultyDashboardPage() {
               studentId,
               score: parsedScore,
               isAbsent: current.isAbsent,
+              attendanceStatus: current.attendanceStatus || (current.isAbsent ? 'absent' : 'present'),
               remarks: current.remarks,
             },
           ],
@@ -843,29 +853,99 @@ export default function FacultyDashboardPage() {
               </p>
             </div>
 
-            {/* Stadium Mode Switcher */}
-            <div className="segmented-control">
-              <button
-                className={`segmented-pill ${mode === 'supervisor' ? 'active' : ''}`}
-                onClick={() => {
-                  setMode('supervisor');
-                  setSelectedPanelTeam(null);
-                }}
-              >
-                <Users size={14} /> Guided Teams
-              </button>
-              <button
-                className={`segmented-pill ${mode === 'panel' ? 'active' : ''}`}
-                onClick={() => {
-                  setMode('panel');
-                  setSelectedPanelTeam(null);
-                }}
-              >
-                <Award size={14} /> Panel Evaluations
-              </button>
+            {/* Stadium Mode Switcher & Admin Quick Action */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              {currentUser?.role === 'admin' && (
+                <Link
+                  href="/admin"
+                  className="btn btn-outline"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '7px 15px',
+                    fontSize: '12.5px',
+                    fontWeight: 600,
+                    borderRadius: '20px',
+                    borderColor: 'var(--color-primary-border, #DBEAFE)',
+                    backgroundColor: 'var(--color-primary-light, #EFF6FF)',
+                    color: 'var(--color-primary, #2563EB)',
+                    textDecoration: 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                  title="Open Master Academic Administration Console"
+                >
+                  <Shield size={13} style={{ color: 'var(--color-primary)' }} />
+                  <span>Use Admin Access</span>
+                </Link>
+              )}
+
+              <div className="segmented-control">
+                <button
+                  className={`segmented-pill ${mode === 'supervisor' ? 'active' : ''}`}
+                  onClick={() => {
+                    setMode('supervisor');
+                    setSelectedPanelTeam(null);
+                  }}
+                >
+                  <Users size={14} /> Guided Teams
+                </button>
+                <button
+                  className={`segmented-pill ${mode === 'panel' ? 'active' : ''}`}
+                  onClick={() => {
+                    setMode('panel');
+                    setSelectedPanelTeam(null);
+                  }}
+                >
+                  <Award size={14} /> Panel Evaluations
+                </button>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Co-Admin Privilege Info Ribbon */}
+        {currentUser?.role === 'admin' && (
+          <div
+            className="card"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              padding: '12px 18px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.03) 0%, rgba(59, 130, 246, 0.05) 100%)',
+              border: '1px solid var(--color-hairline)',
+              marginBottom: '20px',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--color-ink)', fontWeight: 600 }}>
+              <Shield size={16} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+              <span>Administrative Authority Active: You have full access to manage panels, phases, student scores, and faculty governance.</span>
+            </div>
+            <Link
+              href="/admin"
+              className="btn btn-outline"
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: 'var(--color-primary)',
+                borderColor: 'var(--color-primary-border, #DBEAFE)',
+                backgroundColor: 'var(--color-primary-light, #EFF6FF)',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '5px 12px',
+                borderRadius: '6px',
+              }}
+            >
+              <Shield size={13} /> Open Admin Console →
+            </Link>
+          </div>
+        )}
 
         {!selectedPanelTeam && scoreMessage && (
           <div
@@ -2419,20 +2499,28 @@ export default function FacultyDashboardPage() {
                           '⚠️ Needs deeper understanding of backend workflow',
                         ];
 
+                        const isNextShift = current.attendanceStatus === 'next_shift';
+                        const isAbsentOnly = current.attendanceStatus === 'absent' || (current.isAbsent && !isNextShift);
+                        const isPresent = !current.isAbsent && !isNextShift && !isAbsentOnly;
+
                         return (
                           <div
                             key={student.id}
                             style={{
                               padding: '20px 24px',
                               borderRadius: '16px',
-                              border: current.isAbsent
+                              border: isNextShift
+                                ? '1.5px solid #FCD34D'
+                                : isAbsentOnly
                                 ? '1.5px solid #FCA5A5'
                                 : hasScore
                                 ? isMasked
                                   ? '1.5px solid #CBD5E1'
                                   : '1.5px solid #93C5FD'
                                 : '1px solid #E2E8F0',
-                              backgroundColor: current.isAbsent
+                              backgroundColor: isNextShift
+                                ? '#FFFDF5'
+                                : isAbsentOnly
                                 ? '#FFF5F5'
                                 : hasScore
                                 ? isMasked
@@ -2459,7 +2547,9 @@ export default function FacultyDashboardPage() {
                                 width: '5px',
                                 borderTopLeftRadius: '16px',
                                 borderBottomLeftRadius: '16px',
-                                backgroundColor: current.isAbsent
+                                backgroundColor: isNextShift
+                                  ? '#F59E0B'
+                                  : isAbsentOnly
                                   ? '#EF4444'
                                   : hasScore
                                   ? isMasked
@@ -2478,7 +2568,9 @@ export default function FacultyDashboardPage() {
                                     width: '42px',
                                     height: '42px',
                                     borderRadius: '12px',
-                                    background: current.isAbsent
+                                    background: isNextShift
+                                      ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
+                                      : isAbsentOnly
                                       ? 'linear-gradient(135deg, #EF4444 0%, #B91C1C 100%)'
                                       : hasScore
                                       ? isMasked
@@ -2505,9 +2597,9 @@ export default function FacultyDashboardPage() {
                                       style={{
                                         fontSize: '15.5px',
                                         fontWeight: 800,
-                                        color: current.isAbsent ? '#991B1B' : 'var(--color-ink)',
+                                        color: isNextShift ? '#92400E' : isAbsentOnly ? '#991B1B' : 'var(--color-ink)',
                                         letterSpacing: '-0.01em',
-                                        textDecoration: current.isAbsent ? 'line-through' : 'none',
+                                        textDecoration: isAbsentOnly ? 'line-through' : 'none',
                                       }}
                                     >
                                       {student.full_name}
@@ -2559,9 +2651,26 @@ export default function FacultyDashboardPage() {
                                 </div>
                               </div>
 
-                              {/* Status Badges & Attendance Toggle */}
+                              {/* Status Badges & Attendance Segmented Control */}
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                                {current.isAbsent ? (
+                                {isNextShift ? (
+                                  <span
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '5px',
+                                      fontSize: '11.5px',
+                                      fontWeight: 700,
+                                      padding: '4px 10px',
+                                      borderRadius: '8px',
+                                      backgroundColor: '#FEF3C7',
+                                      color: '#B45309',
+                                      border: '1px solid #FCD34D',
+                                    }}
+                                  >
+                                    <Clock size={13} /> Moved to Next Shift
+                                  </span>
+                                ) : isAbsentOnly ? (
                                   <span
                                     style={{
                                       display: 'inline-flex',
@@ -2587,8 +2696,8 @@ export default function FacultyDashboardPage() {
                                             display: 'inline-flex',
                                             alignItems: 'center',
                                             gap: '5px',
-                                            fontSize: '12px',
-                                            fontWeight: 800,
+                                            fontSize: '11.5px',
+                                            fontWeight: 700,
                                             padding: '4px 10px',
                                             borderRadius: '8px',
                                             backgroundColor: '#F1F5F9',
@@ -2596,7 +2705,7 @@ export default function FacultyDashboardPage() {
                                             border: '1px solid #CBD5E1',
                                           }}
                                         >
-                                          <Lock size={12} color="#64748B" /> ● ● ● ● / {maxMarks}
+                                          <CheckCircle2 size={13} color="#059669" /> Recorded ••••
                                         </span>
                                         <button
                                           type="button"
@@ -2631,14 +2740,14 @@ export default function FacultyDashboardPage() {
                                             gap: '5px',
                                             fontSize: '12px',
                                             fontWeight: 800,
-                                            padding: '4px 10px',
+                                            padding: '4px 11px',
                                             borderRadius: '8px',
-                                            backgroundColor: '#EFF6FF',
-                                            color: '#1E40AF',
-                                            border: '1px solid #BFDBFE',
+                                            backgroundColor: '#ECFDF5',
+                                            color: '#059669',
+                                            border: '1px solid #A7F3D0',
                                           }}
                                         >
-                                          <CheckCircle2 size={13} color="#2563EB" /> {current.score} / {maxMarks}
+                                          <CheckCircle2 size={14} /> Score: {current.score} / {maxMarks}
                                         </span>
                                         {scoreRating && (
                                           <span
@@ -2709,48 +2818,104 @@ export default function FacultyDashboardPage() {
                                   </span>
                                 )}
 
-                                {/* Interactive Attendance Button Pill */}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const nextAbsent = !current.isAbsent;
-                                    setStudentScores({
-                                      ...studentScores,
-                                      [student.id]: {
-                                        ...current,
-                                        isAbsent: nextAbsent,
-                                        score: nextAbsent ? '' : current.score,
-                                      },
-                                    });
-                                  }}
-                                  style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    padding: '5px 12px',
-                                    borderRadius: '8px',
-                                    fontSize: '12px',
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    border: current.isAbsent ? '1px solid #EF4444' : '1px solid #CBD5E1',
-                                    backgroundColor: current.isAbsent ? '#EF4444' : '#FFFFFF',
-                                    color: current.isAbsent ? '#FFFFFF' : '#475569',
-                                    transition: 'all 0.15s ease',
-                                    boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                                  }}
-                                  title={current.isAbsent ? 'Click to mark student present' : 'Click to mark student absent'}
-                                >
-                                  {current.isAbsent ? (
-                                    <>
-                                      <UserX size={13} /> Absent
-                                    </>
-                                  ) : (
-                                    <>
-                                      <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#10B981' }} />
-                                      Mark Absent
-                                    </>
-                                  )}
-                                </button>
+                                {/* Interactive Attendance Segmented Control */}
+                                <div style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: '#F1F5F9', padding: '3px', borderRadius: '10px', gap: '2px', border: '1px solid #E2E8F0' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setStudentScores({
+                                        ...studentScores,
+                                        [student.id]: {
+                                          ...current,
+                                          isAbsent: false,
+                                          attendanceStatus: 'present',
+                                        },
+                                      });
+                                    }}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      padding: '4px 9px',
+                                      borderRadius: '7px',
+                                      fontSize: '11.5px',
+                                      fontWeight: isPresent ? 700 : 500,
+                                      cursor: 'pointer',
+                                      border: 'none',
+                                      backgroundColor: isPresent ? '#10B981' : 'transparent',
+                                      color: isPresent ? '#FFFFFF' : '#64748B',
+                                      transition: 'all 0.15s ease',
+                                    }}
+                                    title="Student is present and participating"
+                                  >
+                                    <CheckCircle2 size={12} /> Present
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setStudentScores({
+                                        ...studentScores,
+                                        [student.id]: {
+                                          ...current,
+                                          isAbsent: true,
+                                          attendanceStatus: 'next_shift',
+                                          score: '',
+                                          remarks: current.remarks || 'Scheduled for next shift',
+                                        },
+                                      });
+                                    }}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      padding: '4px 9px',
+                                      borderRadius: '7px',
+                                      fontSize: '11.5px',
+                                      fontWeight: isNextShift ? 700 : 500,
+                                      cursor: 'pointer',
+                                      border: 'none',
+                                      backgroundColor: isNextShift ? '#F59E0B' : 'transparent',
+                                      color: isNextShift ? '#FFFFFF' : '#64748B',
+                                      transition: 'all 0.15s ease',
+                                    }}
+                                    title="Unable to attend current shift; shift to next shift"
+                                  >
+                                    <Clock size={12} /> Next Shift
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setStudentScores({
+                                        ...studentScores,
+                                        [student.id]: {
+                                          ...current,
+                                          isAbsent: true,
+                                          attendanceStatus: 'absent',
+                                          score: '',
+                                        },
+                                      });
+                                    }}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      padding: '4px 9px',
+                                      borderRadius: '7px',
+                                      fontSize: '11.5px',
+                                      fontWeight: isAbsentOnly ? 700 : 500,
+                                      cursor: 'pointer',
+                                      border: 'none',
+                                      backgroundColor: isAbsentOnly ? '#EF4444' : 'transparent',
+                                      color: isAbsentOnly ? '#FFFFFF' : '#64748B',
+                                      transition: 'all 0.15s ease',
+                                    }}
+                                    title="Mark student absent"
+                                  >
+                                    <UserX size={12} /> Absent
+                                  </button>
+                                </div>
                               </div>
                             </div>
 
@@ -3121,47 +3286,133 @@ export default function FacultyDashboardPage() {
                                   </div>
                                 </div>
                               </div>
+                            ) : isNextShift ? (
+                              /* Moved to Next Shift Banner inside Card */
+                              <div
+                                style={{
+                                  padding: '14px 18px',
+                                  borderRadius: '12px',
+                                  backgroundColor: '#FFFBEB',
+                                  border: '1.5px dashed #FCD34D',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '10px',
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', color: '#92400E', fontWeight: 600 }}>
+                                    <Clock size={16} color="#D97706" />
+                                    <span>Candidate shifted to <strong>Next Shift / Batch</strong>. Score marked pending for next shift evaluation.</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setStudentScores({
+                                        ...studentScores,
+                                        [student.id]: { ...current, isAbsent: false, attendanceStatus: 'present' },
+                                      });
+                                    }}
+                                    style={{
+                                      fontSize: '11.5px',
+                                      fontWeight: 700,
+                                      padding: '4px 12px',
+                                      borderRadius: '6px',
+                                      backgroundColor: '#FFFFFF',
+                                      color: '#D97706',
+                                      border: '1px solid #FCD34D',
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    Mark Present
+                                  </button>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <input
+                                    type="text"
+                                    className="input-field"
+                                    style={{
+                                      fontSize: '12px',
+                                      height: '36px',
+                                      padding: '6px 12px',
+                                      borderRadius: '8px',
+                                      backgroundColor: '#FFFFFF',
+                                      border: '1px solid #FDE68A',
+                                      flex: 1,
+                                    }}
+                                    value={current.remarks || ''}
+                                    onChange={(e) => {
+                                      setStudentScores({
+                                        ...studentScores,
+                                        [student.id]: { ...current, remarks: e.target.value },
+                                      });
+                                    }}
+                                    placeholder="Note/Reason for next shift (e.g. Attending afternoon batch due to morning exam collision)"
+                                  />
+                                </div>
+                              </div>
                             ) : (
                               /* Marked Absent Banner inside Card */
                               <div
                                 style={{
-                                  padding: '12px 16px',
-                                  borderRadius: '10px',
+                                  padding: '14px 18px',
+                                  borderRadius: '12px',
                                   backgroundColor: '#FEF2F2',
-                                  border: '1px dashed #FCA5A5',
+                                  border: '1.5px dashed #FCA5A5',
                                   display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'space-between',
-                                  fontSize: '12.5px',
-                                  color: '#991B1B',
-                                  fontWeight: 600,
+                                  flexDirection: 'column',
+                                  gap: '10px',
                                 }}
                               >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <UserX size={15} color="#DC2626" />
-                                  <span>Candidate marked <strong>Absent</strong> for this viva defense phase. Score recorded as null.</span>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', color: '#991B1B', fontWeight: 600 }}>
+                                    <UserX size={16} color="#DC2626" />
+                                    <span>Candidate marked <strong>Absent</strong> for this viva defense phase. Score recorded as null.</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setStudentScores({
+                                        ...studentScores,
+                                        [student.id]: { ...current, isAbsent: false, attendanceStatus: 'present' },
+                                      });
+                                    }}
+                                    style={{
+                                      fontSize: '11.5px',
+                                      fontWeight: 700,
+                                      padding: '4px 12px',
+                                      borderRadius: '6px',
+                                      backgroundColor: '#FFFFFF',
+                                      color: '#DC2626',
+                                      border: '1px solid #FCA5A5',
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    Undo Absent
+                                  </button>
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setStudentScores({
-                                      ...studentScores,
-                                      [student.id]: { ...current, isAbsent: false },
-                                    });
-                                  }}
-                                  style={{
-                                    fontSize: '11.5px',
-                                    fontWeight: 700,
-                                    padding: '3px 10px',
-                                    borderRadius: '6px',
-                                    backgroundColor: '#FFFFFF',
-                                    color: '#DC2626',
-                                    border: '1px solid #FCA5A5',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  Undo Absent
-                                </button>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <input
+                                    type="text"
+                                    className="input-field"
+                                    style={{
+                                      fontSize: '12px',
+                                      height: '36px',
+                                      padding: '6px 12px',
+                                      borderRadius: '8px',
+                                      backgroundColor: '#FFFFFF',
+                                      border: '1px solid #FECACA',
+                                      flex: 1,
+                                    }}
+                                    value={current.remarks || ''}
+                                    onChange={(e) => {
+                                      setStudentScores({
+                                        ...studentScores,
+                                        [student.id]: { ...current, remarks: e.target.value },
+                                      });
+                                    }}
+                                    placeholder="Optional note / reason for absence"
+                                  />
+                                </div>
                               </div>
                             )}
                           </div>

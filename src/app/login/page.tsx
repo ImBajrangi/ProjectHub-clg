@@ -302,7 +302,7 @@ function LoginForm() {
                   id="cohere-email"
                   type="email"
                   className="cohere-comp-input mono"
-                  placeholder="faculty@gla.ac.in or leader@gla.ac.in"
+                  placeholder="leader@gla.ac.in"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"

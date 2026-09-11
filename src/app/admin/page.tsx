@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Shield,
@@ -24,7 +25,6 @@ import {
   X,
   UserCheck,
   Check,
-  FileCode,
   FileText,
   Sparkles,
   Copy,
@@ -47,20 +47,39 @@ import {
   ShieldAlert,
   BadgeCheck,
   Lock,
+  UserX,
+  Download,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LoadingScreen from '@/components/LoadingScreen';
 import { clientCache } from '@/lib/clientCache';
+import {
+  exportPanelsData,
+  exportTeamsAndStudents,
+  exportFacultyDirectory,
+  exportAbsentAndShiftData,
+  exportDefaultingTeams,
+  exportMasterWorkbook,
+} from '@/lib/exportUtils';
+
 
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [adminData, setAdminData] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // Segmented Navigation: Overview, Teams & Students, Supervisors, Panels & Shifts, Defaulting
-  const [activeTab, setActiveTab] = useState<'overview' | 'teams' | 'supervisors' | 'panels' | 'defaulting'>('overview');
+  // Segmented Navigation: Overview, Teams & Students, Supervisors, Panels & Shifts, Defaulting, Attendance
+  const [activeTab, setActiveTab] = useState<'overview' | 'teams' | 'supervisors' | 'panels' | 'defaulting' | 'attendance'>('overview');
+
+  // Attendance & Shift Segregation State
+  const [attendancePhaseFilter, setAttendancePhaseFilter] = useState<'all' | 1 | 2 | 3>('all');
+  const [attendanceStatusFilter, setAttendanceStatusFilter] = useState<'all' | 'next_shift' | 'absent'>('all');
+  const [attendanceSearch, setAttendanceSearch] = useState('');
+  const [segregationModalItem, setSegregationModalItem] = useState<any>(null);
+  const [segregationLoading, setSegregationLoading] = useState(false);
+  const [segregationCustomRemark, setSegregationCustomRemark] = useState('');
 
   // Teams & Students Directory State
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,6 +128,7 @@ export default function AdminDashboardPage() {
   // Interactive Visual Panel Builder State
   const [createPanelModalOpen, setCreatePanelModalOpen] = useState(false);
   const [panelFormPhase, setPanelFormPhase] = useState<1 | 2 | 3>(1);
+  const [panelFormProgram, setPanelFormProgram] = useState<'all' | 'BCA' | 'BCA - DS'>('all');
   const [panelFormName, setPanelFormName] = useState('');
   const [panelFormRangeStart, setPanelFormRangeStart] = useState<number>(1);
   const [panelFormRangeEnd, setPanelFormRangeEnd] = useState<number>(10);
@@ -121,6 +141,7 @@ export default function AdminDashboardPage() {
   const [panelFormLoading, setPanelFormLoading] = useState(false);
   const [panelFormError, setPanelFormError] = useState<string | null>(null);
   const [judgeSearchQuery, setJudgeSearchQuery] = useState('');
+  const [facultyAvailabilityFilter, setFacultyAvailabilityFilter] = useState<'all' | 'available' | 'busy'>('all');
 
   // JSON Batch Modal State
   const [jsonModalOpen, setJsonModalOpen] = useState(false);
@@ -155,25 +176,47 @@ export default function AdminDashboardPage() {
   const [panelsSubmitLoading, setPanelsSubmitLoading] = useState(false);
   const [panelsMessage, setPanelsMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
 
-  // Admin Student Score Edit Modal State
-  const [scoreEditModalOpen, setScoreEditModalOpen] = useState(false);
-  const [editingStudentData, setEditingStudentData] = useState<{
-    teamId: string;
-    teamName: string;
-    studentId: string;
-    studentName: string;
-    rollNo: string;
-    phaseNumber: 1 | 2 | 3;
-    currentScore: string;
-    isAbsent: boolean;
-    remarks: string;
+  // In-Software Confirmation Dialog & Toast System (Zero Browser Alert/Confirm Popups)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    loadingText?: string;
+    cancelText?: string;
+    type?: 'danger' | 'warning' | 'info';
+    onConfirm: () => void | Promise<void>;
+    loading?: boolean;
   } | null>(null);
-  const [scoreEditLoading, setScoreEditLoading] = useState(false);
-  const [scoreEditMessage, setScoreEditMessage] = useState<string | null>(null);
+
+  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
+  const showConfirmDialog = (options: {
+    title: string;
+    message: string;
+    confirmText?: string;
+    loadingText?: string;
+    cancelText?: string;
+    type?: 'danger' | 'warning' | 'info';
+    onConfirm: () => void | Promise<void>;
+  }) => {
+    setConfirmDialog({
+      isOpen: true,
+      ...options,
+    });
+  };
+
 
   // Lock background scroll and handle Escape key to close modals
   useEffect(() => {
-    const isAnyModalOpen = jsonModalOpen || selectedTeamModal || createPanelModalOpen || scoreEditModalOpen || selectedSupervisorModal || authorityModalOpen;
+    const isAnyModalOpen = jsonModalOpen || selectedTeamModal || createPanelModalOpen || selectedSupervisorModal || authorityModalOpen;
     if (isAnyModalOpen) {
       document.body.style.overflow = 'hidden';
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -182,7 +225,6 @@ export default function AdminDashboardPage() {
           setSelectedSupervisorModal(null);
           setJsonModalOpen(false);
           setCreatePanelModalOpen(false);
-          setScoreEditModalOpen(false);
           setAuthorityModalOpen(false);
         }
       };
@@ -197,7 +239,7 @@ export default function AdminDashboardPage() {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [jsonModalOpen, selectedTeamModal, createPanelModalOpen, scoreEditModalOpen, selectedSupervisorModal, authorityModalOpen]);
+  }, [jsonModalOpen, selectedTeamModal, createPanelModalOpen, selectedSupervisorModal, authorityModalOpen, segregationModalItem]);
 
   const loadAdminData = async () => {
     try {
@@ -216,15 +258,17 @@ export default function AdminDashboardPage() {
         return;
       }
       setCurrentUser(authData.user);
+      clientCache.set(clientCache.keys.USER_ME, authData.user);
 
       const res = await fetch('/api/admin');
       if (res.ok) {
         const data = await res.json();
         setAdminData(data);
+        clientCache.set(clientCache.keys.ADMIN_DATA, data);
 
         // Update selectedTeamModal if currently open to reflect updated scores
         if (selectedTeamModal) {
-          const freshTeam = data.teams.find((t: any) => t.id === selectedTeamModal.id);
+          const freshTeam = data.teams?.find((t: any) => t.id === selectedTeamModal.id);
           if (freshTeam) setSelectedTeamModal(freshTeam);
         }
       }
@@ -235,9 +279,102 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleSegregateAttendance = async (
+    phaseNumber: number,
+    teamId: string,
+    studentId: string,
+    newStatus: 'next_shift' | 'absent',
+    customRemark?: string
+  ) => {
+    setSegregationLoading(true);
+    try {
+      const res = await fetch('/api/evaluations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'segregate_attendance',
+          phaseNumber,
+          teamId,
+          studentId,
+          attendanceStatus: newStatus,
+          remarks: customRemark || (newStatus === 'next_shift' ? 'Admin moved to Next Shift' : 'Admin marked as Absent'),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setToastMessage({ type: 'error', text: `Failed to update attendance status: ${data.error}` });
+      } else {
+        await loadAdminData();
+        setSegregationModalItem(null);
+        setSegregationCustomRemark('');
+        setToastMessage({ type: 'success', text: 'Attendance record updated successfully.' });
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('codeshastra_notification_update'));
+          try {
+            const bc = new BroadcastChannel('codeshastra_notifications_channel');
+            bc.postMessage({ type: 'UPDATE' });
+            setTimeout(() => { try { bc.close(); } catch {} }, 1000);
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      setToastMessage({ type: 'error', text: `Error updating attendance: ${err.message}` });
+    } finally {
+      setSegregationLoading(false);
+    }
+  };
+
   useEffect(() => {
+    const cachedUser = clientCache.get<any>(clientCache.keys.USER_ME);
+    if (cachedUser && cachedUser.role === 'admin') {
+      setCurrentUser(cachedUser);
+      const cachedData = clientCache.get<any>(clientCache.keys.ADMIN_DATA);
+      if (cachedData) {
+        setAdminData(cachedData);
+        setLoading(false);
+      }
+    }
     loadAdminData();
   }, []);
+
+  const [editingPhaseMarks, setEditingPhaseMarks] = useState<{ [key: number]: number }>({});
+  const [savingPhaseMarks, setSavingPhaseMarks] = useState<number | null>(null);
+
+  const handleUpdatePhaseMarks = async (phaseNumber: 1 | 2 | 3, marksWeightage: number) => {
+    if (!marksWeightage || marksWeightage <= 0) {
+      setToastMessage({ type: 'error', text: 'Please enter a valid positive number for maximum marks.' });
+      return;
+    }
+    setSavingPhaseMarks(phaseNumber);
+    try {
+      const res = await fetch('/api/phases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_marks',
+          phaseNumber,
+          marksWeightage,
+        }),
+      });
+
+      if (res.ok) {
+        await loadAdminData();
+        setEditingPhaseMarks((prev) => {
+          const next = { ...prev };
+          delete next[phaseNumber];
+          return next;
+        });
+        setToastMessage({ type: 'success', text: `Phase ${phaseNumber} maximum marks updated to ${marksWeightage}.` });
+      } else {
+        const data = await res.json();
+        setToastMessage({ type: 'error', text: data.error || 'Failed to update maximum marks' });
+      }
+    } catch {
+      setToastMessage({ type: 'error', text: 'Network error while updating maximum marks' });
+    } finally {
+      setSavingPhaseMarks(null);
+    }
+  };
 
   const handleTogglePhaseLive = async (phaseNumber: 1 | 2 | 3, currentLive: boolean) => {
     try {
@@ -329,7 +466,10 @@ export default function AdminDashboardPage() {
             date: panelFormDate,
             timeWindow: finalShift,
             academicBlock: 'Academic Block AB10',
-            roomNumber: finalRoom.startsWith('Room') ? finalRoom : `Room ${finalRoom}`,
+            roomNumber:
+              finalRoom.startsWith('Room') || finalRoom.startsWith('Lab') || finalRoom.startsWith('Seminar') || finalRoom.startsWith('Hall') || isNaN(Number(finalRoom.trim()))
+                ? finalRoom.trim()
+                : `Room ${finalRoom.trim()}`,
           },
         }),
       });
@@ -350,87 +490,41 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Delete Panel
-  const handleDeletePanel = async (panelId: string, panelName: string) => {
-    if (!confirm(`Are you sure you want to delete ${panelName}?`)) return;
+  // Delete Panel with Software Confirmation Dialog & Instant Loader
+  const handleDeletePanel = (panelId: string, panelName: string) => {
+    showConfirmDialog({
+      title: 'Delete Evaluation Panel?',
+      message: `Are you sure you want to delete ${panelName}? This will permanently remove the panel schedule, room allotment, and faculty assignments.`,
+      confirmText: 'Delete Panel',
+      loadingText: 'Deleting Panel...',
+      cancelText: 'Cancel',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await fetch('/api/panels', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'delete_panel',
+              panelId,
+            }),
+          });
 
-    try {
-      const res = await fetch('/api/panels', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'delete_panel',
-          panelId,
-        }),
-      });
-
-      if (res.ok) {
-        loadAdminData();
-      } else {
-        const data = await res.json();
-        setPanelFormError(data.error || 'Failed to delete panel');
-      }
-    } catch (e: any) {
-      setPanelFormError(e.message || 'Error deleting panel');
-    }
-  };
-
-  // Open Score Editor Modal
-  const handleOpenScoreEditor = (team: any, student: any, phaseNum: 1 | 2 | 3) => {
-    const evalData = student[`phase${phaseNum}`];
-    setEditingStudentData({
-      teamId: team.id,
-      teamName: team.team_name,
-      studentId: student.id,
-      studentName: student.full_name,
-      rollNo: student.roll_no,
-      phaseNumber: phaseNum,
-      currentScore: evalData?.score !== null && evalData?.score !== undefined ? String(evalData.score) : '',
-      isAbsent: evalData ? evalData.isAbsent : false,
-      remarks: evalData?.remarks || '',
+          if (res.ok) {
+            setConfirmDialog(null);
+            setToastMessage({ type: 'success', text: `Successfully removed ${panelName}.` });
+            await loadAdminData();
+          } else {
+            const data = await res.json();
+            setToastMessage({ type: 'error', text: data.error || 'Failed to delete panel' });
+            setConfirmDialog(null);
+          }
+        } catch (e: any) {
+          setToastMessage({ type: 'error', text: e.message || 'Error deleting panel' });
+          setConfirmDialog(null);
+        }
+      },
     });
-    setScoreEditMessage(null);
-    setScoreEditModalOpen(true);
-  };
-
-  // Submit Admin Score Edit
-  const handleSubmitScoreEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingStudentData) return;
-
-    setScoreEditLoading(true);
-    setScoreEditMessage(null);
-
-    try {
-      const res = await fetch('/api/evaluations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'admin_edit_score',
-          phaseNumber: editingStudentData.phaseNumber,
-          teamId: editingStudentData.teamId,
-          studentId: editingStudentData.studentId,
-          score: editingStudentData.isAbsent ? null : editingStudentData.currentScore,
-          isAbsent: editingStudentData.isAbsent,
-          remarks: editingStudentData.remarks || 'Updated by Project Incharge',
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setScoreEditMessage(`Error: ${data.error || 'Failed to update score'}`);
-      } else {
-        setScoreEditMessage('Score updated successfully.');
-        setTimeout(() => {
-          setScoreEditModalOpen(false);
-          loadAdminData();
-        }, 600);
-      }
-    } catch (err: any) {
-      setScoreEditMessage(`Error: ${err.message}`);
-    } finally {
-      setScoreEditLoading(false);
-    }
   };
 
   // Authority Transfer Handlers
@@ -497,13 +591,14 @@ export default function AdminDashboardPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || 'Failed to update role');
+        setToastMessage({ type: 'error', text: data.error || 'Failed to update role' });
         return;
       }
+      setToastMessage({ type: 'success', text: 'Faculty role updated successfully.' });
       clientCache.invalidate(clientCache.keys.ADMIN_DATA);
       await loadAdminData();
     } catch (err: any) {
-      alert(err.message || 'Error updating role');
+      setToastMessage({ type: 'error', text: err.message || 'Error updating role' });
     }
   };
 
@@ -559,15 +654,310 @@ export default function AdminDashboardPage() {
     }
   };
 
-  if (loading) {
-    return <LoadingScreen label="Loading administration portal..." />;
-  }
-
   const summary = adminData?.summary || {};
   const teams = adminData?.teams || [];
   const supervisors = adminData?.supervisors || [];
   const phases = adminData?.phases || [];
   const panels = adminData?.panels || [];
+
+  // Computed Absent & Next Shift Students list across all phases
+  const absentAndShiftEntries = useMemo(() => {
+    const entries: any[] = [];
+    (teams || []).forEach((t: any) => {
+      (t.students || []).forEach((st: any) => {
+        [1, 2, 3].forEach((phaseNum) => {
+          const phaseEval = phaseNum === 1 ? st.phase1 : phaseNum === 2 ? st.phase2 : st.phase3;
+          if (phaseEval && phaseEval.isAbsent) {
+            const status: 'next_shift' | 'absent' = phaseEval.attendanceStatus === 'next_shift' ? 'next_shift' : 'absent';
+            const panel = (panels || []).find((p: any) => p.phase_number === phaseNum && (p.assigned_team_ids || []).includes(t.id));
+            entries.push({
+              studentId: st.id,
+              studentName: st.full_name,
+              rollNo: st.roll_no,
+              email: st.email,
+              isLeader: st.isLeader,
+              teamId: t.id,
+              teamCode: t.team_code,
+              teamName: t.team_name,
+              teamNumber: t.team_number,
+              program: t.program,
+              supervisor: t.supervisor?.name || 'Unassigned',
+              phaseNumber: phaseNum,
+              attendanceStatus: status,
+              remarks: phaseEval.remarks || '',
+              submittedAt: phaseEval.submittedAt,
+              panelName: panel?.name || 'Unassigned Panel',
+              roomNumber: panel?.room_number || 'TBD',
+              timeWindow: panel?.time_window || 'Shift 1',
+              evaluators: (panel?.members || []).map((m: any) => m.name).join(', ') || 'Pending',
+            });
+          }
+        });
+      });
+    });
+    return entries;
+  }, [teams, panels]);
+
+  const nextShiftCount = useMemo(() => absentAndShiftEntries.filter((e) => e.attendanceStatus === 'next_shift').length, [absentAndShiftEntries]);
+  const absentCount = useMemo(() => absentAndShiftEntries.filter((e) => e.attendanceStatus === 'absent').length, [absentAndShiftEntries]);
+
+  // Filtered entries for Tab 6: Absent & Next Shift
+  const filteredAbsentAndShiftEntries = useMemo(() => {
+    return absentAndShiftEntries.filter((item) => {
+      if (attendancePhaseFilter !== 'all' && item.phaseNumber !== attendancePhaseFilter) return false;
+      if (attendanceStatusFilter !== 'all' && item.attendanceStatus !== attendanceStatusFilter) return false;
+      if (attendanceSearch.trim()) {
+        const q = attendanceSearch.toLowerCase().trim();
+        const matches =
+          item.studentName.toLowerCase().includes(q) ||
+          item.rollNo.toLowerCase().includes(q) ||
+          item.teamCode.toLowerCase().includes(q) ||
+          item.teamName.toLowerCase().includes(q) ||
+          item.supervisor.toLowerCase().includes(q) ||
+          item.remarks.toLowerCase().includes(q);
+        if (!matches) return false;
+      }
+      return true;
+    });
+  }, [absentAndShiftEntries, attendancePhaseFilter, attendanceStatusFilter, attendanceSearch]);
+
+  const getPhaseMaxMarks = (pNum: number) => {
+    const p = phases.find((phase: any) => phase.phase_number === pNum);
+    return p?.marks_weightage ?? (pNum === 1 ? 20 : pNum === 2 ? 40 : 40);
+  };
+
+  // Helper to get granular batch breakdowns for a panel range
+  const getPanelBatches = (startNum: number, endNum: number) => {
+    const matching = (teams || []).filter((t: any) => t.team_number >= startNum && t.team_number <= endNum);
+    const bcaList = matching.filter((t: any) => t.program === 'BCA' || t.team_code?.startsWith('BCA'));
+    const dsList = matching.filter((t: any) => t.program?.includes('DS') || t.team_code?.startsWith('DS'));
+    const otherList = matching.filter((t: any) => !t.team_code?.startsWith('BCA') && !t.team_code?.startsWith('DS'));
+
+    const batches: { program: string; label: string; count: number; colorBg: string; colorText: string; colorBorder: string }[] = [];
+
+    if (bcaList.length > 0) {
+      const first = bcaList[0];
+      const last = bcaList[bcaList.length - 1];
+      const rangeLabel = first.team_code === last.team_code ? first.team_code : `${first.team_code} → ${last.team_code}`;
+      batches.push({
+        program: 'BCA',
+        label: rangeLabel,
+        count: bcaList.length,
+        colorBg: '#EFF6FF',
+        colorText: '#1D4ED8',
+        colorBorder: '#BFDBFE',
+      });
+    }
+
+    if (dsList.length > 0) {
+      const first = dsList[0];
+      const last = dsList[dsList.length - 1];
+      const rangeLabel = first.team_code === last.team_code ? first.team_code : `${first.team_code} → ${last.team_code}`;
+      batches.push({
+        program: 'BCA - DS',
+        label: rangeLabel,
+        count: dsList.length,
+        colorBg: '#FAF5FF',
+        colorText: '#7E22CE',
+        colorBorder: '#E9D5FF',
+      });
+    }
+
+    if (otherList.length > 0) {
+      const first = otherList[0];
+      const last = otherList[otherList.length - 1];
+      batches.push({
+        program: 'Other',
+        label: `${first.team_code} → ${last.team_code}`,
+        count: otherList.length,
+        colorBg: '#F1F5F9',
+        colorText: '#475569',
+        colorBorder: '#CBD5E1',
+      });
+    }
+
+    return batches;
+  };
+
+  // Helper to get formatted team range label from start and end numbers (e.g. BCA-1 → BCA-10 & DS-1 → DS-9)
+  const getFormattedTeamRange = (startNum: number, endNum: number) => {
+    const batches = getPanelBatches(startNum, endNum);
+    if (batches.length === 0) return `Teams #${startNum}–#${endNum}`;
+    return batches.map(b => b.label).join(' & ');
+  };
+
+  // Categorized teams for batch selection
+  const bcaTeams = useMemo(() => (teams || []).filter((t: any) => t.program === 'BCA' || t.team_code?.startsWith('BCA')), [teams]);
+  const dsTeams = useMemo(() => (teams || []).filter((t: any) => t.program?.includes('DS') || t.team_code?.startsWith('DS')), [teams]);
+
+  // Dynamic Batch Presets (e.g. 10 teams per batch)
+  const bcaPresets = useMemo(() => {
+    if (!bcaTeams || bcaTeams.length === 0) return [];
+    const presets: { label: string; startNum: number; endNum: number; count: number }[] = [];
+    const batchSize = 10;
+    for (let i = 0; i < bcaTeams.length; i += batchSize) {
+      const slice = bcaTeams.slice(i, i + batchSize);
+      const first = slice[0];
+      const last = slice[slice.length - 1];
+      presets.push({
+        label: `${first.team_code} → ${last.team_code}`,
+        startNum: first.team_number,
+        endNum: last.team_number,
+        count: slice.length,
+      });
+    }
+    return presets;
+  }, [bcaTeams]);
+
+  const dsPresets = useMemo(() => {
+    if (!dsTeams || dsTeams.length === 0) return [];
+    const presets: { label: string; startNum: number; endNum: number; count: number }[] = [];
+    const batchSize = 10;
+    for (let i = 0; i < dsTeams.length; i += batchSize) {
+      const slice = dsTeams.slice(i, i + batchSize);
+      const first = slice[0];
+      const last = slice[slice.length - 1];
+      presets.push({
+        label: `${first.team_code} → ${last.team_code}`,
+        startNum: first.team_number,
+        endNum: last.team_number,
+        count: slice.length,
+      });
+    }
+    return presets;
+  }, [dsTeams]);
+
+  // Teams currently included within the selected start and end range
+  const selectedRangeTeams = useMemo(() => {
+    return (teams || []).filter(
+      (t: any) => t.team_number >= panelFormRangeStart && t.team_number <= panelFormRangeEnd
+    );
+  }, [teams, panelFormRangeStart, panelFormRangeEnd]);
+
+  const selectedRangeStudentCount = useMemo(() => {
+    return selectedRangeTeams.reduce((acc: number, t: any) => acc + (t.students?.length || 0), 0);
+  }, [selectedRangeTeams]);
+
+  // Check for potential conflicts with selected judges in this range
+  const panelJudgeConflicts = useMemo(() => {
+    if (panelFormSelectedJudges.length === 0 || selectedRangeTeams.length === 0) return [];
+    const conflicts: { judgeName: string; teamCode: string }[] = [];
+    panelFormSelectedJudges.forEach((judgeId) => {
+      const sup = (supervisors || []).find((s: any) => s.id === judgeId);
+      const conflictTeam = selectedRangeTeams.find((t: any) => t.supervisor?.id === judgeId || t.supervisor_id === judgeId);
+      if (conflictTeam && sup) {
+        conflicts.push({ judgeName: sup.full_name, teamCode: conflictTeam.team_code });
+      }
+    });
+    return conflicts;
+  }, [panelFormSelectedJudges, selectedRangeTeams, supervisors]);
+
+  // Faculty Availability calculations for the current panel configuration
+  const getFacultyAvailability = (facultyId: string) => {
+    const assignedPhasePanels = (panels || []).filter(
+      (p: any) =>
+        p.phase_number === panelFormPhase &&
+        (p.judges || []).some((j: any) => j.id === facultyId)
+    );
+    const isAssigned = assignedPhasePanels.length > 0;
+    const conflictTeam = selectedRangeTeams.find(
+      (t: any) => t.supervisor_id === facultyId || t.supervisor?.id === facultyId
+    );
+    return {
+      isAvailable: !isAssigned,
+      assignedPanels: assignedPhasePanels,
+      conflictTeam,
+    };
+  };
+
+  const facultyAvailabilityStats = useMemo(() => {
+    let availableCount = 0;
+    let busyCount = 0;
+    (supervisors || []).forEach((s: any) => {
+      const isAssigned = (panels || []).some(
+        (p: any) =>
+          p.phase_number === panelFormPhase &&
+          (p.judges || []).some((j: any) => j.id === s.id)
+      );
+      if (isAssigned) busyCount++;
+      else availableCount++;
+    });
+    return { availableCount, busyCount };
+  }, [supervisors, panels, panelFormPhase]);
+
+  // Dynamic AB10 Rooms List synchronized with Database
+  const AB10_ROOMS = useMemo(() => {
+    const standardRooms = [
+      'Room 401', 'Room 402', 'Room 403', 'Room 404',
+      'Room 405', 'Room 406', 'Room 407', 'Room 408',
+      'Lab 401', 'Lab 402', 'Seminar Hall 1', 'Seminar Hall 2'
+    ];
+    // Sync with any custom or existing rooms in the database panels
+    const dbRooms = (panels || [])
+      .map((p: any) => p.room_number)
+      .filter((r: any): r is string => Boolean(r && typeof r === 'string' && r.trim()));
+    
+    return Array.from(new Set([...standardRooms, ...dbRooms]));
+  }, [panels]);
+
+  // Standard Shift Presets with Time Slots
+  const SHIFT_PRESETS = useMemo(() => [
+    { label: 'Shift 1: Morning', timeWindow: 'Batch 1: Morning (08:00 AM - 10:00 AM)', timeShort: '08:00 AM - 10:00 AM', icon: '🌅', color: '#059669', colorBg: '#ECFDF5', colorBorder: '#A7F3D0' },
+    { label: 'Shift 2: Midday', timeWindow: 'Batch 2: Midday (10:30 AM - 12:30 PM)', timeShort: '10:30 AM - 12:30 PM', icon: '☀️', color: '#2563EB', colorBg: '#EFF6FF', colorBorder: '#BFDBFE' },
+    { label: 'Shift 3: Afternoon', timeWindow: 'Batch 3: Afternoon (01:30 PM - 03:30 PM)', timeShort: '01:30 PM - 03:30 PM', icon: '🌇', color: '#D97706', colorBg: '#FFFBEB', colorBorder: '#FDE68A' },
+    { label: 'Shift 4: Evening', timeWindow: 'Batch 4: Evening (04:00 PM - 06:00 PM)', timeShort: '04:00 PM - 06:00 PM', icon: '🌆', color: '#7C3AED', colorBg: '#FAF5FF', colorBorder: '#E9D5FF' },
+  ], []);
+
+  // Calculate Live Room Occupancy & Availability for selected Date, Shift & Phase
+  const roomOccupancyMap = useMemo(() => {
+    const map: Record<string, { isAvailable: boolean; occupiedByPanel?: string }> = {};
+
+    AB10_ROOMS.forEach((room) => {
+      const normalizedRoom = room.toLowerCase().replace('room ', '').trim();
+      const existing = (panels || []).find((p: any) => {
+        const pRoom = (p.room_number || '').toLowerCase().replace('room ', '').trim();
+        const roomMatch = pRoom === normalizedRoom || (p.room_number || '').toLowerCase() === room.toLowerCase();
+        const dateMatch = !p.date || !panelFormDate || p.date === panelFormDate;
+        
+        // Match shift / time window
+        const pShift = (p.time_window || '').toLowerCase();
+        const curShift = (panelFormShift || '').toLowerCase();
+        const shiftMatch = !pShift || !curShift ||
+          pShift.slice(0, 7) === curShift.slice(0, 7) ||
+          pShift.includes(curShift.slice(0, 8)) ||
+          curShift.includes(pShift.slice(0, 8));
+
+        return roomMatch && dateMatch && shiftMatch && p.phase_number === panelFormPhase;
+      });
+
+      if (existing) {
+        map[room] = {
+          isAvailable: false,
+          occupiedByPanel: existing.panel_name || `Panel (Phase ${existing.phase_number})`,
+        };
+      } else {
+        map[room] = {
+          isAvailable: true,
+        };
+      }
+    });
+
+    return map;
+  }, [AB10_ROOMS, panels, panelFormDate, panelFormShift, panelFormPhase]);
+
+  // First available vacant room
+  const firstAvailableRoom = useMemo(() => {
+    return AB10_ROOMS.find((r) => roomOccupancyMap[r]?.isAvailable) || AB10_ROOMS[0];
+  }, [AB10_ROOMS, roomOccupancyMap]);
+
+  // Auto-allot available room helper
+  const handleAutoAllotRoom = () => {
+    if (firstAvailableRoom) {
+      setPanelFormRoom(firstAvailableRoom);
+    }
+  };
+
+
 
   // Filtered teams for Tab 2 (Universal Search across team name, code, supervisor, leader, students roll/name, problem statement)
   const filteredTeams = teams.filter((t: any) => {
@@ -663,7 +1053,8 @@ export default function AdminDashboardPage() {
   };
 
   const getAiPromptForPhase = (phase: number) => {
-    const roundName = phase === 1 ? 'Round 1 (Phase 1 • 20 Marks)' : phase === 2 ? 'Round 2 (Phase 2 • 40 Marks)' : 'Round 3 (Final Defense • 40 Marks)';
+    const marks = getPhaseMaxMarks(phase);
+    const roundName = phase === 1 ? `Round 1 (Phase 1 • ${marks} Marks)` : phase === 2 ? `Round 2 (Phase 2 • ${marks} Marks)` : `Round 3 (Final Defense • ${marks} Marks)`;
     return `Please convert the provided faculty panel and team allocation Excel sheet for ${roundName} into a clean raw JSON array matching this exact simple schema for ProjectHub:
 
 [
@@ -694,6 +1085,10 @@ Field Rules:
 Output ONLY the raw valid JSON array.`;
   };
 
+  if (loading) {
+    return <LoadingScreen label="Loading administration portal..." />;
+  }
+
   return (
     <div className="page-fade-in" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--color-canvas)' }}>
       <Navbar user={currentUser} />
@@ -714,50 +1109,115 @@ Output ONLY the raw valid JSON array.`;
               </p>
             </div>
 
-            {/* Quick Actions (Responsive: Desktop side-by-side, Mobile 2-column grid) */}
-            <div className="admin-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            {/* Quick Actions (Responsive: Desktop 4-in-a-row, Mobile 2x2 grid) */}
+            <div className="admin-header-actions">
+              {currentUser?.email?.toLowerCase() !== 'admin@codeshastra.edu' && (
+                <Link
+                  href="/dashboard/faculty"
+                  className="btn btn-outline"
+                  style={{
+                    height: '38px',
+                    padding: '0 14px',
+                    fontSize: '12.5px',
+                    fontWeight: 600,
+                    gap: '6px',
+                    borderRadius: '8px',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxSizing: 'border-box',
+                  }}
+                  title="Switch to Faculty Mentor & Evaluation Panel Workspace"
+                >
+                  <Users size={15} color="var(--color-primary)" /> Faculty Portal
+                </Link>
+              )}
+
               <button
+                type="button"
+                onClick={() => {
+                  setToastMessage({ type: 'info', text: 'Generating Master Excel Workbook...' });
+                  exportMasterWorkbook({
+                    panels,
+                    teams,
+                    supervisors,
+                    absentEntries: absentAndShiftEntries,
+                    defaultingTeams,
+                  });
+                  setToastMessage({ type: 'success', text: 'Master Excel Workbook downloaded.' });
+                }}
+                className="btn btn-outline"
+                style={{
+                  height: '38px',
+                  padding: '0 14px',
+                  fontSize: '12.5px',
+                  fontWeight: 600,
+                  gap: '6px',
+                  borderRadius: '8px',
+                  borderColor: '#2563EB',
+                  color: '#1D4ED8',
+                  backgroundColor: '#EFF6FF',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxSizing: 'border-box',
+                }}
+                title="Download all platform data across 5 sections in a multi-sheet Excel file"
+              >
+                <Download size={14} /> Master Excel Report (.xlsx)
+              </button>
+
+              <button
+                type="button"
                 onClick={() => {
                   setAuthorityModalOpen(true);
                   setAuthorityActiveTab('transfer');
                   setTransferMessage(null);
-                  setCreateTeacherSuccess(null);
+                  setSelectedTeacherForTransfer('');
+                  setTransferConfirmOpen(false);
                 }}
                 className="btn btn-outline"
                 style={{
-                  padding: '9px 18px',
-                  fontSize: '13px',
+                  height: '38px',
+                  padding: '0 14px',
+                  fontSize: '12.5px',
                   fontWeight: 600,
                   gap: '6px',
                   borderRadius: '8px',
                   borderColor: '#F59E0B',
                   color: '#B45309',
                   backgroundColor: '#FFFBEB',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxSizing: 'border-box',
                 }}
               >
-                <Crown size={15} color="#D97706" /> Transfer Admin Authority
+                <Crown size={15} color="#D97706" /> Transfer Authority
               </button>
 
               <button
+                type="button"
                 onClick={() => {
                   setCreatePanelModalOpen(true);
                   setPanelFormError(null);
                 }}
                 className="btn btn-primary"
-                style={{ padding: '9px 18px', fontSize: '13px', fontWeight: 600, gap: '6px', borderRadius: '8px' }}
+                style={{
+                  height: '38px',
+                  padding: '0 16px',
+                  fontSize: '12.5px',
+                  fontWeight: 600,
+                  gap: '6px',
+                  borderRadius: '8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxSizing: 'border-box',
+                }}
               >
                 <Plus size={15} /> Assign New Panel
-              </button>
-
-              <button
-                onClick={() => {
-                  setJsonModalOpen(true);
-                  setPanelsMessage(null);
-                }}
-                className="btn btn-outline"
-                style={{ padding: '9px 18px', fontSize: '13px', fontWeight: 600, gap: '6px', borderRadius: '8px' }}
-              >
-                <FileCode size={15} /> Batch JSON Import
               </button>
             </div>
           </div>
@@ -796,6 +1256,29 @@ Output ONLY the raw valid JSON array.`;
               onClick={() => setActiveTab('defaulting')}
             >
               Defaulting Audit ({defaultingTeams.length})
+            </button>
+            <button
+              className={`segmented-pill ${activeTab === 'attendance' ? 'active' : ''}`}
+              onClick={() => setActiveTab('attendance')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <span>Absent & Next Shift</span>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  padding: '2px 7px',
+                  borderRadius: '10px',
+                  backgroundColor: activeTab === 'attendance' ? 'var(--color-primary)' : '#FEF3C7',
+                  color: activeTab === 'attendance' ? '#FFFFFF' : '#B45309',
+                }}
+              >
+                {absentAndShiftEntries.length}
+              </span>
             </button>
           </div>
         </div>
@@ -1032,7 +1515,7 @@ Output ONLY the raw valid JSON array.`;
                         </div>
 
                         {/* Date & Marks Chips */}
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px', alignItems: 'center' }}>
                           <span
                             style={{
                               fontSize: '11px',
@@ -1048,21 +1531,87 @@ Output ONLY the raw valid JSON array.`;
                           >
                             <Calendar size={11} /> {targetDate}
                           </span>
-                          <span
-                            style={{
-                              fontSize: '11px',
-                              fontWeight: 700,
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                              backgroundColor: '#ECFDF5',
-                              color: '#047857',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
-                          >
-                            <Award size={11} /> {marks} Marks
-                          </span>
+
+                          {editingPhaseMarks[ph.phase_number] !== undefined ? (
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <input
+                                type="number"
+                                min="1"
+                                max="500"
+                                value={editingPhaseMarks[ph.phase_number]}
+                                onChange={(e) =>
+                                  setEditingPhaseMarks({
+                                    ...editingPhaseMarks,
+                                    [ph.phase_number]: Number(e.target.value),
+                                  })
+                                }
+                                style={{
+                                  width: '60px',
+                                  padding: '2px 6px',
+                                  fontSize: '11.5px',
+                                  fontWeight: 700,
+                                  borderRadius: '4px',
+                                  border: '1px solid var(--color-primary)',
+                                  outline: 'none',
+                                }}
+                                autoFocus
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleUpdatePhaseMarks(
+                                    ph.phase_number,
+                                    editingPhaseMarks[ph.phase_number]
+                                  )
+                                }
+                                disabled={savingPhaseMarks === ph.phase_number}
+                                className="btn btn-primary"
+                                style={{ padding: '2px 7px', fontSize: '11px', borderRadius: '4px' }}
+                              >
+                                {savingPhaseMarks === ph.phase_number ? '...' : 'Save'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingPhaseMarks((prev) => {
+                                    const next = { ...prev };
+                                    delete next[ph.phase_number];
+                                    return next;
+                                  });
+                                }}
+                                className="btn btn-outline"
+                                style={{ padding: '2px 6px', fontSize: '11px', borderRadius: '4px' }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setEditingPhaseMarks({
+                                  ...editingPhaseMarks,
+                                  [ph.phase_number]: marks,
+                                })
+                              }
+                              style={{
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                backgroundColor: '#ECFDF5',
+                                color: '#047857',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                border: '1px solid #A7F3D0',
+                                cursor: 'pointer',
+                              }}
+                              title="Click to change max marks for this round"
+                            >
+                              <Award size={11} /> {marks} Max Marks <Edit3 size={10} style={{ opacity: 0.7 }} />
+                            </button>
+                          )}
                         </div>
 
                         <h4 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '6px' }}>{ph.phase_name}</h4>
@@ -1175,8 +1724,37 @@ Output ONLY the raw valid JSON array.`;
                   </button>
                 </div>
 
-                <div style={{ fontSize: '12.5px', color: 'var(--color-text-muted)' }}>
-                  Found <strong>{filteredTeams.length}</strong> teams
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: '12.5px', color: 'var(--color-text-muted)' }}>
+                    Found <strong>{filteredTeams.length}</strong> teams
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportTeamsAndStudents(filteredTeams, 'xlsx');
+                        setToastMessage({ type: 'success', text: 'Teams & Students Excel roster downloaded.' });
+                      }}
+                      className="btn btn-outline"
+                      style={{ padding: '5px 10px', fontSize: '11.5px', gap: '4px', borderRadius: '6px' }}
+                      title="Download Teams roster as Excel (.xlsx)"
+                    >
+                      <Download size={12} /> Excel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportTeamsAndStudents(filteredTeams, 'csv');
+                        setToastMessage({ type: 'success', text: 'Teams & Students CSV downloaded.' });
+                      }}
+                      className="btn btn-outline"
+                      style={{ padding: '5px 10px', fontSize: '11.5px', gap: '4px', borderRadius: '6px' }}
+                      title="Download Teams roster as CSV (.csv)"
+                    >
+                      CSV
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1190,14 +1768,13 @@ Output ONLY the raw valid JSON array.`;
                     <th>Supervisor</th>
                     <th>Leader</th>
                     <th>Students & Marks</th>
-                    <th>Clearances</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedTeams.length === 0 ? (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--color-text-muted)' }}>
+                      <td colSpan={5} style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--color-text-muted)' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                           <img
                             src="/images/undraw/searching-themed.svg"
@@ -1258,19 +1835,6 @@ Output ONLY the raw valid JSON array.`;
                           </div>
                         </td>
                         <td>
-                          <div style={{ display: 'flex', gap: '4px' }}>
-                            <span className={`badge ${t.phase1_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>
-                              P1
-                            </span>
-                            <span className={`badge ${t.phase2_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>
-                              P2
-                            </span>
-                            <span className={`badge ${t.phase3_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>
-                              P3
-                            </span>
-                          </div>
-                        </td>
-                        <td>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1312,7 +1876,7 @@ Output ONLY the raw valid JSON array.`;
                       boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
                     }}
                   >
-                    {/* Top Row: Team Name & Clearances */}
+                    {/* Top Row: Team Name */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
                       <div>
                         <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1.2 }}>
@@ -1321,11 +1885,6 @@ Output ONLY the raw valid JSON array.`;
                         <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: '2px', fontWeight: 500 }}>
                           {t.program} • {t.studentCount || (t.students?.length || 0)} Members
                         </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                        <span className={`badge ${t.phase1_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '9.5px', padding: '2px 6px', fontWeight: 700 }}>P1</span>
-                        <span className={`badge ${t.phase2_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '9.5px', padding: '2px 6px', fontWeight: 700 }}>P2</span>
-                        <span className={`badge ${t.phase3_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '9.5px', padding: '2px 6px', fontWeight: 700 }}>P3</span>
                       </div>
                     </div>
 
@@ -1447,10 +2006,38 @@ Output ONLY the raw valid JSON array.`;
                   )}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <div style={{ fontSize: '12.5px', color: 'var(--color-text-muted)' }}>
                     Total <strong>{filteredSupervisors.length}</strong> Faculty Members
                   </div>
+
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportFacultyDirectory(filteredSupervisors, panels, 'xlsx');
+                        setToastMessage({ type: 'success', text: 'Faculty Directory Excel downloaded.' });
+                      }}
+                      className="btn btn-outline"
+                      style={{ padding: '5px 10px', fontSize: '11.5px', gap: '4px', borderRadius: '6px' }}
+                      title="Download Faculty Directory as Excel (.xlsx)"
+                    >
+                      <Download size={12} /> Excel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportFacultyDirectory(filteredSupervisors, panels, 'csv');
+                        setToastMessage({ type: 'success', text: 'Faculty Directory CSV downloaded.' });
+                      }}
+                      className="btn btn-outline"
+                      style={{ padding: '5px 10px', fontSize: '11.5px', gap: '4px', borderRadius: '6px' }}
+                      title="Download Faculty Directory as CSV (.csv)"
+                    >
+                      CSV
+                    </button>
+                  </div>
+
                   <button
                     onClick={() => {
                       setAuthorityModalOpen(true);
@@ -1537,8 +2124,14 @@ Output ONLY the raw valid JSON array.`;
                           </span>
                         ) : (
                           s.assignedTeams?.map((t: any) => (
-                            <span
+                            <button
                               key={t.id}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const fullTeam = teams.find((team: any) => team.id === t.id) || t;
+                                setSelectedTeamModal(fullTeam);
+                              }}
                               style={{
                                 fontSize: '10.5px',
                                 padding: '2px 7px',
@@ -1546,10 +2139,13 @@ Output ONLY the raw valid JSON array.`;
                                 backgroundColor: 'var(--color-canvas-soft)',
                                 border: '1px solid var(--color-hairline)',
                                 color: 'var(--color-ink)',
+                                cursor: 'pointer',
                               }}
+                              className="btn-icon-hover"
+                              title={`Click to view ${t.team_name} details & marks`}
                             >
                               {t.team_name}
-                            </span>
+                            </button>
                           ))
                         )}
                       </div>
@@ -1567,32 +2163,7 @@ Output ONLY the raw valid JSON array.`;
                     >
                       View Details
                     </button>
-                    {!s.isAdmin ? (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedTeacherForTransfer(s.id);
-                          setAuthorityActiveTab('transfer');
-                          setAuthorityModalOpen(true);
-                          setTransferMessage(null);
-                        }}
-                        className="btn btn-outline"
-                        title="Make this teacher the Administrator"
-                        style={{
-                          fontSize: '12px',
-                          padding: '6px 12px',
-                          borderColor: '#FCD34D',
-                          color: '#B45309',
-                          backgroundColor: '#FFFBEB',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        <Crown size={13} color="#D97706" /> Set Admin
-                      </button>
-                    ) : (
+                    {s.isAdmin && (
                       <span
                         style={{
                           fontSize: '11px',
@@ -1680,25 +2251,33 @@ Output ONLY the raw valid JSON array.`;
                   </div>
 
                   <div className="panels-actions-buttons" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                    <button
-                      onClick={() => {
-                        setTargetPhase(panelPhaseFilter);
-                        setJsonModalOpen(true);
-                        setPanelsMessage(null);
-                      }}
-                      className="btn btn-primary"
-                      style={{
-                        fontSize: '12px',
-                        height: '38px',
-                        padding: '0 14px',
-                        gap: '6px',
-                        backgroundColor: panelPhaseFilter === 1 ? '#2563EB' : panelPhaseFilter === 2 ? '#059669' : '#D97706',
-                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      <Zap size={13} fill="#FFFFFF" /> Batch JSON Import
-                    </button>
+                    {/* Export Panels Buttons */}
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          exportPanelsData(filteredPanels, 'xlsx');
+                          setToastMessage({ type: 'success', text: `Phase ${panelPhaseFilter} Panels Excel report downloaded.` });
+                        }}
+                        className="btn btn-outline"
+                        style={{ height: '38px', padding: '0 10px', fontSize: '11.5px', gap: '4px', borderRadius: '8px' }}
+                        title="Export Panels Schedule as Excel (.xlsx)"
+                      >
+                        <Download size={13} /> Excel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          exportPanelsData(filteredPanels, 'csv');
+                          setToastMessage({ type: 'success', text: `Phase ${panelPhaseFilter} Panels CSV report downloaded.` });
+                        }}
+                        className="btn btn-outline"
+                        style={{ height: '38px', padding: '0 10px', fontSize: '11.5px', gap: '4px', borderRadius: '8px' }}
+                        title="Export Panels Schedule as CSV (.csv)"
+                      >
+                        CSV
+                      </button>
+                    </div>
 
                     <button
                       onClick={() => {
@@ -1706,8 +2285,8 @@ Output ONLY the raw valid JSON array.`;
                         setCreatePanelModalOpen(true);
                         setPanelFormError(null);
                       }}
-                      className="btn btn-outline"
-                      style={{ fontSize: '12px', height: '38px', padding: '0 13px', gap: '6px', whiteSpace: 'nowrap' }}
+                      className="btn btn-primary"
+                      style={{ fontSize: '12px', height: '38px', padding: '0 14px', gap: '6px', whiteSpace: 'nowrap' }}
                     >
                       <Plus size={14} /> Add Single Panel
                     </button>
@@ -1727,56 +2306,237 @@ Output ONLY the raw valid JSON array.`;
               </div>
             ) : (
               <div className="grid-cols-3">
-                {filteredPanels.map((p: any) => (
-                  <div key={p.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                        <div>
-                          <h4 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-ink)' }}>{p.panel_name}</h4>
-                          <span className="badge badge-neutral" style={{ fontSize: '10.5px', marginTop: '2px' }}>Phase {p.phase_number}</span>
-                        </div>
-                        <button
-                          onClick={() => handleDeletePanel(p.id, p.panel_name)}
-                          style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-danger)', opacity: 0.8 }}
-                          title="Delete Panel"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '14px' }}>
-                        <div>Range: <strong>Teams #{p.team_range_start} – #{p.team_range_end}</strong> ({p.teamsCount || 0} teams)</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <MapPin size={13} color="#2563EB" />
-                          <span>Venue: <strong>Academic Block AB10</strong> ({p.room_number || 'Room TBA'})</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <Clock size={13} color="#059669" />
-                          <span>Shift: <strong>{p.time_window || 'Batch 1: Morning'}</strong></span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <Calendar size={13} color="#D97706" />
-                          <span>Date: <strong>{p.date || 'TBA'}</strong></span>
-                        </div>
-                      </div>
-
-                      {p.judges && p.judges.length > 0 && (
-                        <div style={{ borderTop: '1px solid var(--color-hairline)', paddingTop: '10px' }}>
-                          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-faint)', marginBottom: '4px' }}>
-                            Assigned Faculty Judges ({p.judges.length}):
+                {filteredPanels.map((p: any) => {
+                  const pBatches = getPanelBatches(p.team_range_start, p.team_range_end);
+                  return (
+                    <div
+                      key={p.id}
+                      className="card"
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        padding: '18px 20px',
+                        borderRadius: '14px',
+                        border: '1px solid var(--color-hairline)',
+                        backgroundColor: '#FFFFFF',
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.03)',
+                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                      }}
+                    >
+                      <div>
+                        {/* Top Meta Badges & Actions */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                backgroundColor: '#F1F5F9',
+                                color: '#334155',
+                                border: '1px solid #E2E8F0',
+                                letterSpacing: '0.2px',
+                              }}
+                            >
+                              Phase {p.phase_number}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                backgroundColor: '#EFF6FF',
+                                color: '#1D4ED8',
+                                border: '1px solid #DBEAFE',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              <Users size={11} />
+                              {p.teamsCount || 0} Teams
+                            </span>
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            {p.judges.map((j: any) => (
-                              <div key={j.id} style={{ fontSize: '12px', color: 'var(--color-ink)' }}>
-                                • {j.full_name} <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>({j.email})</span>
+
+                          <button
+                            onClick={() => handleDeletePanel(p.id, p.panel_name)}
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '7px',
+                              background: '#FEE2E2',
+                              border: '1px solid #FECACA',
+                              cursor: 'pointer',
+                              color: '#DC2626',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.15s ease',
+                            }}
+                            title="Delete Panel"
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#DC2626';
+                              e.currentTarget.style.color = '#FFFFFF';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = '#FEE2E2';
+                              e.currentTarget.style.color = '#DC2626';
+                            }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+
+                        {/* Panel Title */}
+                        <h4 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-ink)', marginBottom: '12px', lineHeight: 1.3 }}>
+                          {p.panel_name}
+                        </h4>
+
+                        {/* Batch / Team Coverage Chips */}
+                        <div style={{ marginBottom: '14px' }}>
+                          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '5px' }}>
+                            Allocated Batches
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                            {pBatches.map((b, idx) => (
+                              <div
+                                key={idx}
+                                style={{
+                                  fontSize: '11.5px',
+                                  fontWeight: 600,
+                                  backgroundColor: b.colorBg,
+                                  color: b.colorText,
+                                  border: `1px solid ${b.colorBorder}`,
+                                  padding: '3px 8px',
+                                  borderRadius: '6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                }}
+                              >
+                                <span>{b.label}</span>
+                                <span style={{ opacity: 0.75, fontSize: '10.5px' }}>({b.count} teams)</span>
                               </div>
                             ))}
                           </div>
                         </div>
-                      )}
+
+                        {/* Session Metadata Box */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '7px',
+                            fontSize: '12px',
+                            backgroundColor: '#F8FAFC',
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            border: '1px solid #EDF2F7',
+                            marginBottom: '14px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                            <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <MapPin size={12} color="#2563EB" />
+                            </div>
+                            <span style={{ color: 'var(--color-text-muted)' }}>
+                              Venue: <strong style={{ color: 'var(--color-ink)' }}>Academic Block AB10</strong> ({p.room_number || 'Room TBA'})
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                            <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <Clock size={12} color="#059669" />
+                            </div>
+                            <span style={{ color: 'var(--color-text-muted)' }}>
+                              Shift: <strong style={{ color: 'var(--color-ink)' }}>{p.time_window || 'Batch 1: Morning'}</strong>
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                            <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <Calendar size={12} color="#D97706" />
+                            </div>
+                            <span style={{ color: 'var(--color-text-muted)' }}>
+                              Date: <strong style={{ color: 'var(--color-ink)' }}>{p.date || 'TBA'}</strong>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Assigned Faculty Section */}
+                        {p.judges && p.judges.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span>Assigned Faculty Judges</span>
+                              <span style={{ fontSize: '10.5px', color: 'var(--color-text-muted)' }}>{p.judges.length} Evaluators</span>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                              {p.judges.map((j: any) => {
+                                const initials = (j.full_name || 'Faculty')
+                                  .split(' ')
+                                  .filter(Boolean)
+                                  .map((n: string) => n[0])
+                                  .slice(0, 2)
+                                  .join('')
+                                  .toUpperCase();
+
+                                return (
+                                  <div
+                                    key={j.id}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '8px',
+                                      padding: '6px 8px',
+                                      borderRadius: '7px',
+                                      backgroundColor: '#F8FAFC',
+                                      border: '1px solid #E2E8F0',
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        width: '24px',
+                                        height: '24px',
+                                        borderRadius: '50%',
+                                        backgroundColor: '#3B82F6',
+                                        color: '#FFFFFF',
+                                        fontSize: '10px',
+                                        fontWeight: 700,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: 0,
+                                      }}
+                                    >
+                                      {initials}
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {j.full_name}
+                                      </span>
+                                      {j.email && (
+                                        <a
+                                          href={`mailto:${j.email}`}
+                                          style={{ fontSize: '10.5px', color: 'var(--color-text-muted)', textDecoration: 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                          title={j.email}
+                                        >
+                                          {j.email}
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1788,16 +2548,45 @@ Output ONLY the raw valid JSON array.`;
         {activeTab === 'defaulting' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div className="card" style={{ padding: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--color-danger)' }}>
-                <AlertTriangle size={20} />
-                <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-danger)' }}>
-                    Defaulting Teams Audit ({defaultingTeams.length})
-                  </h3>
-                  <p style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                    Teams missing designated leaders, lacking approved problem statements, or awaiting supervisor clearance.
-                  </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--color-danger)' }}>
+                  <AlertTriangle size={20} />
+                  <div>
+                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-danger)' }}>
+                      Defaulting Teams Audit ({defaultingTeams.length})
+                    </h3>
+                    <p style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
+                      Teams missing designated leaders, lacking approved problem statements, or awaiting supervisor clearance.
+                    </p>
+                  </div>
                 </div>
+
+                {defaultingTeams.length > 0 && (
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportDefaultingTeams(defaultingTeams, 'xlsx');
+                        setToastMessage({ type: 'success', text: 'Defaulting Teams Excel report downloaded.' });
+                      }}
+                      className="btn btn-outline"
+                      style={{ padding: '6px 12px', fontSize: '12px', gap: '5px', borderRadius: '7px' }}
+                    >
+                      <Download size={13} /> Export Excel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportDefaultingTeams(defaultingTeams, 'csv');
+                        setToastMessage({ type: 'success', text: 'Defaulting Teams CSV report downloaded.' });
+                      }}
+                      className="btn btn-outline"
+                      style={{ padding: '6px 12px', fontSize: '12px', gap: '5px', borderRadius: '7px' }}
+                    >
+                      CSV
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1918,6 +2707,459 @@ Output ONLY the raw valid JSON array.`;
             )}
           </div>
         )}
+
+        {/* =================================================================== */}
+        {/* TAB 6: ABSENT & NEXT SHIFT DIRECTORY                                */}
+        {/* =================================================================== */}
+        {activeTab === 'attendance' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Header / Intro Card */}
+            <div className="card" style={{ padding: '20px 24px', borderRadius: '14px', border: '1px solid var(--color-border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Clock size={18} color="#D97706" />
+                    </div>
+                    <h2 style={{ fontSize: '18px', fontWeight: 800, margin: 0, color: 'var(--color-ink)' }}>
+                      Absent &amp; Next Shift Student Directory
+                    </h2>
+                  </div>
+                  <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '6px', margin: 0 }}>
+                    Segregate students who could not attend their scheduled defense slot. Reassign students to the <strong>Next Shift</strong> or confirm their <strong>Absence</strong> without modifying examination marks.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportAbsentAndShiftData(filteredAbsentAndShiftEntries, 'xlsx');
+                        setToastMessage({ type: 'success', text: 'Absent & Next Shift Excel roster downloaded.' });
+                      }}
+                      className="btn btn-outline"
+                      style={{ padding: '7px 12px', fontSize: '12px', gap: '5px', borderRadius: '7px' }}
+                      title="Export Absent & Shift Roster as Excel (.xlsx)"
+                    >
+                      <Download size={13} /> Excel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportAbsentAndShiftData(filteredAbsentAndShiftEntries, 'csv');
+                        setToastMessage({ type: 'success', text: 'Absent & Next Shift CSV downloaded.' });
+                      }}
+                      className="btn btn-outline"
+                      style={{ padding: '7px 12px', fontSize: '12px', gap: '5px', borderRadius: '7px' }}
+                      title="Export Absent & Shift Roster as CSV (.csv)"
+                    >
+                      CSV
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => loadAdminData()}
+                    className="btn btn-outline"
+                    style={{ padding: '7px 14px', fontSize: '12.5px', gap: '6px' }}
+                  >
+                    <RefreshCw size={13} /> Refresh List
+                  </button>
+                </div>
+              </div>
+
+              {/* 3 Metric Stat Cards */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '14px',
+                  marginTop: '18px',
+                }}
+              >
+                <div
+                  style={{
+                    padding: '14px 18px',
+                    borderRadius: '12px',
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                  }}
+                >
+                  <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Total Non-Present
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--color-ink)', marginTop: '4px' }}>
+                    {absentAndShiftEntries.length}
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: 'var(--color-text-faint)', marginTop: '2px' }}>
+                    Across all 3 evaluation phases
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: '14px 18px',
+                    borderRadius: '12px',
+                    backgroundColor: '#FFFBEB',
+                    border: '1.5px solid #FCD34D',
+                  }}
+                >
+                  <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Clock size={13} color="#D97706" /> Moved to Next Shift
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: 900, color: '#B45309', marginTop: '4px' }}>
+                    {nextShiftCount}
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: '#92400E', marginTop: '2px' }}>
+                    Eligible for rescheduled viva slot
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    padding: '14px 18px',
+                    borderRadius: '12px',
+                    backgroundColor: '#FEF2F2',
+                    border: '1.5px solid #FCA5A5',
+                  }}
+                >
+                  <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#991B1B', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <UserX size={13} color="#DC2626" /> Confirmed Absent
+                  </div>
+                  <div style={{ fontSize: '24px', fontWeight: 900, color: '#DC2626', marginTop: '4px' }}>
+                    {absentCount}
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: '#991B1B', marginTop: '2px' }}>
+                    Absent from scheduled defense
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter Deck & Search */}
+            <div className="card" style={{ padding: '16px 20px', borderRadius: '14px', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                {/* Status Filter */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', marginRight: '4px' }}>Status:</span>
+                  <button
+                    type="button"
+                    onClick={() => setAttendanceStatusFilter('all')}
+                    className={`segmented-pill ${attendanceStatusFilter === 'all' ? 'active' : ''}`}
+                    style={{ fontSize: '11.5px', padding: '4px 12px' }}
+                  >
+                    All ({absentAndShiftEntries.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAttendanceStatusFilter('next_shift')}
+                    className={`segmented-pill ${attendanceStatusFilter === 'next_shift' ? 'active' : ''}`}
+                    style={{ fontSize: '11.5px', padding: '4px 12px' }}
+                  >
+                    🕒 Next Shift ({nextShiftCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAttendanceStatusFilter('absent')}
+                    className={`segmented-pill ${attendanceStatusFilter === 'absent' ? 'active' : ''}`}
+                    style={{ fontSize: '11.5px', padding: '4px 12px' }}
+                  >
+                    ✕ Absent ({absentCount})
+                  </button>
+                </div>
+
+                {/* Phase Filter */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-muted)', marginRight: '4px' }}>Phase:</span>
+                  <button
+                    type="button"
+                    onClick={() => setAttendancePhaseFilter('all')}
+                    className={`segmented-pill ${attendancePhaseFilter === 'all' ? 'active' : ''}`}
+                    style={{ fontSize: '11.5px', padding: '4px 10px' }}
+                  >
+                    All Phases
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAttendancePhaseFilter(1)}
+                    className={`segmented-pill ${attendancePhaseFilter === 1 ? 'active' : ''}`}
+                    style={{ fontSize: '11.5px', padding: '4px 10px' }}
+                  >
+                    Phase 1
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAttendancePhaseFilter(2)}
+                    className={`segmented-pill ${attendancePhaseFilter === 2 ? 'active' : ''}`}
+                    style={{ fontSize: '11.5px', padding: '4px 10px' }}
+                  >
+                    Phase 2
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAttendancePhaseFilter(3)}
+                    className={`segmented-pill ${attendancePhaseFilter === 3 ? 'active' : ''}`}
+                    style={{ fontSize: '11.5px', padding: '4px 10px' }}
+                  >
+                    Phase 3
+                  </button>
+                </div>
+              </div>
+
+              {/* Search Bar */}
+              <div style={{ position: 'relative', width: '100%' }}>
+                <Search
+                  size={15}
+                  style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-faint)' }}
+                />
+                <input
+                  type="text"
+                  className="input-field"
+                  style={{
+                    paddingLeft: '36px',
+                    fontSize: '13px',
+                    height: '40px',
+                    borderRadius: '9px',
+                    width: '100%',
+                  }}
+                  placeholder="Search by student name, roll number, team code, supervisor, or reason note..."
+                  value={attendanceSearch}
+                  onChange={(e) => setAttendanceSearch(e.target.value)}
+                />
+                {attendanceSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setAttendanceSearch('')}
+                    style={{
+                      position: 'absolute',
+                      right: '10px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--color-text-faint)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Attendance & Shift Segregation Table */}
+            <div className="card" style={{ padding: 0, borderRadius: '14px', border: '1px solid var(--color-border)', overflow: 'hidden' }}>
+              {filteredAbsentAndShiftEntries.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                    <CheckCircle2 size={24} color="#059669" />
+                  </div>
+                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-ink)', margin: 0 }}>
+                    No non-present students found
+                  </h3>
+                  <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px', maxWidth: '400px', margin: '4px auto 0' }}>
+                    {absentAndShiftEntries.length === 0
+                      ? 'All students evaluated by examination panels are present or no evaluations are recorded yet.'
+                      : 'No students match the current phase, status, or search filters.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="data-table-container" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%' }}>
+                  <table className="data-table" style={{ width: '100%', minWidth: '850px', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: '25%', minWidth: '180px' }}>Student Details</th>
+                        <th style={{ width: '22%', minWidth: '160px' }}>Team &amp; Guide</th>
+                        <th style={{ width: '12%', minWidth: '95px', textAlign: 'center' }}>Phase</th>
+                        <th style={{ width: '18%', minWidth: '150px' }}>Assigned Slot &amp; Room</th>
+                        <th style={{ width: '13%', minWidth: '120px', textAlign: 'center' }}>Status</th>
+                        <th style={{ width: '10%', minWidth: '110px', textAlign: 'center' }}>Segregate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredAbsentAndShiftEntries.map((item, idx) => {
+                        const isNext = item.attendanceStatus === 'next_shift';
+                        return (
+                          <tr key={`${item.studentId}-${item.phaseNumber}-${idx}`}>
+                            {/* Student Details */}
+                            <td>
+                              <div style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--color-ink)' }}>
+                                {item.studentName}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px', flexWrap: 'wrap' }}>
+                                <span style={{ fontFamily: 'monospace', fontSize: '11.5px', color: 'var(--color-text-muted)', backgroundColor: '#F1F5F9', padding: '1px 5px', borderRadius: '4px' }}>
+                                  {item.rollNo}
+                                </span>
+                                {item.isLeader && (
+                                  <span style={{ fontSize: '10px', fontWeight: 700, color: '#059669' }}>
+                                    ● Leader
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Team & Guide */}
+                            <td>
+                              <div style={{ fontWeight: 600, fontSize: '12.5px', color: 'var(--color-ink)' }}>
+                                {item.teamCode}: {item.teamName}
+                              </div>
+                              <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                                Guide: <strong>{item.supervisor}</strong>
+                              </div>
+                            </td>
+
+                            {/* Phase */}
+                            <td style={{ textAlign: 'center' }}>
+                              <span
+                                className="badge"
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  backgroundColor: item.phaseNumber === 1 ? '#ECFDF5' : item.phaseNumber === 2 ? '#EFF6FF' : '#F5F3FF',
+                                  color: item.phaseNumber === 1 ? '#059669' : item.phaseNumber === 2 ? '#2563EB' : '#7C3AED',
+                                  border: `1px solid ${item.phaseNumber === 1 ? '#A7F3D0' : item.phaseNumber === 2 ? '#BFDBFE' : '#DDD6FE'}`,
+                                }}
+                              >
+                                Phase {item.phaseNumber} ({getPhaseMaxMarks(item.phaseNumber)}M)
+                              </span>
+                            </td>
+
+                            {/* Scheduled Slot & Room */}
+                            <td>
+                              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-ink)' }}>
+                                📍 {item.roomNumber} • {item.panelName}
+                              </div>
+                              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                                🕒 {item.timeWindow}
+                              </div>
+                            </td>
+
+                            {/* Attendance Status */}
+                            <td style={{ textAlign: 'center' }}>
+                              {isNext ? (
+                                <span
+                                  className="badge"
+                                  style={{
+                                    backgroundColor: '#FEF3C7',
+                                    color: '#B45309',
+                                    border: '1px solid #FCD34D',
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                  }}
+                                  title={item.remarks || 'Moved to Next Shift'}
+                                >
+                                  <Clock size={11} /> Next Shift
+                                </span>
+                              ) : (
+                                <span
+                                  className="badge badge-danger"
+                                  style={{
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                  }}
+                                  title={item.remarks || 'Marked Absent'}
+                                >
+                                  <UserX size={11} /> Absent
+                                </span>
+                              )}
+                              {item.remarks && (
+                                <div
+                                  style={{
+                                    fontSize: '10.5px',
+                                    color: 'var(--color-text-muted)',
+                                    marginTop: '4px',
+                                    maxWidth: '140px',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    margin: '4px auto 0',
+                                  }}
+                                  title={item.remarks}
+                                >
+                                  {item.remarks}
+                                </div>
+                              )}
+                            </td>
+
+                            {/* Segregation Action */}
+                            <td style={{ textAlign: 'center' }}>
+                              {isNext ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSegregationModalItem({
+                                      item,
+                                      targetStatus: 'absent',
+                                    });
+                                    setSegregationCustomRemark('Confirmed absent by admin');
+                                  }}
+                                  className="btn"
+                                  style={{
+                                    padding: '5px 10px',
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    backgroundColor: '#FFFFFF',
+                                    color: '#DC2626',
+                                    border: '1px solid #FCA5A5',
+                                    borderRadius: '7px',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                  title="Change status to Confirmed Absent"
+                                >
+                                  <UserX size={12} /> Mark Absent
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSegregationModalItem({
+                                      item,
+                                      targetStatus: 'next_shift',
+                                    });
+                                    setSegregationCustomRemark('Shifted to next slot for rescheduled viva');
+                                  }}
+                                  className="btn"
+                                  style={{
+                                    padding: '5px 10px',
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    backgroundColor: '#FFFBEB',
+                                    color: '#B45309',
+                                    border: '1px solid #FCD34D',
+                                    borderRadius: '7px',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                  title="Shift candidate to Next Shift batch"
+                                >
+                                  <Clock size={12} /> Shift to Next
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </main>
 
       {/* =================================================================== */}
@@ -2024,46 +3266,429 @@ Output ONLY the raw valid JSON array.`;
                   </div>
                 )}
 
-                {/* Team Range */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label className="input-label" style={{ fontSize: '12px', fontWeight: 600 }}>Team Range Start (#)</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="102"
-                      className="input-field"
-                      required
-                      value={panelFormRangeStart}
-                      onChange={(e) => setPanelFormRangeStart(Number(e.target.value))}
-                    />
+                {/* Modern Batch & Team Range Selection Section */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label className="input-label" style={{ fontSize: '12.5px', fontWeight: 700, margin: 0, color: '#0F172A' }}>
+                      Assign Teams / Batch to Panel
+                    </label>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)' }}>
+                      {selectedRangeTeams.length} teams selected ({selectedRangeStudentCount} students)
+                    </span>
                   </div>
+
+                  {/* Program Stream Filter Selector */}
+                  <div style={{ display: 'flex', gap: '6px', backgroundColor: '#F1F5F9', padding: '4px', borderRadius: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setPanelFormProgram('all')}
+                      style={{
+                        flex: 1,
+                        padding: '6px 10px',
+                        fontSize: '11.5px',
+                        fontWeight: panelFormProgram === 'all' ? 700 : 500,
+                        backgroundColor: panelFormProgram === 'all' ? '#FFFFFF' : 'transparent',
+                        color: panelFormProgram === 'all' ? '#2563EB' : 'var(--color-text-muted)',
+                        border: 'none',
+                        borderRadius: '6px',
+                        boxShadow: panelFormProgram === 'all' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      All Programs ({teams.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPanelFormProgram('BCA');
+                        if (bcaTeams.length > 0 && panelFormRangeStart > (bcaTeams[bcaTeams.length - 1]?.team_number || 102)) {
+                          setPanelFormRangeStart(bcaTeams[0].team_number);
+                          setPanelFormRangeEnd(Math.min(bcaTeams[0].team_number + 9, bcaTeams[bcaTeams.length - 1].team_number));
+                        }
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '6px 10px',
+                        fontSize: '11.5px',
+                        fontWeight: panelFormProgram === 'BCA' ? 700 : 500,
+                        backgroundColor: panelFormProgram === 'BCA' ? '#FFFFFF' : 'transparent',
+                        color: panelFormProgram === 'BCA' ? '#2563EB' : 'var(--color-text-muted)',
+                        border: 'none',
+                        borderRadius: '6px',
+                        boxShadow: panelFormProgram === 'BCA' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      BCA Core ({bcaTeams.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPanelFormProgram('BCA - DS');
+                        if (dsTeams.length > 0 && (panelFormRangeStart < dsTeams[0].team_number || panelFormRangeStart > dsTeams[dsTeams.length - 1].team_number)) {
+                          setPanelFormRangeStart(dsTeams[0].team_number);
+                          setPanelFormRangeEnd(Math.min(dsTeams[0].team_number + 9, dsTeams[dsTeams.length - 1].team_number));
+                        }
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '6px 10px',
+                        fontSize: '11.5px',
+                        fontWeight: panelFormProgram === 'BCA - DS' ? 700 : 500,
+                        backgroundColor: panelFormProgram === 'BCA - DS' ? '#FFFFFF' : 'transparent',
+                        color: panelFormProgram === 'BCA - DS' ? '#2563EB' : 'var(--color-text-muted)',
+                        border: 'none',
+                        borderRadius: '6px',
+                        boxShadow: panelFormProgram === 'BCA - DS' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      BCA Data Science ({dsTeams.length})
+                    </button>
+                  </div>
+
+                  {/* Quick Preset Batch Chips */}
                   <div>
-                    <label className="input-label" style={{ fontSize: '12px', fontWeight: 600 }}>Team Range End (#)</label>
+                    <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '6px' }}>
+                      ⚡ Quick Batch Presets (10 Teams / Batch):
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {(panelFormProgram === 'BCA - DS' ? dsPresets : panelFormProgram === 'BCA' ? bcaPresets : [...bcaPresets, ...dsPresets]).map((preset, idx) => {
+                        const isSelected = panelFormRangeStart === preset.startNum && panelFormRangeEnd === preset.endNum;
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setPanelFormRangeStart(preset.startNum);
+                              setPanelFormRangeEnd(preset.endNum);
+                              if (!panelFormName || panelFormName.startsWith('Panel ')) {
+                                setPanelFormName(`Panel (${preset.label})`);
+                              }
+                            }}
+                            style={{
+                              padding: '5px 10px',
+                              fontSize: '11px',
+                              fontWeight: isSelected ? 700 : 500,
+                              backgroundColor: isSelected ? '#2563EB' : '#FFFFFF',
+                              color: isSelected ? '#FFFFFF' : '#1E293B',
+                              border: isSelected ? '1px solid #2563EB' : '1px solid #CBD5E1',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              transition: 'all 0.15s ease',
+                            }}
+                          >
+                            <span>{preset.label}</span>
+                            <span style={{ fontSize: '10px', opacity: isSelected ? 0.9 : 0.6 }}>({preset.count})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Dropdown Selectors for Custom Team Code Start & End */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label className="input-label" style={{ fontSize: '11.5px', fontWeight: 600, marginBottom: '4px' }}>
+                        Start Team (From)
+                      </label>
+                      <select
+                        className="input-field"
+                        style={{ fontSize: '12px', height: '38px' }}
+                        value={panelFormRangeStart}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setPanelFormRangeStart(val);
+                          if (val > panelFormRangeEnd) {
+                            setPanelFormRangeEnd(val);
+                          }
+                        }}
+                      >
+                        {(panelFormProgram === 'BCA' ? bcaTeams : panelFormProgram === 'BCA - DS' ? dsTeams : teams).map((t: any) => (
+                          <option key={t.id} value={t.team_number}>
+                            {t.team_code} — {t.team_name ? (t.team_name.length > 25 ? t.team_name.slice(0, 25) + '...' : t.team_name) : `Team #${t.team_number}`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="input-label" style={{ fontSize: '11.5px', fontWeight: 600, marginBottom: '4px' }}>
+                        End Team (To)
+                      </label>
+                      <select
+                        className="input-field"
+                        style={{ fontSize: '12px', height: '38px' }}
+                        value={panelFormRangeEnd}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setPanelFormRangeEnd(val);
+                          if (val < panelFormRangeStart) {
+                            setPanelFormRangeStart(val);
+                          }
+                        }}
+                      >
+                        {(panelFormProgram === 'BCA' ? bcaTeams : panelFormProgram === 'BCA - DS' ? dsTeams : teams).map((t: any) => (
+                          <option key={t.id} value={t.team_number}>
+                            {t.team_code} — {t.team_name ? (t.team_name.length > 25 ? t.team_name.slice(0, 25) + '...' : t.team_name) : `Team #${t.team_number}`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Selected Range Live Badge Display & Judge Conflict Warnings */}
+                  <div style={{ backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '8px', padding: '10px 12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#1E40AF', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>Selected Batch:</span>
+                        <span style={{ backgroundColor: '#DBEAFE', padding: '2px 8px', borderRadius: '4px', border: '1px solid #93C5FD' }}>
+                          {getFormattedTeamRange(panelFormRangeStart, panelFormRangeEnd)}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#3B82F6', fontWeight: 600 }}>
+                        {selectedRangeTeams.length} Teams • {selectedRangeStudentCount} Students
+                      </div>
+                    </div>
+
+                    {/* Preview of team code pills */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxHeight: '56px', overflowY: 'auto' }}>
+                      {selectedRangeTeams.map((t: any) => (
+                        <span
+                          key={t.id}
+                          style={{
+                            fontSize: '10.5px',
+                            fontWeight: 600,
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            backgroundColor: '#FFFFFF',
+                            border: '1px solid #CBD5E1',
+                            color: '#334155',
+                          }}
+                          title={`${t.team_code}: ${t.team_name || 'No Title'} (Guide: ${t.supervisor?.full_name || 'Unassigned'})`}
+                        >
+                          {t.team_code}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Judge Guide Conflict Alert */}
+                    {panelJudgeConflicts.length > 0 && (
+                      <div style={{ marginTop: '8px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FDE68A', fontSize: '11px', color: '#92400E', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>⚠️ <strong>Guide Conflict Notice:</strong> {panelJudgeConflicts.map(c => `${c.judgeName} guides ${c.teamCode}`).join(', ')}. Please confirm internal evaluation policy.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Presentation Shift / Batch Selection System */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label className="input-label" style={{ fontSize: '12.5px', fontWeight: 700, margin: 0, color: '#0F172A' }}>
+                      Presentation Shift & Time Window
+                    </label>
+                    <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                      Select standard shift or enter custom window
+                    </span>
+                  </div>
+
+                  {/* Preset Shift Cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
+                    {SHIFT_PRESETS.map((shift, idx) => {
+                      const isSelected = panelFormShift === shift.timeWindow;
+                      const panelsInThisShift = (panels || []).filter((p: any) => 
+                        p.phase_number === panelFormPhase && 
+                        (p.time_window || '').toLowerCase().includes(shift.label.slice(0, 7).toLowerCase())
+                      ).length;
+
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setPanelFormShift(shift.timeWindow)}
+                          style={{
+                            padding: '10px',
+                            borderRadius: '9px',
+                            border: `1.5px solid ${isSelected ? shift.color : '#E2E8F0'}`,
+                            backgroundColor: isSelected ? shift.colorBg : '#FFFFFF',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px',
+                            transition: 'all 0.15s ease',
+                            boxShadow: isSelected ? `0 2px 8px ${shift.color}25` : 'none',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '13px' }}>{shift.icon}</span>
+                            <span style={{ fontSize: '10px', fontWeight: 700, color: isSelected ? shift.color : '#64748B' }}>
+                              {panelsInThisShift > 0 ? `${panelsInThisShift} Panels` : '0 Panels'}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '12px', fontWeight: 700, color: isSelected ? shift.color : '#1E293B' }}>
+                            {shift.label}
+                          </div>
+                          <div style={{ fontSize: '10.5px', color: isSelected ? shift.color : '#64748B', opacity: 0.9 }}>
+                            {shift.timeShort}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Custom Shift Input */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
                     <input
-                      type="number"
-                      min="1"
-                      max="102"
+                      type="text"
                       className="input-field"
+                      style={{ fontSize: '12px', height: '36px' }}
+                      placeholder="Or enter custom timing (e.g. Special Batch: 11:00 AM - 01:00 PM)"
+                      value={panelFormShift}
+                      onChange={(e) => setPanelFormShift(e.target.value)}
                       required
-                      value={panelFormRangeEnd}
-                      onChange={(e) => setPanelFormRangeEnd(Number(e.target.value))}
                     />
                   </div>
                 </div>
 
-                {/* Presentation Shift / Batch Input Bar */}
-                <div>
-                  <label className="input-label" style={{ fontSize: '12px', fontWeight: 600 }}>Presentation Shift / Batch</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="e.g. Batch 1: Morning (08:00 AM - 10:00 AM) or Shift 1"
-                    value={panelFormShift}
-                    onChange={(e) => setPanelFormShift(e.target.value)}
-                    required
-                  />
+                {/* Venue & Available Room Allotment System */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '16px 18px' }}>
+                  {/* Header & Integrated Date/Auto-Allot Toolbar */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                        <span style={{ fontSize: '15px' }}>🏢</span>
+                        <label className="input-label" style={{ fontSize: '13px', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                          Allot Presentation Room in Academic Block AB10
+                        </label>
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                        Live occupancy checked across all panels for selected shift &amp; date
+                      </div>
+                    </div>
+
+                    {/* Integrated Date Picker & Auto-Allot Controls */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', padding: '4px 10px' }}>
+                        <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#64748B' }}>Date:</span>
+                        <input
+                          type="date"
+                          style={{ border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 600, color: '#0F172A', outline: 'none', cursor: 'pointer' }}
+                          value={panelFormDate}
+                          onChange={(e) => setPanelFormDate(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleAutoAllotRoom}
+                        style={{
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          backgroundColor: '#2563EB',
+                          color: '#FFFFFF',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          boxShadow: '0 2px 6px rgba(37,99,235,0.25)',
+                          transition: 'all 0.15s ease',
+                        }}
+                        title={`Automatically selects first available vacant room (${firstAvailableRoom})`}
+                      >
+                        <Zap size={13} />
+                        Auto-Allot ({firstAvailableRoom})
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Interactive Symmetric 4-Column Room Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                    {AB10_ROOMS.map((room) => {
+                      const occ = roomOccupancyMap[room];
+                      const isSelected = panelFormRoom === room;
+                      const isVacant = occ?.isAvailable;
+
+                      return (
+                        <button
+                          key={room}
+                          type="button"
+                          onClick={() => setPanelFormRoom(room)}
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: '10px',
+                            border: `1.5px solid ${isSelected ? '#2563EB' : isVacant ? '#CBD5E1' : '#FECACA'}`,
+                            backgroundColor: isSelected ? '#EFF6FF' : isVacant ? '#FFFFFF' : '#FFF1F2',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            gap: '6px',
+                            transition: 'all 0.15s ease',
+                            boxShadow: isSelected ? '0 2px 8px rgba(37,99,235,0.2)' : '0 1px 2px rgba(0,0,0,0.03)',
+                          }}
+                          title={isVacant ? `${room} is vacant and ready for allotment` : `${room} is currently occupied by ${occ?.occupiedByPanel}`}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '12.5px', fontWeight: 700, color: isSelected ? '#1D4ED8' : isVacant ? '#1E293B' : '#991B1B' }}>
+                              {room}
+                            </span>
+                            {isSelected && (
+                              <span style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#2563EB', color: '#FFFFFF', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+                                ✓
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span
+                              style={{
+                                width: '6px',
+                                height: '6px',
+                                borderRadius: '50%',
+                                backgroundColor: isVacant ? '#16A34A' : '#DC2626',
+                                display: 'inline-block',
+                              }}
+                            />
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                color: isVacant ? '#15803D' : '#991B1B',
+                              }}
+                            >
+                              {isVacant ? 'Available' : 'In Use'}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Room Conflict Notice if selected room is in use */}
+                  {!roomOccupancyMap[panelFormRoom]?.isAvailable && (
+                    <div style={{ padding: '8px 12px', borderRadius: '8px', backgroundColor: '#FFF1F2', border: '1px solid #FECACA', fontSize: '11.5px', color: '#991B1B', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                      <span>⚠️ <strong>Room Occupancy Notice:</strong> {panelFormRoom} is already booked by {roomOccupancyMap[panelFormRoom]?.occupiedByPanel} for this shift.</span>
+                      <button
+                        type="button"
+                        onClick={handleAutoAllotRoom}
+                        style={{ fontSize: '11.5px', color: '#2563EB', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 700, textDecoration: 'underline' }}
+                      >
+                        Switch to {firstAvailableRoom}
+                      </button>
+                    </div>
+                  )}
                 </div>
+
 
                 {/* Select Faculty Judges */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -2082,35 +3707,112 @@ Output ONLY the raw valid JSON array.`;
                     )}
                   </div>
 
-                  {/* Faculty Search Bar */}
-                  <div className="search-input-wrapper" style={{ width: '100%' }}>
-                    <input
-                      type="text"
-                      className="input-field"
-                      style={{ height: '36px', fontSize: '12.5px' }}
-                      placeholder="Search faculty by name, email, or phone..."
-                      value={judgeSearchQuery}
-                      onChange={(e) => setJudgeSearchQuery(e.target.value)}
-                    />
-                    <div className="search-icon">
-                      <Search size={13} />
-                    </div>
-                    {judgeSearchQuery && (
+                  {/* Faculty Availability Filter Pills & Search */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '6px', backgroundColor: '#F1F5F9', padding: '3px', borderRadius: '8px' }}>
                       <button
                         type="button"
-                        onClick={() => setJudgeSearchQuery('')}
-                        className="clear-btn"
-                        aria-label="Clear search"
+                        onClick={() => setFacultyAvailabilityFilter('all')}
+                        style={{
+                          flex: 1,
+                          padding: '5px 8px',
+                          fontSize: '11px',
+                          fontWeight: facultyAvailabilityFilter === 'all' ? 700 : 500,
+                          backgroundColor: facultyAvailabilityFilter === 'all' ? '#FFFFFF' : 'transparent',
+                          color: facultyAvailabilityFilter === 'all' ? '#2563EB' : 'var(--color-text-muted)',
+                          border: 'none',
+                          borderRadius: '6px',
+                          boxShadow: facultyAvailabilityFilter === 'all' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
                       >
-                        <X size={13} />
+                        All Faculty ({supervisors.length})
                       </button>
-                    )}
+                      <button
+                        type="button"
+                        onClick={() => setFacultyAvailabilityFilter('available')}
+                        style={{
+                          flex: 1,
+                          padding: '5px 8px',
+                          fontSize: '11px',
+                          fontWeight: facultyAvailabilityFilter === 'available' ? 700 : 500,
+                          backgroundColor: facultyAvailabilityFilter === 'available' ? '#FFFFFF' : 'transparent',
+                          color: facultyAvailabilityFilter === 'available' ? '#059669' : 'var(--color-text-muted)',
+                          border: 'none',
+                          borderRadius: '6px',
+                          boxShadow: facultyAvailabilityFilter === 'available' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <span>🟢 Available</span>
+                        <span style={{ fontSize: '10px', opacity: 0.8 }}>({facultyAvailabilityStats.availableCount})</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFacultyAvailabilityFilter('busy')}
+                        style={{
+                          flex: 1,
+                          padding: '5px 8px',
+                          fontSize: '11px',
+                          fontWeight: facultyAvailabilityFilter === 'busy' ? 700 : 500,
+                          backgroundColor: facultyAvailabilityFilter === 'busy' ? '#FFFFFF' : 'transparent',
+                          color: facultyAvailabilityFilter === 'busy' ? '#D97706' : 'var(--color-text-muted)',
+                          border: 'none',
+                          borderRadius: '6px',
+                          boxShadow: facultyAvailabilityFilter === 'busy' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <span>🟡 In Panel / Busy</span>
+                        <span style={{ fontSize: '10px', opacity: 0.8 }}>({facultyAvailabilityStats.busyCount})</span>
+                      </button>
+                    </div>
+
+                    {/* Faculty Search Bar */}
+                    <div className="search-input-wrapper" style={{ width: '100%' }}>
+                      <input
+                        type="text"
+                        className="input-field"
+                        style={{ height: '36px', fontSize: '12.5px' }}
+                        placeholder="Search faculty by name, email, or phone..."
+                        value={judgeSearchQuery}
+                        onChange={(e) => setJudgeSearchQuery(e.target.value)}
+                      />
+                      <div className="search-icon">
+                        <Search size={13} />
+                      </div>
+                      {judgeSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setJudgeSearchQuery('')}
+                          className="clear-btn"
+                          aria-label="Clear search"
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Filtered Faculty Checklist */}
-                  <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1px solid var(--color-hairline)', borderRadius: '8px', padding: '6px', display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: '#FAFAFA' }}>
+                  {/* Filtered Faculty Checklist with Live Availability Indicators */}
+                  <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--color-hairline)', borderRadius: '8px', padding: '6px', display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: '#FAFAFA' }}>
                     {supervisors
                       .filter((s: any) => {
+                        const availability = getFacultyAvailability(s.id);
+                        if (facultyAvailabilityFilter === 'available' && !availability.isAvailable) return false;
+                        if (facultyAvailabilityFilter === 'busy' && availability.isAvailable) return false;
+
                         if (!judgeSearchQuery.trim()) return true;
                         const q = judgeSearchQuery.toLowerCase();
                         return (
@@ -2122,6 +3824,7 @@ Output ONLY the raw valid JSON array.`;
                       })
                       .map((s: any) => {
                         const isSelected = panelFormSelectedJudges.includes(s.id);
+                        const availability = getFacultyAvailability(s.id);
                         return (
                           <label
                             key={s.id}
@@ -2129,16 +3832,17 @@ Output ONLY the raw valid JSON array.`;
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'space-between',
-                              padding: '6px 8px',
+                              padding: '8px 10px',
                               borderRadius: '6px',
                               backgroundColor: isSelected ? '#EFF6FF' : '#FFFFFF',
                               border: isSelected ? '1px solid #BFDBFE' : '1px solid var(--color-hairline)',
                               cursor: 'pointer',
                               fontSize: '12.5px',
                               transition: 'all 0.12s ease',
+                              gap: '8px',
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
                               <input
                                 type="checkbox"
                                 checked={isSelected}
@@ -2150,18 +3854,80 @@ Output ONLY the raw valid JSON array.`;
                                   }
                                 }}
                               />
-                              <div style={{ minWidth: 0 }}>
-                                <span style={{ fontWeight: 600, color: 'var(--color-ink)' }}>{s.name}</span>
-                                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginLeft: '6px' }}>({s.email})</span>
+                              <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                  <span style={{ fontWeight: 600, color: 'var(--color-ink)' }}>{s.name}</span>
+                                  {availability.conflictTeam && (
+                                    <span
+                                      style={{
+                                        fontSize: '10px',
+                                        fontWeight: 600,
+                                        padding: '1px 5px',
+                                        borderRadius: '4px',
+                                        backgroundColor: '#FEE2E2',
+                                        color: '#991B1B',
+                                        border: '1px solid #FECACA',
+                                      }}
+                                      title={`Guides team ${availability.conflictTeam.team_code} in current range`}
+                                    >
+                                      ⚠️ Guides {availability.conflictTeam.team_code}
+                                    </span>
+                                  )}
+                                </div>
+                                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>{s.email}</span>
                               </div>
                             </div>
-                            <span className="badge badge-neutral" style={{ fontSize: '10px', flexShrink: 0, marginLeft: '8px' }}>
-                              {s.assignedTeamsCount} teams supervised
-                            </span>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                              {availability.isAvailable ? (
+                                <span
+                                  style={{
+                                    fontSize: '10.5px',
+                                    fontWeight: 600,
+                                    padding: '2px 7px',
+                                    borderRadius: '10px',
+                                    backgroundColor: '#DEF7EC',
+                                    color: '#03543F',
+                                    border: '1px solid #BCF0DA',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                  }}
+                                >
+                                  🟢 Available
+                                </span>
+                              ) : (
+                                <span
+                                  style={{
+                                    fontSize: '10.5px',
+                                    fontWeight: 600,
+                                    padding: '2px 7px',
+                                    borderRadius: '10px',
+                                    backgroundColor: '#FEF3C7',
+                                    color: '#92400E',
+                                    border: '1px solid #FDE68A',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                  }}
+                                  title={`Already assigned to: ${availability.assignedPanels.map((p: any) => `${p.panel_name || 'Panel'} (${p.time_window || 'Shift'})`).join(', ')}`}
+                                >
+                                  🟡 In {availability.assignedPanels[0]?.panel_name || 'Panel'}
+                                </span>
+                              )}
+
+                              <span className="badge badge-neutral" style={{ fontSize: '10px' }}>
+                                {s.assignedTeamsCount} teams
+                              </span>
+                            </div>
                           </label>
                         );
                       })}
                     {supervisors.filter((s: any) => {
+                      const availability = getFacultyAvailability(s.id);
+                      if (facultyAvailabilityFilter === 'available' && !availability.isAvailable) return false;
+                      if (facultyAvailabilityFilter === 'busy' && availability.isAvailable) return false;
+
                       if (!judgeSearchQuery.trim()) return true;
                       const q = judgeSearchQuery.toLowerCase();
                       return (
@@ -2172,7 +3938,11 @@ Output ONLY the raw valid JSON array.`;
                       );
                     }).length === 0 && (
                       <div style={{ textAlign: 'center', padding: '16px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                        No faculty found matching &ldquo;{judgeSearchQuery}&rdquo;
+                        {facultyAvailabilityFilter === 'available'
+                          ? 'No available faculty found for this phase/search.'
+                          : facultyAvailabilityFilter === 'busy'
+                          ? 'No assigned faculty found for this phase/search.'
+                          : `No faculty found matching "${judgeSearchQuery}"`}
                       </div>
                     )}
                   </div>
@@ -2779,9 +4549,9 @@ Output ONLY the raw valid JSON array.`;
 
               {/* Students Scorecard & Marks Roster */}
               <div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <h4 style={{ fontSize: '15px', fontWeight: 800, margin: 0, color: 'var(--color-ink)' }}>
                         Student Scorecard & Evaluation Marks
                       </h4>
@@ -2790,21 +4560,20 @@ Output ONLY the raw valid JSON array.`;
                       </span>
                     </div>
                     <span style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                      Click &quot;Edit&quot; on any student to modify marks
+                      Evaluated &amp; recorded by examination panels
                     </span>
                   </div>
                 </div>
 
-                <div className="data-table-container" style={{ border: '1px solid var(--color-border)', borderRadius: '10px', overflow: 'hidden' }}>
-                  <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <div className="data-table-container" style={{ border: '1px solid var(--color-border)', borderRadius: '10px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%' }}>
+                  <table className="data-table" style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr>
-                        <th style={{ width: '28%', minWidth: '160px' }}>Student</th>
-                        <th style={{ width: '18%', minWidth: '105px' }}>Roll No</th>
-                        <th style={{ width: '13%', minWidth: '80px', textAlign: 'center' }}>Phase 1</th>
-                        <th style={{ width: '13%', minWidth: '80px', textAlign: 'center' }}>Phase 2</th>
-                        <th style={{ width: '13%', minWidth: '80px', textAlign: 'center' }}>Phase 3</th>
-                        <th style={{ width: '15%', minWidth: '115px', textAlign: 'right' }}>Action</th>
+                        <th style={{ width: '32%', minWidth: '160px' }}>Student</th>
+                        <th style={{ width: '20%', minWidth: '110px' }}>Roll No</th>
+                        <th style={{ width: '16%', minWidth: '95px', textAlign: 'center' }}>Phase 1 ({getPhaseMaxMarks(1)}M)</th>
+                        <th style={{ width: '16%', minWidth: '95px', textAlign: 'center' }}>Phase 2 ({getPhaseMaxMarks(2)}M)</th>
+                        <th style={{ width: '16%', minWidth: '95px', textAlign: 'center' }}>Phase 3 ({getPhaseMaxMarks(3)}M)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2819,10 +4588,16 @@ Output ONLY the raw valid JSON array.`;
                           <td style={{ color: 'var(--color-text-muted)', fontSize: '12px', fontFamily: 'monospace' }}>{s.roll_no}</td>
                           <td style={{ textAlign: 'center' }}>
                             {s.phase1 ? (
-                              s.phase1.isAbsent ? (
-                                <span className="badge badge-danger" style={{ fontSize: '10px' }}>Absent</span>
+                              s.phase1.attendanceStatus === 'next_shift' ? (
+                                <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase1.remarks || 'Moved to Next Shift'}>
+                                  🕒 Next Shift
+                                </span>
+                              ) : s.phase1.isAbsent ? (
+                                <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase1.remarks || 'Marked Absent'}>
+                                  Absent
+                                </span>
                               ) : (
-                                <span style={{ fontWeight: 700, color: '#059669', fontSize: '12px' }}>{s.phase1.score} / 10</span>
+                                <span style={{ fontWeight: 700, color: '#059669', fontSize: '12.5px' }}>{s.phase1.score} / {getPhaseMaxMarks(1)}</span>
                               )
                             ) : (
                               <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
@@ -2830,10 +4605,16 @@ Output ONLY the raw valid JSON array.`;
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             {s.phase2 ? (
-                              s.phase2.isAbsent ? (
-                                <span className="badge badge-danger" style={{ fontSize: '10px' }}>Absent</span>
+                              s.phase2.attendanceStatus === 'next_shift' ? (
+                                <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase2.remarks || 'Moved to Next Shift'}>
+                                  🕒 Next Shift
+                                </span>
+                              ) : s.phase2.isAbsent ? (
+                                <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase2.remarks || 'Marked Absent'}>
+                                  Absent
+                                </span>
                               ) : (
-                                <span style={{ fontWeight: 700, color: '#2563EB', fontSize: '12px' }}>{s.phase2.score} / 10</span>
+                                <span style={{ fontWeight: 700, color: '#2563EB', fontSize: '12.5px' }}>{s.phase2.score} / {getPhaseMaxMarks(2)}</span>
                               )
                             ) : (
                               <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
@@ -2841,42 +4622,20 @@ Output ONLY the raw valid JSON array.`;
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             {s.phase3 ? (
-                              s.phase3.isAbsent ? (
-                                <span className="badge badge-danger" style={{ fontSize: '10px' }}>Absent</span>
+                              s.phase3.attendanceStatus === 'next_shift' ? (
+                                <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase3.remarks || 'Moved to Next Shift'}>
+                                  🕒 Next Shift
+                                </span>
+                              ) : s.phase3.isAbsent ? (
+                                <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase3.remarks || 'Marked Absent'}>
+                                  Absent
+                                </span>
                               ) : (
-                                <span style={{ fontWeight: 700, color: '#7C3AED', fontSize: '12px' }}>{s.phase3.score} / 10</span>
+                                <span style={{ fontWeight: 700, color: '#7C3AED', fontSize: '12.5px' }}>{s.phase3.score} / {getPhaseMaxMarks(3)}</span>
                               )
                             ) : (
                               <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
                             )}
-                          </td>
-                          <td style={{ textAlign: 'right' }}>
-                            <div style={{ display: 'inline-flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                              <button
-                                onClick={() => handleOpenScoreEditor(selectedTeamModal, s, 1)}
-                                className="btn btn-outline"
-                                style={{ padding: '3px 7px', fontSize: '11px', fontWeight: 600 }}
-                                title="Edit Phase 1 Score"
-                              >
-                                P1
-                              </button>
-                              <button
-                                onClick={() => handleOpenScoreEditor(selectedTeamModal, s, 2)}
-                                className="btn btn-outline"
-                                style={{ padding: '3px 7px', fontSize: '11px', fontWeight: 600 }}
-                                title="Edit Phase 2 Score"
-                              >
-                                P2
-                              </button>
-                              <button
-                                onClick={() => handleOpenScoreEditor(selectedTeamModal, s, 3)}
-                                className="btn btn-outline"
-                                style={{ padding: '3px 7px', fontSize: '11px', fontWeight: 600 }}
-                                title="Edit Phase 3 Score"
-                              >
-                                P3
-                              </button>
-                            </div>
                           </td>
                         </tr>
                       ))}
@@ -2899,139 +4658,6 @@ Output ONLY the raw valid JSON array.`;
                 Close
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* =================================================================== */}
-      {/* MODAL 4: ADMIN DIRECT SCORE OVERRIDE / EDIT MODAL                   */}
-      {/* =================================================================== */}
-      {scoreEditModalOpen && editingStudentData && (
-        <div
-          className="modal-overlay-responsive"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 1400,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-            backgroundColor: 'rgba(15, 23, 42, 0.6)',
-            backdropFilter: 'blur(5px)',
-            WebkitBackdropFilter: 'blur(5px)',
-            padding: '32px 16px',
-            overflowY: 'auto',
-          }}
-          onClick={() => setScoreEditModalOpen(false)}
-        >
-          <div
-            className="card animate-scale-in modal-card-responsive"
-            style={{
-              width: '100%',
-              maxWidth: '480px',
-              padding: '24px',
-              backgroundColor: '#FFFFFF',
-              borderRadius: '16px',
-              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
-              border: '1px solid var(--color-border)',
-              margin: 'auto 0',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', gap: '12px' }}>
-              <div>
-                <span className="badge badge-brand" style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Phase {editingStudentData.phaseNumber} Evaluation
-                </span>
-                <h3 style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px', color: 'var(--color-ink)' }}>
-                  Edit Student Score
-                </h3>
-              </div>
-              <button
-                onClick={() => setScoreEditModalOpen(false)}
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '1px solid var(--color-border)',
-                  background: 'var(--color-canvas-soft)',
-                  cursor: 'pointer',
-                  color: 'var(--color-ink)',
-                  flexShrink: 0,
-                }}
-                className="btn-icon-hover"
-                aria-label="Close modal"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div style={{ backgroundColor: 'var(--color-canvas-soft)', padding: '12px 14px', borderRadius: '10px', marginBottom: '16px', fontSize: '12.5px', border: '1px solid var(--color-border)' }}>
-              <div style={{ fontWeight: 700, color: 'var(--color-ink)' }}>{editingStudentData.studentName} <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(Roll: {editingStudentData.rollNo})</span></div>
-              <div style={{ color: 'var(--color-text-muted)', fontSize: '11.5px', marginTop: '2px' }}>Team: <strong>{editingStudentData.teamName}</strong></div>
-            </div>
-
-            {scoreEditMessage && (
-              <div className={`alert-banner ${scoreEditMessage.includes('Error') ? 'alert-danger' : 'alert-success'}`} style={{ marginBottom: '14px', fontSize: '12px' }}>
-                {scoreEditMessage}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmitScoreEdit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label className="input-label" style={{ fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>Score out of 10</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="10"
-                  step="0.5"
-                  className="input-field"
-                  disabled={editingStudentData.isAbsent}
-                  value={editingStudentData.isAbsent ? '' : editingStudentData.currentScore}
-                  onChange={(e) => setEditingStudentData({ ...editingStudentData, currentScore: e.target.value })}
-                  placeholder="e.g. 9.5"
-                  required={!editingStudentData.isAbsent}
-                  style={{ fontSize: '14px', fontWeight: 600 }}
-                />
-              </div>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer', padding: '6px 0' }}>
-                <input
-                  type="checkbox"
-                  checked={editingStudentData.isAbsent}
-                  onChange={(e) => setEditingStudentData({ ...editingStudentData, isAbsent: e.target.checked })}
-                  style={{ width: '16px', height: '16px', accentColor: 'var(--color-danger)' }}
-                />
-                <span style={{ color: editingStudentData.isAbsent ? 'var(--color-danger)' : 'var(--color-ink)', fontWeight: 600 }}>
-                  Mark Student as Absent
-                </span>
-              </label>
-
-              <div>
-                <label className="input-label" style={{ fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>Remarks / Modification Reason</label>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={editingStudentData.remarks}
-                  onChange={(e) => setEditingStudentData({ ...editingStudentData, remarks: e.target.value })}
-                  placeholder="e.g. Verified by Project Incharge after viva"
-                  style={{ fontSize: '13px' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--color-border)' }}>
-                <button type="button" className="btn btn-outline" onClick={() => setScoreEditModalOpen(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={scoreEditLoading}>
-                  {scoreEditLoading ? 'Updating Score...' : 'Save Updated Score'}
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}
@@ -3182,43 +4808,29 @@ Output ONLY the raw valid JSON array.`;
                   )}
                 </div>
 
-                <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: '14px' }}>
+                <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginBottom: selectedSupervisorModal.isAdmin ? '14px' : '0' }}>
                   {selectedSupervisorModal.isAdmin
                     ? 'This faculty member currently holds full administrative authority over all teams, evaluations, panels, and project timelines.'
                     : 'This faculty member currently operates with Faculty Supervisor rights to guide assigned project teams and serve on examination panels.'}
                 </p>
 
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  {!selectedSupervisorModal.isAdmin ? (
+                {selectedSupervisorModal.isAdmin && (
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     <button
                       type="button"
                       onClick={() => {
-                        setSelectedTeacherForTransfer(selectedSupervisorModal.id);
-                        setSelectedSupervisorModal(null);
-                        setAuthorityActiveTab('transfer');
-                        setAuthorityModalOpen(true);
-                        setTransferMessage(null);
-                      }}
-                      className="btn btn-primary"
-                      style={{
-                        fontSize: '12.5px',
-                        padding: '8px 16px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontWeight: 600,
-                      }}
-                    >
-                      <Crown size={14} /> Transfer Admin Authority to {selectedSupervisorModal.name}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (confirm(`Are you sure you want to demote ${selectedSupervisorModal.name} back to Faculty Supervisor?`)) {
-                          handleQuickSetRole(selectedSupervisorModal.id, 'supervisor');
-                          setSelectedSupervisorModal(null);
-                        }
+                        showConfirmDialog({
+                          title: 'Revert Administrator Role?',
+                          message: `Are you sure you want to demote ${selectedSupervisorModal.name} back to Faculty Supervisor?`,
+                          confirmText: 'Revert Role',
+                          cancelText: 'Keep Admin',
+                          type: 'warning',
+                          onConfirm: async () => {
+                            await handleQuickSetRole(selectedSupervisorModal.id, 'supervisor');
+                            setSelectedSupervisorModal(null);
+                            setConfirmDialog(null);
+                          },
+                        });
                       }}
                       className="btn btn-outline"
                       style={{
@@ -3230,8 +4842,8 @@ Output ONLY the raw valid JSON array.`;
                     >
                       Revert to Faculty Mentor Role
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Assigned Teams */}
@@ -3246,29 +4858,35 @@ Output ONLY the raw valid JSON array.`;
                         <th>Team</th>
                         <th>Leader</th>
                         <th>Members</th>
-                        <th>Clearances</th>
                       </tr>
                     </thead>
                     <tbody>
                       {selectedSupervisorModal.assignedTeams?.length === 0 ? (
                         <tr>
-                          <td colSpan={4} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '16px' }}>
+                          <td colSpan={3} style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '16px' }}>
                             No teams currently assigned.
                           </td>
                         </tr>
                       ) : (
                         selectedSupervisorModal.assignedTeams?.map((t: any) => (
-                          <tr key={t.id}>
-                            <td><strong>{t.team_name}</strong></td>
-                            <td style={{ fontSize: '12px' }}>{t.leaderName}</td>
-                            <td style={{ fontSize: '12px' }}>{t.studentCount} Students</td>
+                          <tr
+                            key={t.id}
+                            className="clickable-row"
+                            onClick={() => {
+                              const fullTeam = teams.find((team: any) => team.id === t.id) || t;
+                              setSelectedTeamModal(fullTeam);
+                              setSelectedSupervisorModal(null);
+                            }}
+                            title="Click to view team details & score roster"
+                          >
                             <td>
-                              <div style={{ display: 'flex', gap: '4px' }}>
-                                <span className={`badge ${t.phase1_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>P1</span>
-                                <span className={`badge ${t.phase2_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>P2</span>
-                                <span className={`badge ${t.phase3_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>P3</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <strong style={{ color: 'var(--color-brand)' }}>{t.team_name}</strong>
+                                <ExternalLink size={12} style={{ opacity: 0.6 }} />
                               </div>
                             </td>
+                            <td style={{ fontSize: '12px' }}>{t.leaderName}</td>
+                            <td style={{ fontSize: '12px' }}>{t.studentCount} Students</td>
                           </tr>
                         ))
                       )}
@@ -3289,8 +4907,21 @@ Output ONLY the raw valid JSON array.`;
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {selectedSupervisorModal.assignedPanels?.map((p: any) => (
-                      <div key={p.id} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-canvas-soft)', fontSize: '12.5px' }}>
-                        <div style={{ fontWeight: 700, color: 'var(--color-ink)' }}>{p.panel_name} (Phase {p.phase_number})</div>
+                      <div
+                        key={p.id}
+                        onClick={() => {
+                          setPanelPhaseFilter(p.phase_number);
+                          setActiveTab('panels');
+                          setSelectedSupervisorModal(null);
+                        }}
+                        className="clickable-card"
+                        style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-canvas-soft)', fontSize: '12.5px', cursor: 'pointer' }}
+                        title="Click to view panel in Panels tab"
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ fontWeight: 700, color: 'var(--color-ink)' }}>{p.panel_name} (Phase {p.phase_number})</div>
+                          <span className="badge badge-brand" style={{ fontSize: '10px' }}>View Panel →</span>
+                        </div>
                         <div style={{ color: 'var(--color-text-muted)', fontSize: '11.5px', marginTop: '3px' }}>
                           {p.range} • {p.time_window} • Venue: {p.room_number || 'Room 402 (AB10)'}
                         </div>
@@ -3309,10 +4940,18 @@ Output ONLY the raw valid JSON array.`;
                 borderTop: '1px solid var(--color-hairline)',
                 backgroundColor: '#FFFFFF',
                 display: 'flex',
-                justifyContent: 'flex-end',
+                justifyContent: selectedSupervisorModal.isAdmin ? 'space-between' : 'flex-end',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '12px',
                 flexShrink: 0,
               }}
             >
+              {selectedSupervisorModal.isAdmin && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#059669', fontSize: '12px', fontWeight: 600 }}>
+                  <BadgeCheck size={16} /> Currently Assigned as Portal Administrator
+                </div>
+              )}
               <button type="button" onClick={() => setSelectedSupervisorModal(null)} className="btn btn-outline" style={{ minWidth: '100px', padding: '8px 18px', fontWeight: 600 }}>
                 Close
               </button>
@@ -3682,7 +5321,7 @@ Output ONLY the raw valid JSON array.`;
                               🛡️ Grant Co-Admin Rights (Joint Administration)
                             </div>
                             <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '3px', lineHeight: 1.4 }}>
-                              Elevate this teacher to Administrator without modifying your existing account. Both accounts will share full administrative governance.
+                              Elevate this teacher to Administrator without modifying your existing account. Both accounts will share full administrative governance, and this teacher will receive the direct <strong>'Use Admin Access'</strong> button to switch to the Admin console anytime.
                             </div>
                           </div>
                         </label>
@@ -3727,11 +5366,11 @@ Output ONLY the raw valid JSON array.`;
                       type="button"
                       onClick={() => {
                         if (!selectedTeacherForTransfer) {
-                          alert('Please select a teacher from the list first.');
+                          setToastMessage({ type: 'error', text: 'Please select a teacher from the list first.' });
                           return;
                         }
                         if (!transferConfirmOpen) {
-                          alert('Please check the confirmation box to authorize the transfer.');
+                          setToastMessage({ type: 'error', text: 'Please check the confirmation box to authorize the transfer.' });
                           return;
                         }
                         handleTransferAuthority(selectedTeacherForTransfer, transferDemoteCurrent);
@@ -3931,81 +5570,6 @@ Output ONLY the raw valid JSON array.`;
                         </div>
                       </div>
 
-                      {/* Role Selection */}
-                      <div style={{ marginTop: '6px' }}>
-                        <label className="input-label" style={{ fontSize: '12.5px', fontWeight: 700, marginBottom: '6px' }}>
-                          Role &amp; Privilege Level
-                        </label>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                          <label
-                            style={{
-                              padding: '10px 14px',
-                              borderRadius: '8px',
-                              border: createTeacherForm.role === 'supervisor' ? '2px solid var(--color-primary, #2563eb)' : '1px solid var(--color-border)',
-                              backgroundColor: createTeacherForm.role === 'supervisor' ? 'rgba(37, 99, 235, 0.05)' : '#FFFFFF',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                            }}
-                          >
-                            <input
-                              type="radio"
-                              name="createRole"
-                              checked={createTeacherForm.role === 'supervisor'}
-                              onChange={() => setCreateTeacherForm({ ...createTeacherForm, role: 'supervisor' })}
-                              style={{ accentColor: 'var(--color-primary, #2563eb)' }}
-                            />
-                            <div>
-                              <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-ink)' }}>🎓 Faculty Supervisor</div>
-                              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>Project Mentor &amp; Panel Judge</div>
-                            </div>
-                          </label>
-
-                          <label
-                            style={{
-                              padding: '10px 14px',
-                              borderRadius: '8px',
-                              border: createTeacherForm.role === 'admin' ? '2px solid #F59E0B' : '1px solid var(--color-border)',
-                              backgroundColor: createTeacherForm.role === 'admin' ? '#FFFBEB' : '#FFFFFF',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px',
-                            }}
-                          >
-                            <input
-                              type="radio"
-                              name="createRole"
-                              checked={createTeacherForm.role === 'admin'}
-                              onChange={() => setCreateTeacherForm({ ...createTeacherForm, role: 'admin' })}
-                              style={{ accentColor: '#D97706' }}
-                            />
-                            <div>
-                              <div style={{ fontSize: '13px', fontWeight: 700, color: '#78350F' }}>👑 System Administrator</div>
-                              <div style={{ fontSize: '11px', color: '#92400E' }}>Project Incharge Authority</div>
-                            </div>
-                          </label>
-                        </div>
-                      </div>
-
-                      {/* If creating as admin: Checkbox to transfer primary authority */}
-                      {createTeacherForm.role === 'admin' && (
-                        <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: '#FFFBEB', border: '1px solid #FCD34D' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', cursor: 'pointer' }}>
-                            <input
-                              type="checkbox"
-                              checked={createTeacherForm.transferCurrentAdmin}
-                              onChange={(e) => setCreateTeacherForm({ ...createTeacherForm, transferCurrentAdmin: e.target.checked })}
-                              style={{ accentColor: '#D97706' }}
-                            />
-                            <span style={{ fontWeight: 600, color: '#78350F' }}>
-                              Transfer my primary admin authority to this new account (my account becomes Faculty Mentor).
-                            </span>
-                          </label>
-                        </div>
-                      )}
-
                       {/* Custom Password Input */}
                       <div>
                         <label className="input-label" style={{ fontSize: '12px', fontWeight: 700, marginBottom: '4px' }}>
@@ -4120,6 +5684,368 @@ Output ONLY the raw valid JSON array.`;
               Go to Faculty Dashboard Now
             </button>
           </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* MODAL 5: ATTENDANCE & SHIFT SEGREGATION CONFIRMATION DIALOG         */}
+      {/* =================================================================== */}
+      {segregationModalItem && (
+        <div
+          className="modal-overlay-responsive"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1400,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(5px)',
+            WebkitBackdropFilter: 'blur(5px)',
+            padding: '24px 16px',
+            overflowY: 'auto',
+          }}
+          onClick={() => {
+            if (!segregationLoading) setSegregationModalItem(null);
+          }}
+        >
+          <div
+            className="card animate-scale-in"
+            style={{
+              width: '100%',
+              maxWidth: '520px',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
+              border: '1px solid var(--color-border)',
+              padding: 0,
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: '20px 24px',
+                borderBottom: '1px solid var(--color-border)',
+                backgroundColor: segregationModalItem.targetStatus === 'next_shift' ? '#FFFBEB' : '#FEF2F2',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    backgroundColor: segregationModalItem.targetStatus === 'next_shift' ? '#FEF3C7' : '#FEE2E2',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {segregationModalItem.targetStatus === 'next_shift' ? (
+                    <Clock size={18} color="#D97706" />
+                  ) : (
+                    <UserX size={18} color="#DC2626" />
+                  )}
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: 'var(--color-ink)' }}>
+                    {segregationModalItem.targetStatus === 'next_shift' ? 'Move Candidate to Next Shift' : 'Mark Candidate as Absent'}
+                  </h3>
+                  <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                    Phase {segregationModalItem.item.phaseNumber} Viva Attendance Segregation
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!segregationLoading) setSegregationModalItem(null);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--color-text-faint)',
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Student info box */}
+              <div
+                style={{
+                  padding: '14px 16px',
+                  borderRadius: '10px',
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 800, fontSize: '14px', color: 'var(--color-ink)' }}>
+                    {segregationModalItem.item.studentName}
+                  </span>
+                  <span style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--color-text-muted)', backgroundColor: '#FFFFFF', padding: '2px 6px', borderRadius: '4px', border: '1px solid #CBD5E1' }}>
+                    {segregationModalItem.item.rollNo}
+                  </span>
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                  Team: <strong>{segregationModalItem.item.teamCode}: {segregationModalItem.item.teamName}</strong>
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                  Assigned Slot: <strong>{segregationModalItem.item.roomNumber}</strong> • {segregationModalItem.item.timeWindow}
+                </div>
+              </div>
+
+              {/* Status Change Description */}
+              <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.5 }}>
+                {segregationModalItem.targetStatus === 'next_shift'
+                  ? 'Moving this candidate to the Next Shift preserves their eligibility to be evaluated during the upcoming batch slot without penalizing their defense records.'
+                  : 'Marking this candidate as Confirmed Absent records their non-attendance for this defense phase.'}
+              </p>
+
+              {/* Remarks / Reason input */}
+              <div>
+                <label className="input-label" style={{ fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
+                  Reason / Notes (Optional):
+                </label>
+                <input
+                  type="text"
+                  className="input-field"
+                  style={{
+                    fontSize: '13px',
+                    height: '42px',
+                    borderRadius: '10px',
+                    width: '100%',
+                  }}
+                  value={segregationCustomRemark}
+                  onChange={(e) => setSegregationCustomRemark(e.target.value)}
+                  placeholder={
+                    segregationModalItem.targetStatus === 'next_shift'
+                      ? 'e.g. Rescheduled to Afternoon Shift due to morning exam collision'
+                      : 'e.g. Candidate did not report for defense'
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                padding: '16px 24px',
+                borderTop: '1px solid var(--color-border)',
+                backgroundColor: '#F8FAFC',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '10px',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setSegregationModalItem(null)}
+                className="btn btn-outline"
+                disabled={segregationLoading}
+                style={{ padding: '8px 18px', fontSize: '13px' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  handleSegregateAttendance(
+                    segregationModalItem.item.phaseNumber,
+                    segregationModalItem.item.teamId,
+                    segregationModalItem.item.studentId,
+                    segregationModalItem.targetStatus,
+                    segregationCustomRemark
+                  )
+                }
+                className="btn"
+                disabled={segregationLoading}
+                style={{
+                  padding: '8px 20px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  backgroundColor: segregationModalItem.targetStatus === 'next_shift' ? '#F59E0B' : '#DC2626',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                {segregationLoading ? (
+                  'Updating...'
+                ) : segregationModalItem.targetStatus === 'next_shift' ? (
+                  <>
+                    <Clock size={14} /> Confirm Next Shift
+                  </>
+                ) : (
+                  <>
+                    <UserX size={14} /> Confirm Absent
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* IN-SOFTWARE CONFIRMATION DIALOG (Zero browser alert/confirm popups)  */}
+      {/* =================================================================== */}
+      {confirmDialog && confirmDialog.isOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(5px)',
+            WebkitBackdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '16px',
+            animation: 'fadeIn 0.15s ease',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '440px',
+              padding: '24px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.08)',
+              border: '1px solid #E2E8F0',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+              <div
+                style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
+                  backgroundColor: confirmDialog.type === 'danger' ? '#FEE2E2' : '#FEF3C7',
+                  color: confirmDialog.type === 'danger' ? '#DC2626' : '#D97706',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                {confirmDialog.type === 'danger' ? <Trash2 size={20} /> : <AlertTriangle size={20} />}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3 style={{ fontSize: '16.5px', fontWeight: 700, color: '#0F172A', margin: 0, lineHeight: 1.3 }}>
+                  {confirmDialog.title}
+                </h3>
+                <p style={{ fontSize: '13px', color: '#64748B', marginTop: '6px', marginBottom: 0, lineHeight: 1.5 }}>
+                  {confirmDialog.message}
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setConfirmDialog(null)}
+                className="btn btn-outline"
+                disabled={confirmDialog.loading}
+                style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 600 }}
+              >
+                {confirmDialog.cancelText || 'Cancel'}
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (confirmDialog.loading) return;
+                  setConfirmDialog((prev) => (prev ? { ...prev, loading: true } : null));
+                  try {
+                    await confirmDialog.onConfirm();
+                  } catch {
+                    setConfirmDialog((prev) => (prev ? { ...prev, loading: false } : null));
+                  }
+                }}
+                disabled={confirmDialog.loading}
+                style={{
+                  padding: '8px 18px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: confirmDialog.type === 'danger' ? '#DC2626' : '#2563EB',
+                  color: '#FFFFFF',
+                  cursor: confirmDialog.loading ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.15s ease',
+                  opacity: confirmDialog.loading ? 0.85 : 1,
+                }}
+              >
+                {confirmDialog.loading && <RefreshCw size={13} className="spin" />}
+                {confirmDialog.loading
+                  ? confirmDialog.loadingText || 'Processing...'
+                  : confirmDialog.confirmText || 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* IN-SOFTWARE TOAST BANNER NOTIFICATION (Zero browser alert popups)    */}
+      {/* =================================================================== */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 9999,
+            backgroundColor: toastMessage.type === 'success' ? '#065F46' : '#991B1B',
+            color: '#FFFFFF',
+            padding: '12px 18px',
+            borderRadius: '10px',
+            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontSize: '13px',
+            fontWeight: 600,
+            animation: 'slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        >
+          {toastMessage.type === 'success' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+          <span>{toastMessage.text}</span>
+          <button
+            onClick={() => setToastMessage(null)}
+            style={{ background: 'transparent', border: 'none', color: '#FFFFFF', cursor: 'pointer', padding: '0 0 0 8px', opacity: 0.8 }}
+            aria-label="Dismiss toast"
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
 

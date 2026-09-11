@@ -56,7 +56,7 @@ export interface DatabaseStore {
 let memoryStore: DatabaseStore | null = null;
 let lastStoreFetch = 0;
 let isFetchingStore = false;
-const STORE_TTL_MS = 120000; // 2 minutes warm TTL with background refresh
+const STORE_TTL_MS = 20000; // 20 seconds warm TTL with active DB synchronization
 
 function getLocalSeedData(): Partial<DatabaseStore> {
   try {
@@ -188,13 +188,14 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
       ? phasesRes.data.map((p: any) => ({
         ...p,
         target_date:
-          p.phase_number === 1
+          p.target_date ||
+          (p.phase_number === 1
             ? '19-Sep'
             : p.phase_number === 2
               ? '17-Oct'
-              : 'Final Defense',
+              : 'Final Defense'),
         marks_weightage:
-          p.phase_number === 1 ? 20 : p.phase_number === 2 ? 40 : 40,
+          p.marks_weightage ?? (p.phase_number === 1 ? 20 : p.phase_number === 2 ? 40 : 40),
         deliverables:
           p.phase_number === 1
             ? '30% Coding / Approval & Pitch Deck'
@@ -273,12 +274,21 @@ function triggerBackgroundRefresh() {
 
 export const db = {
   // Store management
-  async getStore(): Promise<DatabaseStore> {
+  invalidateStore(): void {
+    lastStoreFetch = 0;
+  },
+
+  async refreshStore(): Promise<DatabaseStore> {
+    lastStoreFetch = 0;
+    return await fetchFreshStore();
+  },
+
+  async getStore(forceFresh = false): Promise<DatabaseStore> {
     const now = Date.now();
-    if (memoryStore && now - lastStoreFetch < STORE_TTL_MS) {
+    if (!forceFresh && memoryStore && now - lastStoreFetch < STORE_TTL_MS) {
       return memoryStore;
     }
-    if (memoryStore) {
+    if (!forceFresh && memoryStore) {
       // Stale-while-revalidate: return instantly and refresh in background
       triggerBackgroundRefresh();
       return memoryStore;
@@ -897,6 +907,29 @@ export const db = {
     return phase || null;
   },
 
+  async updatePhaseMarks(
+    phaseNumber: 1 | 2 | 3,
+    marksWeightage: number
+  ): Promise<EvaluationPhase | null> {
+    const store = await this.getStore();
+    const phase = store.evaluation_phases.find((p) => p.phase_number === phaseNumber);
+    const now = new Date().toISOString();
+
+    if (phase) {
+      phase.marks_weightage = marksWeightage;
+      phase.updated_at = now;
+      this.syncLocalBackup();
+    }
+
+    supabase
+      .from('evaluation_phases')
+      .update({ marks_weightage: marksWeightage, updated_at: now })
+      .eq('phase_number', phaseNumber)
+      .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('evaluation_phases (updatePhaseMarks)', writeErr); });
+
+    return phase || null;
+  },
+
   async setTeamPhaseApproval(
     teamId: string,
     phaseNumber: 1 | 2 | 3,
@@ -971,6 +1004,7 @@ export const db = {
     };
 
     store.panels.push(panel);
+    this.invalidateStore();
     fireAndLog(supabase.from('panels').insert(panel), 'panels insert');
 
     for (const supId of supervisorIds) {
@@ -1010,6 +1044,8 @@ export const db = {
       existing.room_number = schedule.roomNumber;
       existing.team_range_start = teamRangeStart;
       existing.team_range_end = teamRangeEnd;
+
+      this.invalidateStore();
 
       // Update panel members: remove old, insert new
       store.panel_members = store.panel_members.filter((pm) => pm.panel_id !== existing.id);
@@ -1085,6 +1121,8 @@ export const db = {
       panel.room_number = schedule.roomNumber;
     }
 
+    this.invalidateStore();
+
     supabase
       .from('panels')
       .update({
@@ -1104,6 +1142,8 @@ export const db = {
     const store = await this.getStore();
     store.panels = store.panels.filter((p) => p.id !== panelId);
     store.panel_members = store.panel_members.filter((pm) => pm.panel_id !== panelId);
+
+    this.invalidateStore();
 
     fireAndLog(supabase.from('panels').delete().eq('id', panelId), 'panels delete');
     fireAndLog(supabase.from('panel_members').delete().eq('panel_id', panelId), 'panel_members delete');
@@ -1126,7 +1166,8 @@ export const db = {
     panelMemberId: string,
     score: number | null,
     isAbsent: boolean,
-    remarks?: string
+    remarks?: string,
+    attendanceStatus?: 'present' | 'absent' | 'next_shift'
   ): Promise<Evaluation> {
     const store = await this.getStore();
     const now = new Date().toISOString();
@@ -1138,14 +1179,18 @@ export const db = {
         e.panel_member_id === panelMemberId
     );
 
+    const resolvedStatus: 'present' | 'absent' | 'next_shift' = attendanceStatus || (isAbsent ? 'absent' : 'present');
+    const finalIsAbsent = resolvedStatus !== 'present';
+
     const payload: Evaluation = {
       id: existingIdx !== -1 ? store.evaluations[existingIdx].id : crypto.randomUUID(),
       phase_number: phaseNumber,
       team_id: teamId,
       student_id: studentId,
       panel_member_id: panelMemberId,
-      score: isAbsent ? null : score,
-      is_absent: isAbsent,
+      score: finalIsAbsent ? null : score,
+      is_absent: finalIsAbsent,
+      attendance_status: resolvedStatus,
       remarks: remarks || null,
       submitted_at: now,
     };
