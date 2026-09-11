@@ -116,9 +116,13 @@ export interface EvaluationPhase {
 
 export interface Panel {
   id: string;
-  panel_number: number;
+  panel_number?: number;
   panel_name: string;
   phase_number: 1 | 2 | 3;
+  venue?: string | null;
+  scheduled_date?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
   date?: string | null;
   time_window?: string | null; // e.g. "09:00 AM - 01:00 PM"
   academic_block?: string | null; // e.g. "AB1", "AB2"
@@ -140,23 +144,32 @@ export interface Evaluation {
   id: string;
   phase_number: 1 | 2 | 3;
   team_id: string;
-  student_id: string;
-  panel_member_id: string;
-  score?: number | null; // 0 to 10
+  student_id?: string;
+  panel_member_id?: string;
+  supervisor_id?: string;
+  score?: number | null;
+  max_marks?: number;
+  criteria_scores?: any;
+  locked?: boolean;
   is_absent: boolean;
   remarks?: string | null;
-  submitted_at: string;
+  submitted_at?: string;
+  updated_at?: string;
 }
 
 export interface NotificationItem {
   id: string;
-  user_id: string;
+  user_id?: string;
+  recipient_id?: string;
+  sender_id?: string;
   category: string;
   subject: string;
-  salutation: string;
+  salutation?: string;
   body: string;
-  signoff: string;
+  signoff?: string;
   is_read: boolean;
+  url?: string;
+  metadata?: any;
   created_at: string;
 }
 
@@ -164,7 +177,8 @@ export interface PushSubscriptionItem {
   id: string;
   user_id: string;
   endpoint: string;
-  p256dh: string;
-  auth: string;
+  p256dh?: string;
+  auth?: string;
+  keys?: any;
   created_at: string;
 }

@@ -24,6 +24,8 @@ import PasswordChangeModal from './PasswordChangeModal';
 import HelpModal from './HelpModal';
 import { NotificationItem } from '@/lib/types';
 import { triggerSystemNotification, requestDeviceNotificationPermission, playNotificationChime } from '@/lib/deviceNotification';
+import { clientCache } from '@/lib/clientCache';
+import { subscribeToUserNotifications } from '@/lib/supabaseClient';
 
 interface NavbarProps {
   user?: {
@@ -58,27 +60,22 @@ export default function Navbar({
   const isFetchingRef = React.useRef<boolean>(false);
   const userMenuRef = React.useRef<HTMLDivElement>(null);
 
+  // Close menus on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setUserMenuOpen(false);
       }
     }
-    if (userMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      const handleEsc = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') setUserMenuOpen(false);
-      };
-      window.addEventListener('keydown', handleEsc);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-        window.removeEventListener('keydown', handleEsc);
-      };
-    }
-  }, [userMenuOpen]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
-  const dispatchSingleNotification = (n: { id: string; subject?: string; body?: string; salutation?: string; category?: string; url?: string }) => {
+  const dispatchSingleNotification = (n: NotificationItem) => {
     const notifId = String(n.id);
+    if (notifiedIdsRef.current.has(notifId)) return;
     notifiedIdsRef.current.add(notifId);
 
     triggerSystemNotification({
@@ -103,12 +100,17 @@ export default function Navbar({
         setUnreadCount(newUnread);
         setNotifications(notifs);
 
+        // Store in client cache for 0ms future mounts
+        if (user.id) {
+          clientCache.set(clientCache.keys.NOTIFICATIONS(user.id), notifs);
+        }
+
         if (isInitialFetchRef.current) {
           // On first page load: Acknowledge existing inbox notifications so past history doesn't spam
           notifs.forEach((n) => notifiedIdsRef.current.add(String(n.id)));
           isInitialFetchRef.current = false;
         } else if (!isManual) {
-          // Live background poll: Alert only for new incoming unread notifications
+          // Event-triggered update: Alert only for new incoming unread notifications
           const unreadNew = notifs.filter((n) => !n.is_read && !notifiedIdsRef.current.has(String(n.id)));
           if (unreadNew.length > 0) {
             unreadNew.forEach((n) => notifiedIdsRef.current.add(String(n.id)));
@@ -132,12 +134,32 @@ export default function Navbar({
 
   useEffect(() => {
     if (user) {
+      // 1. Instant 0ms cache hydration
+      if (user.id) {
+        const cachedNotifs = clientCache.get<NotificationItem[]>(clientCache.keys.NOTIFICATIONS(user.id));
+        if (cachedNotifs && cachedNotifs.length > 0) {
+          setNotifications(cachedNotifs);
+          setUnreadCount(cachedNotifs.filter((n) => !n.is_read).length);
+        }
+      }
+
+      // 2. Single fresh fetch on load/refresh (No polling interval)
       fetchNotifications();
 
-      // Lightweight 12-second heartbeat polling for live notifications
-      const intervalId = setInterval(() => {
-        fetchNotifications();
-      }, 12000);
+      // 3. Supabase Realtime WebSocket Subscription (0-polling real-time updates)
+      let unsubRealtime: (() => void) | null = null;
+      if (user.id) {
+        unsubRealtime = subscribeToUserNotifications(user.id, (newNotif) => {
+          setNotifications((prev) => {
+            const notifId = String(newNotif.id);
+            const updated = [newNotif, ...prev.filter((n) => String(n.id) !== notifId)];
+            if (user.id) clientCache.set(clientCache.keys.NOTIFICATIONS(user.id), updated);
+            return updated;
+          });
+          setUnreadCount((prev) => prev + 1);
+          dispatchSingleNotification(newNotif);
+        });
+      }
 
       const handleImmediateUpdate = () => {
         fetchNotifications(true);
@@ -147,7 +169,11 @@ export default function Navbar({
         const item = e.detail?.notification;
         if (item) {
           const notifId = String(item.id);
-          setNotifications((prev) => [item, ...prev.filter((n) => String(n.id) !== notifId)]);
+          setNotifications((prev) => {
+            const updated = [item, ...prev.filter((n) => String(n.id) !== notifId)];
+            if (user.id) clientCache.set(clientCache.keys.NOTIFICATIONS(user.id), updated);
+            return updated;
+          });
           setUnreadCount((prev) => prev + 1);
           dispatchSingleNotification(item);
         }
@@ -164,7 +190,11 @@ export default function Navbar({
             if (event.data?.type === 'INSTANT_NOTIFICATION' && event.data?.notification) {
               const item = event.data.notification;
               const notifId = String(item.id);
-              setNotifications((prev) => [item, ...prev.filter((n) => String(n.id) !== notifId)]);
+              setNotifications((prev) => {
+                const updated = [item, ...prev.filter((n) => String(n.id) !== notifId)];
+                if (user.id) clientCache.set(clientCache.keys.NOTIFICATIONS(user.id), updated);
+                return updated;
+              });
               setUnreadCount((prev) => prev + 1);
               dispatchSingleNotification(item);
             } else {
@@ -175,7 +205,7 @@ export default function Navbar({
       } catch {}
 
       return () => {
-        clearInterval(intervalId);
+        if (unsubRealtime) unsubRealtime();
         window.removeEventListener('codeshastra_notification_instant', handleInstantNotif);
         window.removeEventListener('codeshastra_notification_update', handleImmediateUpdate);
         if (bc) {
@@ -252,8 +282,9 @@ export default function Navbar({
     setLoggingOut(true);
     setUserMenuOpen(false);
 
-    // 1. Immediately clear client session & storage (0ms instant response)
+    // 1. Immediately clear all client session, memory & cache storage (0ms instant response)
     try {
+      clientCache.clear();
       localStorage.removeItem('codeshastra_token');
       sessionStorage.clear();
     } catch {}

@@ -33,6 +33,7 @@ import {
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LoadingScreen from '@/components/LoadingScreen';
+import { clientCache } from '@/lib/clientCache';
 
 export default function FacultyDashboardPage() {
   const router = useRouter();
@@ -149,6 +150,8 @@ export default function FacultyDashboardPage() {
         fetch('/api/panels'),
       ]);
 
+      let loggedInUser = currentUser;
+
       if (authRes) {
         if (!authRes.ok) {
           router.push('/login');
@@ -163,12 +166,18 @@ export default function FacultyDashboardPage() {
           router.push('/dashboard/leader');
           return;
         }
+        loggedInUser = authData.user;
         setCurrentUser(authData.user);
+        clientCache.set(clientCache.keys.USER_ME, authData.user);
       }
+
+      let loadedTeams = guidedTeams;
+      let loadedPanels = panelData;
 
       if (teamsRes && teamsRes.ok) {
         const tData = await teamsRes.json();
         const teams = tData.teams || [];
+        loadedTeams = teams;
         setGuidedTeams(teams);
         setSelectedTeam((prev: any) => {
           if (!prev && teams.length > 0) return teams[0];
@@ -182,7 +191,15 @@ export default function FacultyDashboardPage() {
 
       if (panelRes && panelRes.ok) {
         const pData = await panelRes.json();
-        setPanelData(pData.panels || []);
+        loadedPanels = pData.panels || [];
+        setPanelData(loadedPanels);
+      }
+
+      if (loggedInUser?.id) {
+        clientCache.set(clientCache.keys.FACULTY_DATA(loggedInUser.id), {
+          teams: loadedTeams,
+          panels: loadedPanels,
+        });
       }
     } catch (e) {
       console.error(e);
@@ -192,6 +209,24 @@ export default function FacultyDashboardPage() {
   };
 
   useEffect(() => {
+    // 1. Instant 0ms cache hydration
+    const cachedUser = clientCache.get<any>(clientCache.keys.USER_ME);
+    if (cachedUser && (cachedUser.role === 'supervisor' || cachedUser.role === 'admin')) {
+      setCurrentUser(cachedUser);
+      const cachedData = clientCache.get<any>(clientCache.keys.FACULTY_DATA(cachedUser.id));
+      if (cachedData) {
+        if (cachedData.teams && cachedData.teams.length > 0) {
+          setGuidedTeams(cachedData.teams);
+          setSelectedTeam(cachedData.teams[0]);
+        }
+        if (cachedData.panels) {
+          setPanelData(cachedData.panels);
+        }
+        setLoading(false);
+      }
+    }
+
+    // 2. Single fresh fetch on load/refresh
     loadFacultyData();
   }, []);
 

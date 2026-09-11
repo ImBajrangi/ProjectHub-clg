@@ -32,6 +32,7 @@ import {
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LoadingScreen from '@/components/LoadingScreen';
+import { clientCache } from '@/lib/clientCache';
 
 export default function LeaderDashboardPage() {
   const router = useRouter();
@@ -205,6 +206,8 @@ export default function LeaderDashboardPage() {
         fetch('/api/team', { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } }),
       ]);
 
+      let loggedInUser = currentUser;
+
       if (authRes) {
         if (!authRes.ok) {
           router.push('/login');
@@ -219,12 +222,19 @@ export default function LeaderDashboardPage() {
           router.push(authData.user.role === 'supervisor' ? '/dashboard/faculty' : '/admin');
           return;
         }
+        loggedInUser = authData.user;
         setCurrentUser(authData.user);
+        clientCache.set(clientCache.keys.USER_ME, authData.user);
       }
 
       if (teamRes && teamRes.ok) {
         const tData = await teamRes.json();
         setTeamData(tData);
+
+        if (loggedInUser?.id) {
+          clientCache.set(clientCache.keys.LEADER_TEAM(loggedInUser.id), tData);
+        }
+
         if (tData.problemStatement) {
           setPsTitle(tData.problemStatement.title || '');
           const desc = tData.problemStatement.description || '';
@@ -242,6 +252,23 @@ export default function LeaderDashboardPage() {
   };
 
   useEffect(() => {
+    // 1. Instant 0ms cache hydration
+    const cachedUser = clientCache.get<any>(clientCache.keys.USER_ME);
+    if (cachedUser && cachedUser.role === 'leader') {
+      setCurrentUser(cachedUser);
+      const cachedTeam = clientCache.get<any>(clientCache.keys.LEADER_TEAM(cachedUser.id));
+      if (cachedTeam) {
+        setTeamData(cachedTeam);
+        if (cachedTeam.problemStatement) {
+          setPsTitle(cachedTeam.problemStatement.title || '');
+          const desc = cachedTeam.problemStatement.description || '';
+          setPsDescription(desc);
+        }
+        setLoading(false);
+      }
+    }
+
+    // 2. Fetch fresh on load/reload
     loadDashboard();
 
     if (typeof window === 'undefined') return;
@@ -265,15 +292,9 @@ export default function LeaderDashboardPage() {
       } catch {}
     }
 
-    // Periodic 12-second background sync to guarantee freshest supervisor remarks & clearances
-    const pollInterval = setInterval(() => {
-      loadDashboard();
-    }, 12000);
-
     return () => {
       window.removeEventListener('codeshastra_notification_update', handleUpdate);
       if (bc) bc.close();
-      clearInterval(pollInterval);
     };
   }, []);
 

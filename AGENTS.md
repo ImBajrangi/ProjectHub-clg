@@ -12,3 +12,7 @@ Audit Trail Logging:
 
 Viewport Scroll Ergonomics: "Whenever accordions, dropdown detail views, or large cards expand, automatically scroll the expanded container to the center of the available viewport (accounting for fixed navbars) with smooth scrolling."
 
+Network & Cache Strategy: "Do not use continuous background setInterval polling for data fetching. Use client-side caching (clientCache) for 0ms initial renders and trigger network fetches strictly on page load, user gestures, or explicit BroadcastChannel events."
+
+PostgREST Query Strategy: "Always use explicit column projections in Supabase queries (avoid raw select('*')) and handle real-time data flow using Supabase Realtime WebSocket channels rather than client-side polling intervals."
+

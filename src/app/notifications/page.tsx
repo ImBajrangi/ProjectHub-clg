@@ -27,6 +27,7 @@ import {
   requestDeviceNotificationPermission,
   playNotificationChime,
 } from '@/lib/deviceNotification';
+import { clientCache } from '@/lib/clientCache';
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -71,6 +72,8 @@ export default function NotificationsPage() {
         fetch('/api/notifications', { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } }),
       ]);
 
+      let loggedInUser = currentUser;
+
       if (authRes) {
         if (!authRes.ok) {
           router.push('/login');
@@ -81,12 +84,19 @@ export default function NotificationsPage() {
           router.push('/login');
           return;
         }
+        loggedInUser = authData.user;
         setCurrentUser(authData.user);
+        clientCache.set(clientCache.keys.USER_ME, authData.user);
       }
 
       if (notifRes.ok) {
         const notifData = await notifRes.json();
-        setNotifications(notifData.notifications || []);
+        const notifs = notifData.notifications || [];
+        setNotifications(notifs);
+
+        if (loggedInUser?.id) {
+          clientCache.set(clientCache.keys.NOTIFICATIONS(loggedInUser.id), notifs);
+        }
       }
     } catch (err) {
       console.error('Error loading notifications page:', err);
@@ -96,6 +106,18 @@ export default function NotificationsPage() {
   };
 
   useEffect(() => {
+    // 1. Instant 0ms cache hydration
+    const cachedUser = clientCache.get<any>(clientCache.keys.USER_ME);
+    if (cachedUser?.id) {
+      setCurrentUser(cachedUser);
+      const cachedNotifs = clientCache.get<NotificationItem[]>(clientCache.keys.NOTIFICATIONS(cachedUser.id));
+      if (cachedNotifs && cachedNotifs.length > 0) {
+        setNotifications(cachedNotifs);
+        setLoading(false);
+      }
+    }
+
+    // 2. Fetch fresh on load/reload
     loadNotifications();
 
     if (typeof window === 'undefined') return;
@@ -111,12 +133,9 @@ export default function NotificationsPage() {
       } catch {}
     }
 
-    const interval = setInterval(loadNotifications, 15000);
-
     return () => {
       window.removeEventListener('codeshastra_notification_update', handleUpdate);
       if (bc) bc.close();
-      clearInterval(interval);
     };
   }, []);
 

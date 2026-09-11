@@ -54,7 +54,7 @@ export interface DatabaseStore {
 let memoryStore: DatabaseStore | null = null;
 let lastStoreFetch = 0;
 let isFetchingStore = false;
-const STORE_TTL_MS = 60000; // 60 seconds warm TTL with background refresh
+const STORE_TTL_MS = 120000; // 2 minutes warm TTL with background refresh
 
 // Helper to log Supabase errors consistently
 function logSupabaseError(table: string, error: any) {
@@ -90,19 +90,19 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
     notifsRes,
     pushSubsRes,
   ] = await Promise.all([
-    supabase.from('users').select('*'),
-    supabase.from('supervisors').select('*'),
-    supabase.from('teams').select('*').order('team_number', { ascending: true }),
-    supabase.from('students').select('*').order('roll_no', { ascending: true }),
-    supabase.from('problem_statements').select('*'),
-    supabase.from('meetings').select('*'),
-    supabase.from('meeting_attendance').select('*'),
-    supabase.from('evaluation_phases').select('*').order('phase_number', { ascending: true }),
-    supabase.from('panels').select('*'),
-    supabase.from('panel_members').select('*'),
-    supabase.from('evaluations').select('*'),
-    supabase.from('notifications').select('*').order('created_at', { ascending: false }),
-    supabase.from('push_subscriptions').select('*'),
+    supabase.from('users').select('id, email, password_hash, role, full_name, phone, is_leader, active_session_token, active_session_device, active_session_at, reset_token, reset_token_expires_at, created_at, updated_at'),
+    supabase.from('supervisors').select('id, employee_id, designation, department, cabin_number, created_at'),
+    supabase.from('teams').select('id, team_code, team_number, program, supervisor_id, leader_id, phase1_approved, phase2_approved, phase3_approved, phase3_report_clearance, report_url, paper_url, report_uploaded_at, created_at, updated_at').order('team_number', { ascending: true }),
+    supabase.from('students').select('id, roll_no, full_name, email, mobile, cpi, course, section, team_id, user_id, is_leader, created_at').order('roll_no', { ascending: true }),
+    supabase.from('problem_statements').select('id, team_id, title, description, status, supervisor_remarks, locked, approved_at, created_at, updated_at'),
+    supabase.from('meetings').select('id, team_id, supervisor_id, meeting_index, status, requested_at, scheduled_date, time_slot, venue, summary_notes, action_directives, completed_at, created_at'),
+    supabase.from('meeting_attendance').select('id, meeting_id, student_id, is_present, created_at'),
+    supabase.from('evaluation_phases').select('id, phase_number, phase_name, description, target_date, marks_weightage, deliverables, is_live, updated_at').order('phase_number', { ascending: true }),
+    supabase.from('panels').select('id, panel_number, phase_number, panel_name, venue, start_time, end_time, scheduled_date, team_range_start, team_range_end, created_at'),
+    supabase.from('panel_members').select('id, panel_id, supervisor_id, created_at'),
+    supabase.from('evaluations').select('id, team_id, phase_number, supervisor_id, score, max_marks, remarks, criteria_scores, is_absent, locked, updated_at'),
+    supabase.from('notifications').select('id, recipient_id, sender_id, category, subject, body, salutation, signoff, url, is_read, metadata, created_at').order('created_at', { ascending: false }).limit(200),
+    supabase.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth, keys, created_at'),
   ]);
 
   // Log ALL errors from Supabase queries
@@ -256,7 +256,7 @@ export const db = {
 
     const { data, error } = await supabase
       .from('users')
-      .select('*')
+      .select('id, email, password_hash, role, full_name, phone, is_leader, active_session_token, active_session_device, active_session_at, reset_token, reset_token_expires_at, created_at, updated_at')
       .ilike('email', cleanEmail)
       .maybeSingle();
 
@@ -279,7 +279,7 @@ export const db = {
 
     const { data, error } = await supabase
       .from('users')
-      .select('*')
+      .select('id, email, password_hash, role, full_name, phone, is_leader, active_session_token, active_session_device, active_session_at, reset_token, reset_token_expires_at, created_at, updated_at')
       .eq('id', id)
       .maybeSingle();
 
@@ -468,7 +468,11 @@ export const db = {
     if (existing) return existing;
 
     try {
-      const { data: dbPs } = await supabase.from('problem_statements').select('*').eq('team_id', teamId).maybeSingle();
+      const { data: dbPs } = await supabase
+        .from('problem_statements')
+        .select('id, team_id, title, description, status, supervisor_remarks, locked, approved_at, created_at, updated_at')
+        .eq('team_id', teamId)
+        .maybeSingle();
       if (dbPs) {
         store.problem_statements.push(dbPs);
         return dbPs;
@@ -485,7 +489,11 @@ export const db = {
     const store = await this.getStore();
     let existing = store.problem_statements.find((p) => p.team_id === teamId);
     if (!existing) {
-      const { data: dbPs } = await supabase.from('problem_statements').select('*').eq('team_id', teamId).maybeSingle();
+      const { data: dbPs } = await supabase
+        .from('problem_statements')
+        .select('id, team_id, title, description, status, supervisor_remarks, locked, approved_at, created_at, updated_at')
+        .eq('team_id', teamId)
+        .maybeSingle();
       if (dbPs) {
         store.problem_statements.push(dbPs);
         existing = dbPs;
@@ -548,7 +556,11 @@ export const db = {
     let existing = store.problem_statements.find((p) => p.team_id === teamId);
 
     if (!existing) {
-      const { data: dbPs } = await supabase.from('problem_statements').select('*').eq('team_id', teamId).maybeSingle();
+      const { data: dbPs } = await supabase
+        .from('problem_statements')
+        .select('id, team_id, title, description, status, supervisor_remarks, locked, approved_at, created_at, updated_at')
+        .eq('team_id', teamId)
+        .maybeSingle();
       if (dbPs) {
         store.problem_statements.push(dbPs);
         existing = dbPs;
@@ -867,7 +879,7 @@ export const db = {
     if (phaseNumber) {
       panels = panels.filter((p) => p.phase_number === phaseNumber);
     }
-    return panels.sort((a, b) => a.panel_number - b.panel_number);
+    return panels.sort((a, b) => (a.panel_number || 0) - (b.panel_number || 0));
   },
 
   async getPanelById(id: string): Promise<Panel | null> {

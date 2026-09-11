@@ -15,6 +15,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { requestDeviceNotificationPermission } from '@/lib/deviceNotification';
+import { clientCache } from '@/lib/clientCache';
 import LoadingScreen from '@/components/LoadingScreen';
 
 interface DevProfile {
@@ -185,6 +186,12 @@ function LoginForm() {
 
         if (data.token) {
           localStorage.setItem('codeshastra_token', data.token);
+        }
+
+        // Clean stale session caches before setting new account state
+        clientCache.clear();
+        if (data.user) {
+          clientCache.set(clientCache.keys.USER_ME, data.user);
         }
 
         // Proactively request native OS desktop notification permission on login user gesture
