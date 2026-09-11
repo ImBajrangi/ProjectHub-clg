@@ -40,18 +40,25 @@ export async function GET(req: NextRequest) {
         ...p,
         judges: judgeUsers,
         teamsCount: matchingTeams.length,
-        teams: matchingTeams.map((t) => ({
-          id: t.id,
-          team_code: t.team_code,
-          team_name: t.team_name,
-          team_number: t.team_number,
-          supervisor_id: t.supervisor_id,
-          phase1_approved: t.phase1_approved,
-          phase2_approved: t.phase2_approved,
-          phase3_approved: t.phase3_approved,
-          report_url: t.report_url,
-          paper_url: t.paper_url,
-        })),
+        teams: matchingTeams.map((t) => {
+          const sup = allSupervisors.find((s) => s.id === t.supervisor_id);
+          const ps = store.problem_statements.find((p_stmt) => p_stmt.team_id === t.id);
+          return {
+            id: t.id,
+            team_code: t.team_code,
+            team_name: t.team_name,
+            team_number: t.team_number,
+            program: t.program || 'BCA',
+            supervisor_id: t.supervisor_id,
+            supervisor: sup ? { id: sup.id, name: sup.full_name || (sup as any).name, email: sup.email } : null,
+            problemStatement: ps ? { title: ps.title, description: ps.description, status: ps.status } : null,
+            phase1_approved: t.phase1_approved,
+            phase2_approved: t.phase2_approved,
+            phase3_approved: t.phase3_approved,
+            report_url: t.report_url,
+            paper_url: t.paper_url,
+          };
+        }),
       };
     });
 
@@ -63,8 +70,6 @@ export async function GET(req: NextRequest) {
 
       // In each panel, filter teams:
       // STRICT CONFLICT-OF-INTEREST SAFEGUARD: Never evaluate teams they supervise!
-      // Must have supervisor clearance for that active phase!
-      // Must have phase set to Live by Incharge!
       const panelEvaluations = myPanels.map((p) => {
         const phaseInfo = phases.find((ph) => ph.phase_number === p.phase_number);
         const isPhaseLive = phaseInfo ? phaseInfo.is_live : false;
@@ -72,12 +77,6 @@ export async function GET(req: NextRequest) {
         const evaluableTeams = p.teams.filter((t) => {
           // 1. Conflict Check:
           if (t.supervisor_id === sessionUser.id) return false;
-
-          // 2. Phase Clearance Check:
-          if (p.phase_number === 1 && !t.phase1_approved) return false;
-          if (p.phase_number === 2 && !t.phase2_approved) return false;
-          if (p.phase_number === 3 && !t.phase3_approved) return false;
-
           return true;
         });
 

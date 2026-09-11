@@ -16,3 +16,8 @@ Network & Cache Strategy: "Do not use continuous background setInterval polling 
 
 PostgREST Query Strategy: "Always use explicit column projections in Supabase queries (avoid raw select('*')) and handle real-time data flow using Supabase Realtime WebSocket channels rather than client-side polling intervals."
 
+<!-- 
+Email: narendra.mohan@gla.ac.in
+Password: CodeShastra@6128 
+-->
+

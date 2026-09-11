@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import path from 'path';
 import {
   User,
   Student,
@@ -56,6 +58,22 @@ let lastStoreFetch = 0;
 let isFetchingStore = false;
 const STORE_TTL_MS = 120000; // 2 minutes warm TTL with background refresh
 
+function getLocalSeedData(): Partial<DatabaseStore> {
+  try {
+    const dbPath = path.join(process.cwd(), 'data', 'projecthub.db.json');
+    if (fs.existsSync(dbPath)) {
+      return JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+    }
+    const seedPath = path.join(process.cwd(), 'data', 'initial_seed.json');
+    if (fs.existsSync(seedPath)) {
+      return JSON.parse(fs.readFileSync(seedPath, 'utf8'));
+    }
+  } catch (err) {
+    console.error('Failed to read local fallback seed data:', err);
+  }
+  return {};
+}
+
 // Helper to log Supabase errors consistently
 function logSupabaseError(table: string, error: any) {
   if (error) {
@@ -97,11 +115,11 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
     supabase.from('problem_statements').select('id, team_id, title, description, status, supervisor_remarks, locked, approved_at, created_at, updated_at'),
     supabase.from('meetings').select('id, team_id, supervisor_id, meeting_index, status, requested_at, scheduled_date, time_slot, venue, summary_notes, action_directives, completed_at, created_at'),
     supabase.from('meeting_attendance').select('id, meeting_id, student_id, is_present, created_at'),
-    supabase.from('evaluation_phases').select('id, phase_number, phase_name, description, marks_weightage, deliverables, is_live, updated_at').order('phase_number', { ascending: true }),
-    supabase.from('panels').select('id, panel_number, phase_number, panel_name, start_time, end_time, scheduled_date, team_range_start, team_range_end, created_at'),
+    supabase.from('evaluation_phases').select('id, phase_number, phase_name, description, is_live, updated_at').order('phase_number', { ascending: true }),
+    supabase.from('panels').select('id, panel_number, phase_number, panel_name, date, time_window, academic_block, room_number, team_range_start, team_range_end, created_at'),
     supabase.from('panel_members').select('id, panel_id, supervisor_id, created_at'),
-    supabase.from('evaluations').select('id, team_id, student_id, phase_number, score, max_marks, remarks, criteria_scores, is_absent, locked, updated_at'),
-    supabase.from('notifications').select('id, user_id, category, subject, body, salutation, signoff, url, is_read, metadata, created_at').order('created_at', { ascending: false }).limit(200),
+    supabase.from('evaluations').select('id, team_id, student_id, phase_number, score, remarks, criteria_scores, is_absent, locked, updated_at'),
+    supabase.from('notifications').select('id, user_id, category, subject, body, salutation, signoff, is_read, metadata, created_at').order('created_at', { ascending: false }).limit(200),
     supabase.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth, created_at'),
   ]);
 
@@ -120,30 +138,34 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
   logSupabaseError('notifications', notifsRes.error);
   logSupabaseError('push_subscriptions', pushSubsRes.error);
 
+  // Load local fallback for tables if Supabase has 0 rows or is unseeded
+  const localFallback = getLocalSeedData();
+
   // Log row counts for quick diagnostics
   const counts = {
     users: usersRes.data?.length ?? 0,
     teams: teamsRes.data?.length ?? 0,
     students: studentsRes.data?.length ?? 0,
     supervisors: supervisorsRes.data?.length ?? 0,
+    panels: (panelsRes.data && panelsRes.data.length > 0) ? panelsRes.data.length : (localFallback.panels?.length ?? 0),
   };
-  console.log(`[DB Store] Loaded: ${counts.users} users, ${counts.teams} teams, ${counts.students} students, ${counts.supervisors} supervisors`);
+  console.log(`[DB Store] Loaded: ${counts.users} users, ${counts.teams} teams, ${counts.students} students, ${counts.supervisors} supervisors, ${counts.panels} panels`);
 
   if (counts.users === 0 && !usersRes.error) {
     console.warn('[DB Store WARNING] Users table returned 0 rows without error — RLS may be blocking reads. Check Supabase RLS settings.');
   }
 
   const fresh: DatabaseStore = {
-    users: usersRes.data || [],
-    supervisors: supervisorsRes.data || [],
-    teams: (teamsRes.data || []).map((t: any) => ({
+    users: (usersRes.data && usersRes.data.length > 0) ? usersRes.data : (localFallback.users || []),
+    supervisors: (supervisorsRes.data && supervisorsRes.data.length > 0) ? supervisorsRes.data : (localFallback.supervisors || []),
+    teams: ((teamsRes.data && teamsRes.data.length > 0 ? teamsRes.data : localFallback.teams) || []).map((t: any) => ({
       ...t,
       team_name: `Team ${t.team_code}`,
     })),
-    students: studentsRes.data || [],
-    problem_statements: psRes.data || [],
-    meetings: meetingsRes.data || [],
-    meeting_attendance: meetingAttRes.data || [],
+    students: (studentsRes.data && studentsRes.data.length > 0) ? studentsRes.data : (localFallback.students || []),
+    problem_statements: (psRes.data && psRes.data.length > 0) ? psRes.data : (localFallback.problem_statements || []),
+    meetings: (meetingsRes.data && meetingsRes.data.length > 0) ? meetingsRes.data : (localFallback.meetings || []),
+    meeting_attendance: (meetingAttRes.data && meetingAttRes.data.length > 0) ? meetingAttRes.data : (localFallback.meeting_attendance || []),
     evaluation_phases: (phasesRes.data && phasesRes.data.length > 0
       ? phasesRes.data.map((p: any) => ({
           ...p,
@@ -204,11 +226,11 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
             updated_at: new Date().toISOString(),
           },
         ]),
-    panels: panelsRes.data || [],
-    panel_members: panelMembersRes.data || [],
-    evaluations: evalsRes.data || [],
-    notifications: notifsRes.data || [],
-    push_subscriptions: pushSubsRes.data || [],
+    panels: (panelsRes.data && panelsRes.data.length > 0) ? panelsRes.data : (localFallback.panels || []),
+    panel_members: (panelMembersRes.data && panelMembersRes.data.length > 0) ? panelMembersRes.data : (localFallback.panel_members || []),
+    evaluations: (evalsRes.data && evalsRes.data.length > 0) ? evalsRes.data : (localFallback.evaluations || []),
+    notifications: (notifsRes.data && notifsRes.data.length > 0) ? notifsRes.data : (localFallback.notifications || []),
+    push_subscriptions: (pushSubsRes.data && pushSubsRes.data.length > 0) ? pushSubsRes.data : (localFallback.push_subscriptions || []),
   };
 
   memoryStore = fresh;
