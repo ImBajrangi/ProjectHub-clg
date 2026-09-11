@@ -16,7 +16,6 @@ import {
   Calendar,
   Award,
   ArrowLeft,
-  Volume2,
   ShieldCheck,
   RefreshCw,
 } from 'lucide-react';
@@ -152,16 +151,6 @@ export default function NotificationsPage() {
         body: 'You will now receive instant desktop and OS alerts for revisions, approvals, and meetings.',
       });
     }
-  };
-
-  const handleTestNotification = () => {
-    playNotificationChime();
-    triggerSystemNotification({
-      id: 'test-notif-' + Date.now(),
-      subject: 'CodeShastra System Alert Test',
-      body: 'System notifications are working flawlessly on your operating system.',
-      url: '/notifications',
-    });
   };
 
   const handleMarkRead = async (id: string) => {
@@ -355,26 +344,6 @@ export default function NotificationsPage() {
                 <BellRing size={14} /> Enable System Notifications
               </button>
             )}
-
-            <button
-              onClick={handleTestNotification}
-              title="Test system notification chime and desktop banner"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                fontSize: '12px',
-                fontWeight: 600,
-                color: 'var(--color-ink)',
-                backgroundColor: 'var(--color-canvas-soft)',
-                border: '1px solid var(--color-hairline)',
-                padding: '5px 10px',
-                borderRadius: '6px',
-                cursor: 'pointer',
-              }}
-            >
-              <Volume2 size={13} /> Test Alert
-            </button>
           </div>
         </div>
 

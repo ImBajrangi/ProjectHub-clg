@@ -186,64 +186,64 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
     })(),
     evaluation_phases: (phasesRes.data && phasesRes.data.length > 0
       ? phasesRes.data.map((p: any) => ({
-          ...p,
-          target_date:
-            p.phase_number === 1
-              ? '19-Sep'
-              : p.phase_number === 2
+        ...p,
+        target_date:
+          p.phase_number === 1
+            ? '19-Sep'
+            : p.phase_number === 2
               ? '17-Oct'
               : 'Final Defense',
-          marks_weightage:
-            p.phase_number === 1 ? 20 : p.phase_number === 2 ? 40 : 40,
-          deliverables:
-            p.phase_number === 1
-              ? '30% Coding / Approval & Pitch Deck'
-              : p.phase_number === 2
+        marks_weightage:
+          p.phase_number === 1 ? 20 : p.phase_number === 2 ? 40 : 40,
+        deliverables:
+          p.phase_number === 1
+            ? '30% Coding / Approval & Pitch Deck'
+            : p.phase_number === 2
               ? '70% Coding / Technical Demo'
               : 'Report + Certificate / Synopsis',
-          phase_name:
-            p.phase_name ||
-            (p.phase_number === 1
-              ? '1st Presentation (30% Coding)'
-              : p.phase_number === 2
+        phase_name:
+          p.phase_name ||
+          (p.phase_number === 1
+            ? '1st Presentation (30% Coding)'
+            : p.phase_number === 2
               ? '2nd Presentation (70% Coding)'
               : 'Final Presentation (Defense & Report)'),
-        }))
+      }))
       : [
-          {
-            id: 'phase-1',
-            phase_number: 1 as const,
-            phase_name: '1st Presentation (30% Coding)',
-            description: '19-Sep • 20 Marks • 30% coding implementation & supervisor topic approval',
-            target_date: '19-Sep',
-            marks_weightage: 20,
-            deliverables: '30% Coding / Approval & Pitch Deck',
-            is_live: true,
-            updated_at: new Date().toISOString(),
-          },
-          {
-            id: 'phase-2',
-            phase_number: 2 as const,
-            phase_name: '2nd Presentation (70% Coding)',
-            description: '17-Oct • 40 Marks • 70% coding progress & technical implementation demo',
-            target_date: '17-Oct',
-            marks_weightage: 40,
-            deliverables: '70% Coding / Technical Demo',
-            is_live: false,
-            updated_at: new Date().toISOString(),
-          },
-          {
-            id: 'phase-3',
-            phase_number: 3 as const,
-            phase_name: 'Final Presentation (Defense & Report)',
-            description: 'Final Defense • 40 Marks • Complete project defense, formal report, certificate & synopsis',
-            target_date: 'Final Defense',
-            marks_weightage: 40,
-            deliverables: 'Report + Certificate / Synopsis',
-            is_live: false,
-            updated_at: new Date().toISOString(),
-          },
-        ]),
+        {
+          id: 'phase-1',
+          phase_number: 1 as const,
+          phase_name: '1st Presentation (30% Coding)',
+          description: '19-Sep • 20 Marks • 30% coding implementation & supervisor topic approval',
+          target_date: '19-Sep',
+          marks_weightage: 20,
+          deliverables: '30% Coding / Approval & Pitch Deck',
+          is_live: true,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          id: 'phase-2',
+          phase_number: 2 as const,
+          phase_name: '2nd Presentation (70% Coding)',
+          description: '17-Oct • 40 Marks • 70% coding progress & technical implementation demo',
+          target_date: '17-Oct',
+          marks_weightage: 40,
+          deliverables: '70% Coding / Technical Demo',
+          is_live: false,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          id: 'phase-3',
+          phase_number: 3 as const,
+          phase_name: 'Final Presentation (Defense & Report)',
+          description: 'Final Defense • 40 Marks • Complete project defense, formal report, certificate & synopsis',
+          target_date: 'Final Defense',
+          marks_weightage: 40,
+          deliverables: 'Report + Certificate / Synopsis',
+          is_live: false,
+          updated_at: new Date().toISOString(),
+        },
+      ]),
     panels: panelsRes.data ?? (localFallback.panels || []),
     panel_members: panelMembersRes.data ?? (localFallback.panel_members || []),
     evaluations: evalsRes.data ?? (localFallback.evaluations || []),
@@ -517,7 +517,7 @@ export const db = {
         store.problem_statements.push(dbPs);
         return dbPs;
       }
-    } catch {}
+    } catch { }
     return null;
   },
 

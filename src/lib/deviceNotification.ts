@@ -1,6 +1,26 @@
-// Utility for cross-platform OS Notifications (macOS Notification Center, Windows Toast, Android Chrome, iOS Web App)
+// Utility for cross-platform OS Notifications (macOS Notification Center, Windows Action Center, Android Chrome, iOS Web App)
 
 let audioContext: AudioContext | null = null;
+let swRegistrationPromise: Promise<ServiceWorkerRegistration | null> | null = null;
+
+export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+    return null;
+  }
+  if (!swRegistrationPromise) {
+    swRegistrationPromise = navigator.serviceWorker
+      .register('/sw.js', { scope: '/' })
+      .then((reg) => {
+        console.log('[CodeShastra SW] Service Worker active for OS notifications');
+        return reg;
+      })
+      .catch((err) => {
+        console.warn('[CodeShastra SW] Registration failed:', err);
+        return null;
+      });
+  }
+  return swRegistrationPromise;
+}
 
 export function playNotificationChime() {
   if (typeof window === 'undefined') return;
@@ -11,7 +31,7 @@ export function playNotificationChime() {
       audioContext = new AudioCtx();
     }
     if (audioContext.state === 'suspended') {
-      audioContext.resume();
+      audioContext.resume().catch(() => {});
     }
 
     const now = audioContext.currentTime;
@@ -56,6 +76,9 @@ export async function requestDeviceNotificationPermission(): Promise<Notificatio
     return 'denied';
   }
 
+  // Pre-register service worker in background
+  registerServiceWorker().catch(() => {});
+
   if (Notification.permission === 'granted') {
     return 'granted';
   }
@@ -76,7 +99,6 @@ export async function requestDeviceNotificationPermission(): Promise<Notificatio
     }
 
     if (permission === 'granted') {
-      // Play a quick test confirmation chime so user knows it's active
       playNotificationChime();
     }
     return permission;
@@ -90,7 +112,7 @@ export async function requestDeviceNotificationPermission(): Promise<Notificatio
 let lastDispatchTime = 0;
 let lastDispatchSlug = '';
 
-export async function triggerSystemNotification(item: {
+export function triggerSystemNotification(item: {
   id?: string;
   subject?: string;
   body?: string;
@@ -108,24 +130,18 @@ export async function triggerSystemNotification(item: {
   const now = Date.now();
   const slug = `${rawTitle}::${cleanBody.slice(0, 40)}`;
 
-  // Debounce rapid bursts within 2 seconds
-  if (slug === lastDispatchSlug && now - lastDispatchTime < 2000) {
-    console.log('[CodeShastra Notification] ⏳ Debounced rapid burst:', rawTitle);
+  // Debounce rapid bursts within 1.5 seconds
+  if (slug === lastDispatchSlug && now - lastDispatchTime < 1500) {
     return;
   }
   lastDispatchTime = now;
   lastDispatchSlug = slug;
 
-  // 1. Play notification sound chime
+  // 1. Play audio chime
   playNotificationChime();
 
-  // 2. Check Notification API & Permission (NEVER request permission automatically in background)
-  if (!('Notification' in window)) {
-    return;
-  }
-
-  if (Notification.permission !== 'granted') {
-    // Only display if user previously granted permission via explicit user gesture
+  // 2. Check Notification API & Permission
+  if (!('Notification' in window) || Notification.permission !== 'granted') {
     return;
   }
 
@@ -137,20 +153,31 @@ export async function triggerSystemNotification(item: {
     body: cleanBody,
     icon: iconUrl,
     badge: iconUrl,
-    tag: `cs-${(item.id || Date.now()).toString()}`,
+    tag: `cs-${item.id || now}`,
     data: {
-      url: item.url || '/dashboard/leader',
+      url: item.url || '/notifications',
     },
-    requireInteraction: false,
     silent: false,
   };
 
-  console.log('[CodeShastra Notification] 🚀 Displaying OS Notification:', { title, body: cleanBody });
+  console.log('[CodeShastra Notification] 🚀 Pushing OS Notification to System:', { title, body: cleanBody });
 
-  // Try direct Notification (fastest & most reliable on macOS / Windows desktop)
+  // 1. Dispatch via Service Worker Registration (Required by Chrome on macOS/Android for persistent OS toasts)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistration().then((reg) => {
+      if (reg && typeof reg.showNotification === 'function') {
+        reg.showNotification(title, notifOptions).catch((err) => {
+          console.warn('[CodeShastra Notification] SW showNotification failed:', err);
+        });
+      }
+    }).catch(() => {});
+  }
+
+  // 2. Direct window.Notification (Immediate native OS banner fallback on desktop)
   try {
     const notif = new Notification(title, notifOptions);
-    notif.onclick = () => {
+    notif.onclick = (event) => {
+      event.preventDefault();
       window.focus();
       if (item.url) {
         window.location.href = item.url;
@@ -158,17 +185,7 @@ export async function triggerSystemNotification(item: {
       notif.close();
     };
   } catch (err) {
-    // Fallback to Service Worker if window Notification constructor fails
-    if ('serviceWorker' in navigator) {
-      try {
-        const reg = await navigator.serviceWorker.ready;
-        if (reg && typeof reg.showNotification === 'function') {
-          await reg.showNotification(title, notifOptions);
-        }
-      } catch (swErr) {
-        console.warn('[CodeShastra Notification] Service worker fallback failed:', swErr);
-      }
-    }
+    // Gracefully handle environments where Notification constructor is restricted
   }
 }
 

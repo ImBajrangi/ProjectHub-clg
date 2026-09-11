@@ -23,7 +23,7 @@ import NotificationDrawer from './NotificationDrawer';
 import PasswordChangeModal from './PasswordChangeModal';
 import HelpModal from './HelpModal';
 import { NotificationItem } from '@/lib/types';
-import { triggerSystemNotification, requestDeviceNotificationPermission, playNotificationChime } from '@/lib/deviceNotification';
+import { triggerSystemNotification, requestDeviceNotificationPermission, playNotificationChime, registerServiceWorker } from '@/lib/deviceNotification';
 import { clientCache } from '@/lib/clientCache';
 import { subscribeToUserNotifications } from '@/lib/supabaseClient';
 
@@ -41,19 +41,35 @@ interface NavbarProps {
 }
 
 export default function Navbar({
-  user,
+  user: initialUser,
   teamCode,
   activeFacultyMode = 'supervisor',
   onFacultyModeChange,
 }: NavbarProps) {
   const router = useRouter();
-  const [internalUser, setInternalUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(initialUser || null);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
+  const userMenuRef = React.useRef<HTMLDivElement>(null);
+  const notifiedIdsRef = React.useRef<Set<string>>(new Set());
+  const isFetchingRef = React.useRef<boolean>(false);
+  const isInitialFetchRef = React.useRef<boolean>(true);
+
+  // 0ms Cache Hydration on initial render
   useEffect(() => {
-    if (user !== undefined) return;
+    if (initialUser) {
+      setCurrentUser(initialUser);
+      return;
+    }
     const cached = clientCache.get<any>(clientCache.keys.USER_ME);
     if (cached) {
-      setInternalUser({
+      setCurrentUser({
         id: cached.id,
         fullName: cached.full_name || cached.fullName,
         email: cached.email,
@@ -61,37 +77,39 @@ export default function Navbar({
         isLeader: cached.is_leader ?? cached.isLeader,
       });
     }
+  }, [initialUser]);
+
+  // Fetch session if not provided
+  useEffect(() => {
+    if (initialUser) return;
+    let isMounted = true;
     fetch('/api/auth/me')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data?.authenticated && data?.user) {
-          setInternalUser({
+        if (data?.authenticated && data?.user && isMounted) {
+          const u = {
             id: data.user.id,
             fullName: data.user.full_name,
             email: data.user.email,
             role: data.user.role,
             isLeader: data.user.is_leader,
-          });
+          };
+          setCurrentUser(u);
           clientCache.set(clientCache.keys.USER_ME, data.user);
         }
       })
       .catch(() => {});
-  }, [user]);
+    return () => {
+      isMounted = false;
+    };
+  }, [initialUser]);
 
-  const activeUser = user !== undefined ? user : internalUser;
+  const activeUser = initialUser || currentUser;
 
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
-  const [helpModalOpen, setHelpModalOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
-
-  const notifiedIdsRef = React.useRef<Set<string>>(new Set());
-  const isInitialFetchRef = React.useRef<boolean>(true);
-  const isFetchingRef = React.useRef<boolean>(false);
-  const userMenuRef = React.useRef<HTMLDivElement>(null);
+  // Pre-register Service Worker for reliable background OS toasts
+  useEffect(() => {
+    registerServiceWorker().catch(() => {});
+  }, []);
 
   // Close menus on outside click
   useEffect(() => {
@@ -117,15 +135,15 @@ export default function Navbar({
       body: n.body,
       salutation: n.salutation,
       category: n.category,
-      url: n.url,
+      url: n.url || '/notifications',
     });
   };
 
-  const fetchNotifications = async (isManual = false) => {
+  const fetchNotifications = async (opts?: { suppressAlerts?: boolean }) => {
     if (!activeUser || isFetchingRef.current) return;
     isFetchingRef.current = true;
     try {
-      const res = await fetch('/api/notifications');
+      const res = await fetch('/api/notifications', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         const rawNotifs: NotificationItem[] = data.notifications || [];
@@ -145,18 +163,12 @@ export default function Navbar({
           // On first page load: Acknowledge existing inbox notifications so past history doesn't spam
           notifs.forEach((n) => notifiedIdsRef.current.add(String(n.id)));
           isInitialFetchRef.current = false;
-        } else if (!isManual) {
-          // Event-triggered update: Alert only for new incoming unread notifications
+        } else if (!opts?.suppressAlerts) {
+          // Alert for new incoming unread notifications
           const unreadNew = notifs.filter((n) => !n.is_read && !notifiedIdsRef.current.has(String(n.id)));
           if (unreadNew.length > 0) {
-            unreadNew.forEach((n) => notifiedIdsRef.current.add(String(n.id)));
-            const latest = unreadNew[0];
-            triggerSystemNotification({
-              id: String(latest.id),
-              subject: unreadNew.length > 1 ? `${latest.subject} (+${unreadNew.length - 1} new)` : latest.subject,
-              body: latest.body,
-              salutation: latest.salutation,
-              category: latest.category,
+            unreadNew.forEach((n) => {
+              dispatchSingleNotification(n);
             });
           }
         }
@@ -179,7 +191,7 @@ export default function Navbar({
         }
       }
 
-      // 2. Single fresh fetch on load/refresh (No polling interval)
+      // 2. Initial fetch on mount
       fetchNotifications();
 
       // 3. Supabase Realtime WebSocket Subscription (0-polling real-time updates)
@@ -198,7 +210,7 @@ export default function Navbar({
       }
 
       const handleImmediateUpdate = () => {
-        fetchNotifications(true);
+        fetchNotifications();
       };
 
       const handleInstantNotif = (e: any) => {
@@ -236,7 +248,7 @@ export default function Navbar({
                 dispatchSingleNotification(item);
               }
             } else {
-              fetchNotifications(true);
+              fetchNotifications();
             }
           };
         }
