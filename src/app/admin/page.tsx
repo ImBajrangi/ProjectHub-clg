@@ -275,7 +275,7 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    const finalShift = panelFormShift === 'Custom' ? panelFormCustomShift : panelFormShift;
+    const finalShift = panelFormShift?.trim() || 'Batch 1: Morning (08:00 AM - 10:00 AM)';
     const finalRoom = panelFormRoom === 'Custom' ? panelFormCustomRoom : panelFormRoom;
 
     try {
@@ -1660,11 +1660,11 @@ Output ONLY the raw valid JSON array.`;
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'rgba(15, 23, 42, 0.55)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-            padding: '24px 16px',
+            justifyContent: 'flex-start',
+            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(5px)',
+            WebkitBackdropFilter: 'blur(5px)',
+            padding: '32px 16px',
             overflowY: 'auto',
           }}
           onClick={() => setCreatePanelModalOpen(false)}
@@ -1674,24 +1674,39 @@ Output ONLY the raw valid JSON array.`;
             style={{
               width: '100%',
               maxWidth: '640px',
-              maxHeight: 'min(90vh, 700px)',
-              overflowY: 'auto',
-              padding: '24px',
+              maxHeight: 'min(90vh, 720px)',
               backgroundColor: '#FFFFFF',
               borderRadius: '16px',
               boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
               border: '1px solid var(--color-border)',
-              margin: 'auto',
+              margin: 'auto 0',
+              padding: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px', gap: '12px' }}>
+            {/* Pinned Modal Header */}
+            <div
+              className="modal-header-responsive"
+              style={{
+                padding: '18px 24px',
+                borderBottom: '1px solid var(--color-hairline)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                gap: '12px',
+                backgroundColor: '#FFFFFF',
+                flexShrink: 0,
+              }}
+            >
               <div style={{ flex: 1 }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-ink)' }}>
                   <PlusCircle size={18} color="#2563EB" /> Add Single Panel (Manual Configuration)
                 </h3>
                 <p style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                  Configure presentation shifts (e.g. 8–10 AM / 12–2 PM), room numbers in AB10, and assign conflict-free judges.
+                  Configure presentation shifts and assign conflict-free judges for project teams.
                 </p>
               </div>
               <button
@@ -1717,225 +1732,163 @@ Output ONLY the raw valid JSON array.`;
               </button>
             </div>
 
-            {panelFormError && (
-              <div className="alert-banner alert-danger" style={{ marginBottom: '16px', fontSize: '13px' }}>
-                {panelFormError}
-              </div>
-            )}
-
-            <form onSubmit={handleCreateVisualPanel} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {/* Phase Selection */}
-              <div>
-                <label className="input-label" style={{ fontSize: '12px', fontWeight: 600 }}>Evaluation Phase</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                  {[
-                    { num: 1, name: 'Phase 1', date: '2026-09-19', label: '19-Sep (20 M)' },
-                    { num: 2, name: 'Phase 2', date: '2026-10-17', label: '17-Oct (40 M)' },
-                    { num: 3, name: 'Phase 3', date: '2026-11-20', label: 'Final (40 M)' },
-                  ].map((p) => (
-                    <button
-                      key={p.num}
-                      type="button"
-                      onClick={() => {
-                        setPanelFormPhase(p.num as 1 | 2 | 3);
-                        setPanelFormDate(p.date);
-                      }}
-                      className={panelFormPhase === p.num ? 'btn btn-primary' : 'btn btn-outline'}
-                      style={{ padding: '8px', fontSize: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}
-                    >
-                      <span style={{ fontWeight: 700 }}>{p.name}</span>
-                      <span style={{ fontSize: '10px', opacity: 0.85 }}>{p.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Panel Name */}
-              <div>
-                <label className="input-label" style={{ fontSize: '12px', fontWeight: 600 }}>Panel Title (Optional)</label>
-                <input
-                  type="text"
-                  className="input-field"
-                  placeholder="e.g. Panel 1 (DS & AI Specialization)"
-                  value={panelFormName}
-                  onChange={(e) => setPanelFormName(e.target.value)}
-                />
-              </div>
-
-              {/* Team Range */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label className="input-label" style={{ fontSize: '12px', fontWeight: 600 }}>Team Range Start (#)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="102"
-                    className="input-field"
-                    required
-                    value={panelFormRangeStart}
-                    onChange={(e) => setPanelFormRangeStart(Number(e.target.value))}
-                  />
-                </div>
-                <div>
-                  <label className="input-label" style={{ fontSize: '12px', fontWeight: 600 }}>Team Range End (#)</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="102"
-                    className="input-field"
-                    required
-                    value={panelFormRangeEnd}
-                    onChange={(e) => setPanelFormRangeEnd(Number(e.target.value))}
-                  />
-                </div>
-              </div>
-
-              {/* Presentation Shift / Batch (2 Batches Supported) */}
-              <div>
-                <label className="input-label" style={{ fontSize: '12px', fontWeight: 600 }}>Presentation Shift / Batch</label>
-                <select
-                  className="input-field"
-                  value={panelFormShift}
-                  onChange={(e) => setPanelFormShift(e.target.value)}
-                >
-                  <option value="Batch 1: Morning (08:00 AM - 10:00 AM)">Batch 1: Morning (08:00 AM - 10:00 AM)</option>
-                  <option value="Batch 2: Afternoon (12:00 PM - 02:00 PM)">Batch 2: Afternoon (12:00 PM - 02:00 PM)</option>
-                  <option value="Shift 1: Morning (09:00 AM - 01:00 PM)">Shift 1: Morning (09:00 AM - 01:00 PM)</option>
-                  <option value="Shift 2: Evening (02:00 PM - 06:00 PM)">Shift 2: Evening (02:00 PM - 06:00 PM)</option>
-                  <option value="Custom">Custom Shift Timing...</option>
-                </select>
-                {panelFormShift === 'Custom' && (
-                  <input
-                    type="text"
-                    className="input-field"
-                    style={{ marginTop: '8px' }}
-                    placeholder="e.g. Batch 3: Evening (03:00 PM - 05:00 PM)"
-                    value={panelFormCustomShift}
-                    onChange={(e) => setPanelFormCustomShift(e.target.value)}
-                    required
-                  />
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleCreateVisualPanel} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+              <div
+                className="modal-body-responsive"
+                style={{
+                  padding: '20px 24px',
+                  overflowY: 'auto',
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px',
+                }}
+              >
+                {panelFormError && (
+                  <div className="alert-banner alert-danger" style={{ fontSize: '13px' }}>
+                    {panelFormError}
+                  </div>
                 )}
-              </div>
 
-              {/* Venue & Room Number (AB10) */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                {/* Team Range */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label className="input-label" style={{ fontSize: '12px', fontWeight: 600 }}>Team Range Start (#)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="102"
+                      className="input-field"
+                      required
+                      value={panelFormRangeStart}
+                      onChange={(e) => setPanelFormRangeStart(Number(e.target.value))}
+                    />
+                  </div>
+                  <div>
+                    <label className="input-label" style={{ fontSize: '12px', fontWeight: 600 }}>Team Range End (#)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="102"
+                      className="input-field"
+                      required
+                      value={panelFormRangeEnd}
+                      onChange={(e) => setPanelFormRangeEnd(Number(e.target.value))}
+                    />
+                  </div>
+                </div>
+
+                {/* Presentation Shift / Batch Input Bar */}
                 <div>
-                  <label className="input-label" style={{ fontSize: '12px', fontWeight: 600 }}>Venue Block</label>
+                  <label className="input-label" style={{ fontSize: '12px', fontWeight: 600 }}>Presentation Shift / Batch</label>
                   <input
                     type="text"
                     className="input-field"
-                    value="Academic Block AB10"
-                    disabled
-                    style={{ backgroundColor: 'var(--color-canvas-soft)' }}
+                    placeholder="e.g. Batch 1: Morning (08:00 AM - 10:00 AM) or Shift 1"
+                    value={panelFormShift}
+                    onChange={(e) => setPanelFormShift(e.target.value)}
+                    required
                   />
                 </div>
-                <div>
-                  <label className="input-label" style={{ fontSize: '12px', fontWeight: 600 }}>Room Number</label>
-                  <select
-                    className="input-field"
-                    value={panelFormRoom}
-                    onChange={(e) => setPanelFormRoom(e.target.value)}
-                  >
-                    <option value="Room 402">Room 402</option>
-                    <option value="Room 405">Room 405</option>
-                    <option value="Room 408">Room 408</option>
-                    <option value="Room 410">Room 410</option>
-                    <option value="Seminar Hall 1">Seminar Hall 1</option>
-                    <option value="Seminar Hall 2">Seminar Hall 2</option>
-                    <option value="Custom">Custom Room...</option>
-                  </select>
-                  {panelFormRoom === 'Custom' && (
+
+                {/* Select Faculty Judges */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label className="input-label" style={{ fontSize: '12px', fontWeight: 600, margin: 0 }}>
+                      Assign Faculty Judges ({panelFormSelectedJudges.length} selected)
+                    </label>
+                    {panelFormSelectedJudges.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setPanelFormSelectedJudges([])}
+                        style={{ fontSize: '11px', color: '#2563EB', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                      >
+                        Clear Selection ({panelFormSelectedJudges.length})
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Faculty Search Bar */}
+                  <div className="search-input-wrapper" style={{ width: '100%' }}>
                     <input
                       type="text"
                       className="input-field"
-                      style={{ marginTop: '8px' }}
-                      placeholder="e.g. Room 501"
-                      value={panelFormCustomRoom}
-                      onChange={(e) => setPanelFormCustomRoom(e.target.value)}
-                      required
+                      style={{ height: '36px', fontSize: '12.5px' }}
+                      placeholder="Search faculty by name, email, or phone..."
+                      value={judgeSearchQuery}
+                      onChange={(e) => setJudgeSearchQuery(e.target.value)}
                     />
-                  )}
-                </div>
-              </div>
-
-              {/* Date */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <label className="input-label" style={{ fontSize: '12px', fontWeight: 600, margin: 0 }}>Presentation Date</label>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <button
-                      type="button"
-                      onClick={() => setPanelFormDate('2026-09-19')}
-                      className="btn"
-                      style={{ padding: '2px 6px', fontSize: '10.5px', height: 'auto', backgroundColor: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE' }}
-                    >
-                      19-Sep (Phase 1)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPanelFormDate('2026-10-17')}
-                      className="btn"
-                      style={{ padding: '2px 6px', fontSize: '10.5px', height: 'auto', backgroundColor: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0' }}
-                    >
-                      17-Oct (Phase 2)
-                    </button>
+                    <div className="search-icon">
+                      <Search size={13} />
+                    </div>
+                    {judgeSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setJudgeSearchQuery('')}
+                        className="clear-btn"
+                        aria-label="Clear search"
+                      >
+                        <X size={13} />
+                      </button>
+                    )}
                   </div>
-                </div>
-                <input
-                  type="date"
-                  className="input-field"
-                  required
-                  value={panelFormDate}
-                  onChange={(e) => setPanelFormDate(e.target.value)}
-                />
-              </div>
 
-              {/* Select Faculty Judges */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label className="input-label" style={{ fontSize: '12px', fontWeight: 600, margin: 0 }}>
-                    Assign Faculty Judges ({panelFormSelectedJudges.length} selected)
-                  </label>
-                  {panelFormSelectedJudges.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setPanelFormSelectedJudges([])}
-                      style={{ fontSize: '11px', color: '#2563EB', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-                    >
-                      Clear Selection ({panelFormSelectedJudges.length})
-                    </button>
-                  )}
-                </div>
-
-                {/* Faculty Search Bar */}
-                <div className="search-input-wrapper" style={{ width: '100%' }}>
-                  <input
-                    type="text"
-                    className="input-field"
-                    style={{ height: '36px', fontSize: '12.5px' }}
-                    placeholder="Search faculty by name, email, or phone..."
-                    value={judgeSearchQuery}
-                    onChange={(e) => setJudgeSearchQuery(e.target.value)}
-                  />
-                  <div className="search-icon">
-                    <Search size={13} />
-                  </div>
-                  {judgeSearchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setJudgeSearchQuery('')}
-                      className="clear-btn"
-                      aria-label="Clear search"
-                    >
-                      <X size={13} />
-                    </button>
-                  )}
-                </div>
-
-                {/* Filtered Faculty Checklist */}
-                <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1px solid var(--color-hairline)', borderRadius: '8px', padding: '6px', display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: '#FAFAFA' }}>
-                  {supervisors
-                    .filter((s: any) => {
+                  {/* Filtered Faculty Checklist */}
+                  <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1px solid var(--color-hairline)', borderRadius: '8px', padding: '6px', display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: '#FAFAFA' }}>
+                    {supervisors
+                      .filter((s: any) => {
+                        if (!judgeSearchQuery.trim()) return true;
+                        const q = judgeSearchQuery.toLowerCase();
+                        return (
+                          (s.name || '').toLowerCase().includes(q) ||
+                          (s.email || '').toLowerCase().includes(q) ||
+                          (s.phone || '').toLowerCase().includes(q) ||
+                          (s.cabin || '').toLowerCase().includes(q)
+                        );
+                      })
+                      .map((s: any) => {
+                        const isSelected = panelFormSelectedJudges.includes(s.id);
+                        return (
+                          <label
+                            key={s.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '6px 8px',
+                              borderRadius: '6px',
+                              backgroundColor: isSelected ? '#EFF6FF' : '#FFFFFF',
+                              border: isSelected ? '1px solid #BFDBFE' : '1px solid var(--color-hairline)',
+                              cursor: 'pointer',
+                              fontSize: '12.5px',
+                              transition: 'all 0.12s ease',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setPanelFormSelectedJudges([...panelFormSelectedJudges, s.id]);
+                                  } else {
+                                    setPanelFormSelectedJudges(panelFormSelectedJudges.filter((id) => id !== s.id));
+                                  }
+                                }}
+                              />
+                              <div style={{ minWidth: 0 }}>
+                                <span style={{ fontWeight: 600, color: 'var(--color-ink)' }}>{s.name}</span>
+                                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginLeft: '6px' }}>({s.email})</span>
+                              </div>
+                            </div>
+                            <span className="badge badge-neutral" style={{ fontSize: '10px', flexShrink: 0, marginLeft: '8px' }}>
+                              {s.assignedTeamsCount} teams supervised
+                            </span>
+                          </label>
+                        );
+                      })}
+                    {supervisors.filter((s: any) => {
                       if (!judgeSearchQuery.trim()) return true;
                       const q = judgeSearchQuery.toLowerCase();
                       return (
@@ -1944,66 +1897,28 @@ Output ONLY the raw valid JSON array.`;
                         (s.phone || '').toLowerCase().includes(q) ||
                         (s.cabin || '').toLowerCase().includes(q)
                       );
-                    })
-                    .map((s: any) => {
-                      const isSelected = panelFormSelectedJudges.includes(s.id);
-                      return (
-                        <label
-                          key={s.id}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '6px 8px',
-                            borderRadius: '6px',
-                            backgroundColor: isSelected ? '#EFF6FF' : '#FFFFFF',
-                            border: isSelected ? '1px solid #BFDBFE' : '1px solid var(--color-hairline)',
-                            cursor: 'pointer',
-                            fontSize: '12.5px',
-                            transition: 'all 0.12s ease',
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setPanelFormSelectedJudges([...panelFormSelectedJudges, s.id]);
-                                } else {
-                                  setPanelFormSelectedJudges(panelFormSelectedJudges.filter((id) => id !== s.id));
-                                }
-                              }}
-                            />
-                            <div style={{ minWidth: 0 }}>
-                              <span style={{ fontWeight: 600, color: 'var(--color-ink)' }}>{s.name}</span>
-                              <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', marginLeft: '6px' }}>({s.email})</span>
-                            </div>
-                          </div>
-                          <span className="badge badge-neutral" style={{ fontSize: '10px', flexShrink: 0, marginLeft: '8px' }}>
-                            {s.assignedTeamsCount} teams supervised
-                          </span>
-                        </label>
-                      );
-                    })}
-                  {supervisors.filter((s: any) => {
-                    if (!judgeSearchQuery.trim()) return true;
-                    const q = judgeSearchQuery.toLowerCase();
-                    return (
-                      (s.name || '').toLowerCase().includes(q) ||
-                      (s.email || '').toLowerCase().includes(q) ||
-                      (s.phone || '').toLowerCase().includes(q) ||
-                      (s.cabin || '').toLowerCase().includes(q)
-                    );
-                  }).length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '16px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                      No faculty found matching &ldquo;{judgeSearchQuery}&rdquo;
-                    </div>
-                  )}
+                    }).length === 0 && (
+                      <div style={{ textAlign: 'center', padding: '16px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                        No faculty found matching &ldquo;{judgeSearchQuery}&rdquo;
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px', paddingTop: '14px', borderTop: '1px solid #F1F5F9' }}>
+              {/* Pinned Modal Footer */}
+              <div
+                className="modal-footer-responsive"
+                style={{
+                  padding: '16px 24px',
+                  borderTop: '1px solid var(--color-hairline)',
+                  backgroundColor: '#FFFFFF',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '10px',
+                  flexShrink: 0,
+                }}
+              >
                 <button
                   type="button"
                   className="btn btn-outline"
@@ -2054,12 +1969,14 @@ Output ONLY the raw valid JSON array.`;
               inset: 0,
               zIndex: 1300,
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'rgba(15, 23, 42, 0.5)',
-              backdropFilter: 'blur(2px)',
-              WebkitBackdropFilter: 'blur(2px)',
-              padding: '20px',
+              justifyContent: 'flex-start',
+              backgroundColor: 'rgba(15, 23, 42, 0.6)',
+              backdropFilter: 'blur(5px)',
+              WebkitBackdropFilter: 'blur(5px)',
+              padding: '32px 16px',
+              overflowY: 'auto',
             }}
             onClick={() => setJsonModalOpen(false)}
           >
@@ -2068,6 +1985,7 @@ Output ONLY the raw valid JSON array.`;
               style={{
                 width: '100%',
                 maxWidth: '860px',
+                margin: 'auto 0',
                 maxHeight: '94vh',
                 overflowY: 'auto',
                 padding: 0,
@@ -2473,11 +2391,11 @@ Output ONLY the raw valid JSON array.`;
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'rgba(15, 23, 42, 0.55)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-            padding: '24px 16px',
+            justifyContent: 'flex-start',
+            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(5px)',
+            WebkitBackdropFilter: 'blur(5px)',
+            padding: '32px 16px',
             overflowY: 'auto',
           }}
           onClick={() => setSelectedTeamModal(null)}
@@ -2723,12 +2641,14 @@ Output ONLY the raw valid JSON array.`;
             inset: 0,
             zIndex: 1400,
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'rgba(15, 23, 42, 0.45)',
-            backdropFilter: 'blur(3px)',
-            WebkitBackdropFilter: 'blur(3px)',
-            padding: '16px',
+            justifyContent: 'flex-start',
+            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(5px)',
+            WebkitBackdropFilter: 'blur(5px)',
+            padding: '32px 16px',
+            overflowY: 'auto',
           }}
           onClick={() => setScoreEditModalOpen(false)}
         >
@@ -2742,6 +2662,7 @@ Output ONLY the raw valid JSON array.`;
               borderRadius: '16px',
               boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
               border: '1px solid var(--color-border)',
+              margin: 'auto 0',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -2855,11 +2776,11 @@ Output ONLY the raw valid JSON array.`;
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'rgba(15, 23, 42, 0.55)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-            padding: '24px 16px',
+            justifyContent: 'flex-start',
+            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(5px)',
+            WebkitBackdropFilter: 'blur(5px)',
+            padding: '32px 16px',
             overflowY: 'auto',
           }}
           onClick={() => setSelectedSupervisorModal(null)}
@@ -2869,24 +2790,38 @@ Output ONLY the raw valid JSON array.`;
             style={{
               width: '100%',
               maxWidth: '720px',
-              maxHeight: 'min(90vh, 680px)',
-              overflowY: 'auto',
-              padding: '24px',
+              maxHeight: 'min(90vh, 720px)',
               borderRadius: '16px',
               backgroundColor: '#FFFFFF',
               boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
               border: '1px solid var(--color-border)',
-              margin: 'auto',
+              margin: 'auto 0',
+              padding: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px', gap: '12px' }}>
+            {/* Pinned Header */}
+            <div
+              className="modal-header-responsive"
+              style={{
+                padding: '18px 24px',
+                borderBottom: '1px solid var(--color-hairline)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                gap: '12px',
+                backgroundColor: '#FFFFFF',
+                flexShrink: 0,
+              }}
+            >
               <div style={{ flex: 1 }}>
                 <span className="badge badge-brand" style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
                   Faculty Supervisor
                 </span>
-                <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.02em', margin: '2px 0 6px 0' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.02em', margin: '2px 0 6px 0' }}>
                   {selectedSupervisorModal.name}
                 </h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
@@ -2933,66 +2868,89 @@ Output ONLY the raw valid JSON array.`;
               </button>
             </div>
 
-            {/* Assigned Teams */}
-            <div style={{ marginBottom: '22px' }}>
-              <h4 style={{ fontSize: '15px', fontWeight: 800, marginBottom: '10px', color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                Assigned Teams <span className="badge badge-neutral" style={{ fontSize: '11px' }}>{selectedSupervisorModal.assignedTeams?.length || 0}</span>
-              </h4>
-              <div className="data-table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Team</th>
-                      <th>Leader</th>
-                      <th>Members</th>
-                      <th>Clearances</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedSupervisorModal.assignedTeams?.map((t: any) => (
-                      <tr key={t.id}>
-                        <td><strong>{t.team_name}</strong></td>
-                        <td style={{ fontSize: '12px' }}>{t.leaderName}</td>
-                        <td style={{ fontSize: '12px' }}>{t.studentCount} Students</td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '4px' }}>
-                            <span className={`badge ${t.phase1_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>P1</span>
-                            <span className={`badge ${t.phase2_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>P2</span>
-                            <span className={`badge ${t.phase3_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>P3</span>
-                          </div>
-                        </td>
+            {/* Scrollable Body */}
+            <div
+              className="modal-body-responsive"
+              style={{
+                padding: '20px 24px',
+                overflowY: 'auto',
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px',
+              }}
+            >
+              {/* Assigned Teams */}
+              <div>
+                <h4 style={{ fontSize: '15px', fontWeight: 800, marginBottom: '10px', color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  Assigned Teams <span className="badge badge-neutral" style={{ fontSize: '11px' }}>{selectedSupervisorModal.assignedTeams?.length || 0}</span>
+                </h4>
+                <div className="data-table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Team</th>
+                        <th>Leader</th>
+                        <th>Members</th>
+                        <th>Clearances</th>
                       </tr>
+                    </thead>
+                    <tbody>
+                      {selectedSupervisorModal.assignedTeams?.map((t: any) => (
+                        <tr key={t.id}>
+                          <td><strong>{t.team_name}</strong></td>
+                          <td style={{ fontSize: '12px' }}>{t.leaderName}</td>
+                          <td style={{ fontSize: '12px' }}>{t.studentCount} Students</td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <span className={`badge ${t.phase1_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>P1</span>
+                              <span className={`badge ${t.phase2_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>P2</span>
+                              <span className={`badge ${t.phase3_approved ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '10px' }}>P3</span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Assigned Panel Duties */}
+              <div>
+                <h4 style={{ fontSize: '15px', fontWeight: 800, marginBottom: '10px', color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  Panel Judge Duties <span className="badge badge-neutral" style={{ fontSize: '11px' }}>{selectedSupervisorModal.assignedPanels?.length || 0}</span>
+                </h4>
+                {selectedSupervisorModal.assignedPanels?.length === 0 ? (
+                  <div style={{ padding: '16px', textAlign: 'center', backgroundColor: 'var(--color-canvas-soft)', borderRadius: '10px', border: '1px dashed var(--color-border)', color: 'var(--color-text-muted)', fontSize: '13px' }}>
+                    No panel evaluation duties assigned.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {selectedSupervisorModal.assignedPanels?.map((p: any) => (
+                      <div key={p.id} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-canvas-soft)', fontSize: '12.5px' }}>
+                        <div style={{ fontWeight: 700, color: 'var(--color-ink)' }}>{p.panel_name} (Phase {p.phase_number})</div>
+                        <div style={{ color: 'var(--color-text-muted)', fontSize: '11.5px', marginTop: '3px' }}>
+                          {p.range} • {p.time_window} • Venue: {p.room_number || 'Room 402 (AB10)'}
+                        </div>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Assigned Panel Duties */}
-            <div>
-              <h4 style={{ fontSize: '15px', fontWeight: 800, marginBottom: '10px', color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                Panel Judge Duties <span className="badge badge-neutral" style={{ fontSize: '11px' }}>{selectedSupervisorModal.assignedPanels?.length || 0}</span>
-              </h4>
-              {selectedSupervisorModal.assignedPanels?.length === 0 ? (
-                <div style={{ padding: '16px', textAlign: 'center', backgroundColor: 'var(--color-canvas-soft)', borderRadius: '10px', border: '1px dashed var(--color-border)', color: 'var(--color-text-muted)', fontSize: '13px' }}>
-                  No panel evaluation duties assigned.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {selectedSupervisorModal.assignedPanels?.map((p: any) => (
-                    <div key={p.id} style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-canvas-soft)', fontSize: '12.5px' }}>
-                      <div style={{ fontWeight: 700, color: 'var(--color-ink)' }}>{p.panel_name} (Phase {p.phase_number})</div>
-                      <div style={{ color: 'var(--color-text-muted)', fontSize: '11.5px', marginTop: '3px' }}>
-                        {p.range} • {p.time_window} • Venue: {p.room_number || 'Room 402 (AB10)'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'flex-end' }}>
+            {/* Pinned Footer */}
+            <div
+              className="modal-footer-responsive"
+              style={{
+                padding: '16px 24px',
+                borderTop: '1px solid var(--color-hairline)',
+                backgroundColor: '#FFFFFF',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                flexShrink: 0,
+              }}
+            >
               <button type="button" onClick={() => setSelectedSupervisorModal(null)} className="btn btn-outline" style={{ minWidth: '100px', padding: '8px 18px', fontWeight: 600 }}>
                 Close
               </button>
