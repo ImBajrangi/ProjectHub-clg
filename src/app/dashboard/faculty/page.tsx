@@ -123,7 +123,7 @@ export default function FacultyDashboardPage() {
     try {
       const [authRes, teamsRes, panelRes] = await Promise.all([
         currentUser ? Promise.resolve(null) : fetch('/api/auth/me'),
-        fetch('/api/team'),
+        fetch('/api/team', { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } }),
         fetch('/api/panels'),
       ]);
 
@@ -210,7 +210,7 @@ export default function FacultyDashboardPage() {
           try {
             const bc = new BroadcastChannel('codeshastra_notifications_channel');
             bc.postMessage({ type: 'UPDATE' });
-            bc.close();
+            setTimeout(() => { try { bc.close(); } catch {} }, 1000);
           } catch { }
         }
       } else {
@@ -1969,14 +1969,15 @@ export default function FacultyDashboardPage() {
           style={{
             position: 'fixed',
             inset: 0,
-            zIndex: 1100,
+            zIndex: 1200,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(15, 23, 42, 0.45)',
-            backdropFilter: 'blur(3px)',
-            WebkitBackdropFilter: 'blur(3px)',
-            padding: '20px',
+            backgroundColor: 'rgba(15, 23, 42, 0.5)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            padding: '16px',
+            overflowY: 'auto',
           }}
           onClick={() => setScheduleModalOpen(false)}
         >
@@ -1985,6 +1986,8 @@ export default function FacultyDashboardPage() {
             style={{
               width: '100%',
               maxWidth: '460px',
+              maxHeight: 'min(90vh, 600px)',
+              overflowY: 'auto',
               backgroundColor: '#FFFFFF',
               borderRadius: '16px',
               padding: '24px',
@@ -2088,14 +2091,15 @@ export default function FacultyDashboardPage() {
           style={{
             position: 'fixed',
             inset: 0,
-            zIndex: 1100,
+            zIndex: 1200,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(15, 23, 42, 0.45)',
-            backdropFilter: 'blur(3px)',
-            WebkitBackdropFilter: 'blur(3px)',
-            padding: '20px',
+            backgroundColor: 'rgba(15, 23, 42, 0.5)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            padding: '16px',
+            overflowY: 'auto',
           }}
           onClick={() => setLogModalOpen(false)}
         >
@@ -2103,38 +2107,64 @@ export default function FacultyDashboardPage() {
             className="card animate-scale-in modal-card-responsive"
             style={{
               width: '100%',
-              maxWidth: '540px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
+              maxWidth: '520px',
+              maxHeight: 'min(90vh, 640px)',
+              display: 'flex',
+              flexDirection: 'column',
               backgroundColor: '#FFFFFF',
               borderRadius: '16px',
               padding: '24px',
               boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
               border: '1px solid var(--color-border)',
+              overflowY: 'auto',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '6px' }}>
-              Log Meet {logMeetingIndex} Attendance & Notes
-            </h3>
-            <form onSubmit={handleLogSubmit}>
-              <div style={{ marginBottom: '16px' }}>
-                <label className="input-label">Attendance Roster:</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ marginBottom: '14px', flexShrink: 0 }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '4px' }}>
+                Log Meet {logMeetingIndex} Attendance & Notes
+              </h3>
+              <p style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                Mark student attendance and enter brief minutes of meeting.
+              </p>
+            </div>
+            
+            <form onSubmit={handleLogSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+              <div style={{ marginBottom: '14px' }}>
+                <label className="input-label" style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Attendance Roster</span>
+                  <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                    {attendanceList.filter(a => a.isPresent).length} / {attendanceList.length} Present
+                  </span>
+                </label>
+                <div 
+                  style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '6px',
+                    maxHeight: '180px',
+                    overflowY: 'auto',
+                    paddingRight: '4px',
+                  }}
+                >
                   {attendanceList.map((att, idx) => (
                     <div
                       key={att.studentId}
                       style={{
                         padding: '8px 12px',
-                        borderRadius: 'var(--rounded-sm)',
-                        backgroundColor: 'var(--color-canvas-soft)',
+                        borderRadius: '8px',
+                        backgroundColor: att.isPresent ? '#F0FDF4' : 'var(--color-canvas-soft)',
+                        border: `1px solid ${att.isPresent ? '#BBF7D0' : 'var(--color-hairline)'}`,
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
+                        transition: 'all 0.15s ease',
                       }}
                     >
-                      <span style={{ fontSize: '13px', fontWeight: 600 }}>{att.name}</span>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: att.isPresent ? '#15803D' : 'var(--color-ink)' }}>
+                        {att.name}
+                      </span>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer', fontWeight: 600, color: att.isPresent ? '#15803D' : 'var(--color-text-muted)' }}>
                         <input
                           type="checkbox"
                           checked={att.isPresent}
@@ -2143,6 +2173,7 @@ export default function FacultyDashboardPage() {
                             updated[idx].isPresent = e.target.checked;
                             setAttendanceList(updated);
                           }}
+                          style={{ accentColor: '#16A34A', width: '15px', height: '15px' }}
                         />
                         <span>{att.isPresent ? 'Present' : 'Absent'}</span>
                       </label>
@@ -2151,19 +2182,20 @@ export default function FacultyDashboardPage() {
                 </div>
               </div>
 
-              <div className="input-group">
+              <div className="input-group" style={{ marginBottom: '16px' }}>
                 <label className="input-label">Discussion Summary & Progress Directives</label>
                 <textarea
                   className="textarea-field"
-                  rows={4}
+                  rows={3}
                   value={meetingSummary}
                   onChange={(e) => setMeetingSummary(e.target.value)}
-                  placeholder="Record guidance notes..."
+                  placeholder="Record guidance notes and task directives for next meeting..."
                   required
+                  style={{ minHeight: '70px', resize: 'vertical' }}
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '10px', marginTop: 'auto', paddingTop: '8px' }}>
                 <button type="button" className="btn btn-outline" onClick={() => setLogModalOpen(false)} style={{ flex: 1 }}>
                   Cancel
                 </button>

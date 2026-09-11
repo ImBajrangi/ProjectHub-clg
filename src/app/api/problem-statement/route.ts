@@ -3,6 +3,42 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { NotificationTemplates } from '@/lib/notifications';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export async function GET(req: NextRequest) {
+  try {
+    const token = req.cookies.get('codeshastra_token')?.value || req.headers.get('authorization')?.replace('Bearer ', '');
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const sessionUser = await auth.validateSession(token);
+    if (!sessionUser) return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+
+    let teamId: string | null = null;
+    if (sessionUser.role === 'leader') {
+      const team = await db.getTeamByLeaderId(sessionUser.id);
+      if (!team) return NextResponse.json({ error: 'Team not found for this leader' }, { status: 404 });
+      teamId = team.id;
+    } else {
+      const { searchParams } = new URL(req.url);
+      teamId = searchParams.get('teamId');
+    }
+
+    if (!teamId) {
+      return NextResponse.json({ error: 'teamId is required' }, { status: 400 });
+    }
+
+    const problemStatement = await db.getProblemStatementByTeam(teamId);
+    return NextResponse.json(
+      { problemStatement },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' } }
+    );
+  } catch (error) {
+    console.error('Problem statement GET API error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const token = req.cookies.get('codeshastra_token')?.value || req.headers.get('authorization')?.replace('Bearer ', '');

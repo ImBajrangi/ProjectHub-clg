@@ -464,7 +464,17 @@ export const db = {
       if (found) return found;
     }
     const store = await this.getStore();
-    return store.problem_statements.find((p) => p.team_id === teamId) || null;
+    const existing = store.problem_statements.find((p) => p.team_id === teamId);
+    if (existing) return existing;
+
+    try {
+      const { data: dbPs } = await supabase.from('problem_statements').select('*').eq('team_id', teamId).maybeSingle();
+      if (dbPs) {
+        store.problem_statements.push(dbPs);
+        return dbPs;
+      }
+    } catch {}
+    return null;
   },
 
   async saveProblemStatement(
@@ -473,7 +483,14 @@ export const db = {
     description: string
   ): Promise<{ success: boolean; error?: string; problemStatement?: ProblemStatement }> {
     const store = await this.getStore();
-    const existing = store.problem_statements.find((p) => p.team_id === teamId);
+    let existing = store.problem_statements.find((p) => p.team_id === teamId);
+    if (!existing) {
+      const { data: dbPs } = await supabase.from('problem_statements').select('*').eq('team_id', teamId).maybeSingle();
+      if (dbPs) {
+        store.problem_statements.push(dbPs);
+        existing = dbPs;
+      }
+    }
 
     if (existing && existing.locked) {
       return { success: false, error: 'Problem statement is approved and permanently locked.' };
@@ -489,13 +506,17 @@ export const db = {
       // Update Supabase in parallel
       supabase
         .from('problem_statements')
-        .update({
-          title,
-          description,
+        .upsert({
+          id: existing.id,
+          team_id: existing.team_id,
+          title: existing.title,
+          description: existing.description,
           status: 'pending',
+          locked: existing.locked || false,
+          approved_at: existing.approved_at || null,
+          supervisor_remarks: existing.supervisor_remarks || null,
           updated_at: now,
-        })
-        .eq('id', existing.id)
+        }, { onConflict: 'team_id' })
         .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('problem_statements (update)', writeErr); });
 
       return { success: true, problemStatement: existing };
@@ -524,38 +545,65 @@ export const db = {
     remarks?: string
   ): Promise<{ success: boolean; error?: string; problemStatement?: ProblemStatement }> {
     const store = await this.getStore();
-    const existing = store.problem_statements.find((p) => p.team_id === teamId);
+    let existing = store.problem_statements.find((p) => p.team_id === teamId);
 
     if (!existing) {
-      return { success: false, error: 'Problem statement not found' };
+      const { data: dbPs } = await supabase.from('problem_statements').select('*').eq('team_id', teamId).maybeSingle();
+      if (dbPs) {
+        store.problem_statements.push(dbPs);
+        existing = dbPs;
+      }
     }
 
     const now = new Date().toISOString();
-    if (action === 'approve') {
-      existing.status = 'approved';
-      existing.locked = true;
-      existing.approved_at = now;
-      existing.supervisor_remarks = remarks || 'Approved without modifications.';
-      existing.updated_at = now;
+    if (existing) {
+      if (action === 'approve') {
+        existing.status = 'approved';
+        existing.locked = true;
+        existing.approved_at = now;
+        existing.supervisor_remarks = remarks || 'Approved without modifications.';
+        existing.updated_at = now;
+      } else {
+        existing.status = 'revision_requested';
+        existing.supervisor_remarks = remarks || 'Revisions required.';
+        existing.updated_at = now;
+      }
+
+      supabase
+        .from('problem_statements')
+        .upsert({
+          id: existing.id,
+          team_id: existing.team_id,
+          title: existing.title,
+          description: existing.description,
+          status: existing.status,
+          locked: existing.locked,
+          approved_at: existing.approved_at || null,
+          supervisor_remarks: existing.supervisor_remarks,
+          updated_at: now,
+        }, { onConflict: 'team_id' })
+        .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('problem_statements (review)', writeErr); });
+
+      return { success: true, problemStatement: existing };
     } else {
-      existing.status = 'revision_requested';
-      existing.supervisor_remarks = remarks || 'Revisions required.';
-      existing.updated_at = now;
-    }
-
-    supabase
-      .from('problem_statements')
-      .update({
-        status: existing.status,
-        locked: existing.locked,
-        approved_at: existing.approved_at,
-        supervisor_remarks: existing.supervisor_remarks,
+      // Create initial reviewed statement for team
+      const newPs: ProblemStatement = {
+        id: crypto.randomUUID(),
+        team_id: teamId,
+        title: 'Project Proposal',
+        description: '',
+        status: action === 'approve' ? 'approved' : 'revision_requested',
+        locked: action === 'approve',
+        supervisor_remarks: remarks || (action === 'approve' ? 'Approved without modifications.' : 'Revisions required.'),
+        approved_at: action === 'approve' ? now : null,
+        created_at: now,
         updated_at: now,
-      })
-      .eq('team_id', teamId)
-      .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('problem_statements (review)', writeErr); });
+      };
 
-    return { success: true, problemStatement: existing };
+      store.problem_statements.push(newPs);
+      fireAndLog(supabase.from('problem_statements').insert(newPs), 'problem_statements insert review');
+      return { success: true, problemStatement: newPs };
+    }
   },
 
   // Meetings
@@ -1105,6 +1153,32 @@ export const db = {
       await supabase.from('notifications').update({ is_read: true }).eq('user_id', userId);
     } catch (err) {
       console.error('Error updating markAllNotificationsRead in supabase:', err);
+    }
+    return true;
+  },
+
+  async deleteNotification(id: string, userId: string): Promise<boolean> {
+    const store = await this.getStore();
+    store.notifications = store.notifications.filter(
+      (n) => !(String(n.id) === String(id) && String(n.user_id) === String(userId))
+    );
+    try {
+      await supabase.from('notifications').delete().eq('id', id).eq('user_id', userId);
+    } catch (err) {
+      console.error('Error deleting notification in supabase:', err);
+    }
+    return true;
+  },
+
+  async clearAllNotifications(userId: string): Promise<boolean> {
+    const store = await this.getStore();
+    store.notifications = store.notifications.filter(
+      (n) => String(n.user_id) !== String(userId)
+    );
+    try {
+      await supabase.from('notifications').delete().eq('user_id', userId);
+    } catch (err) {
+      console.error('Error clearing notifications in supabase:', err);
     }
     return true;
   },

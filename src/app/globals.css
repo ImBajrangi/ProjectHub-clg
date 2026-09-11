@@ -1256,14 +1256,22 @@ textarea {
   cursor: pointer;
   position: fixed !important;
   inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
   z-index: 1200 !important;
   display: flex !important;
+  flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  background-color: rgba(15, 23, 42, 0.5) !important;
+  background-color: rgba(15, 23, 42, 0.55) !important;
   backdrop-filter: blur(4px) !important;
   -webkit-backdrop-filter: blur(4px) !important;
-  padding: 20px 16px !important;
+  padding: 24px 16px !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
   box-sizing: border-box !important;
@@ -1277,13 +1285,14 @@ textarea {
   cursor: default;
   position: relative !important;
   margin: auto !important;
-  max-height: calc(100dvh - 40px) !important;
-  max-height: calc(100vh - 40px) !important;
+  max-height: min(90dvh, 720px) !important;
+  max-height: min(90vh, 720px) !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
   border-radius: 16px !important;
   box-sizing: border-box !important;
-  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.06) !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.08) !important;
 }
 
 /* Mobile-Friendly Modal Layouts & Grids */
@@ -1292,6 +1301,8 @@ textarea {
   /* Modal Overlays & Centered Responsive Card */
   .modal-overlay-responsive {
     padding: 16px 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
   }
@@ -1302,6 +1313,7 @@ textarea {
     border-radius: 16px !important;
     margin: auto !important;
     width: 100% !important;
+    flex-shrink: 0 !important;
     box-sizing: border-box !important;
   }
 

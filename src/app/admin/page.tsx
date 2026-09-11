@@ -1658,12 +1658,14 @@ Output ONLY the raw valid JSON array.`;
             inset: 0,
             zIndex: 1300,
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(15, 23, 42, 0.45)',
-            backdropFilter: 'blur(1.5px)',
-            WebkitBackdropFilter: 'blur(1.5px)',
-            padding: '20px',
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            padding: '24px 16px',
+            overflowY: 'auto',
           }}
           onClick={() => setCreatePanelModalOpen(false)}
         >
@@ -1672,13 +1674,14 @@ Output ONLY the raw valid JSON array.`;
             style={{
               width: '100%',
               maxWidth: '640px',
-              maxHeight: '92vh',
+              maxHeight: 'min(90vh, 700px)',
               overflowY: 'auto',
               padding: '24px',
               backgroundColor: '#FFFFFF',
               borderRadius: '16px',
               boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
               border: '1px solid var(--color-border)',
+              margin: 'auto',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -2468,12 +2471,14 @@ Output ONLY the raw valid JSON array.`;
             inset: 0,
             zIndex: 1300,
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(15, 23, 42, 0.45)',
-            backdropFilter: 'blur(3px)',
-            WebkitBackdropFilter: 'blur(3px)',
-            padding: '16px',
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            padding: '24px 16px',
+            overflowY: 'auto',
           }}
           onClick={() => setSelectedTeamModal(null)}
         >
@@ -2482,13 +2487,14 @@ Output ONLY the raw valid JSON array.`;
             style={{
               width: '100%',
               maxWidth: '800px',
-              maxHeight: '92vh',
+              maxHeight: 'min(90vh, 720px)',
               overflowY: 'auto',
               padding: '24px',
               borderRadius: '16px',
               backgroundColor: '#FFFFFF',
               boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
               border: '1px solid var(--color-border)',
+              margin: 'auto',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -2840,12 +2846,14 @@ Output ONLY the raw valid JSON array.`;
             inset: 0,
             zIndex: 1300,
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(15, 23, 42, 0.45)',
-            backdropFilter: 'blur(3px)',
-            WebkitBackdropFilter: 'blur(3px)',
-            padding: '16px',
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            padding: '24px 16px',
+            overflowY: 'auto',
           }}
           onClick={() => setSelectedSupervisorModal(null)}
         >
@@ -2854,13 +2862,14 @@ Output ONLY the raw valid JSON array.`;
             style={{
               width: '100%',
               maxWidth: '720px',
-              maxHeight: '90vh',
+              maxHeight: 'min(90vh, 680px)',
               overflowY: 'auto',
               padding: '24px',
               borderRadius: '16px',
               backgroundColor: '#FFFFFF',
               boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
               border: '1px solid var(--color-border)',
+              margin: 'auto',
             }}
             onClick={(e) => e.stopPropagation()}
           >

@@ -49,6 +49,7 @@ export default function Navbar({
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const notifiedIdsRef = React.useRef<Set<string>>(new Set());
   const isInitialFetchRef = React.useRef<boolean>(true);
@@ -245,14 +246,26 @@ export default function Navbar({
   };
 
   const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    setUserMenuOpen(false);
+
+    // 1. Immediately clear client session & storage (0ms instant response)
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch {
-      // Ignore network errors during logout
-    } finally {
       localStorage.removeItem('codeshastra_token');
-      router.push('/login');
-    }
+      sessionStorage.clear();
+    } catch {}
+
+    // 2. Dispatch background server logout with keepalive flag (guarantees completion)
+    try {
+      fetch('/api/auth/logout', {
+        method: 'POST',
+        keepalive: true,
+      }).catch(() => {});
+    } catch {}
+
+    // 3. Instant clean navigation to login (resets all in-memory React states)
+    window.location.href = '/login';
   };
 
   // Safe dashboard routing for logged in users when clicking CodeShastra logo
@@ -477,14 +490,33 @@ export default function Navbar({
                       {/* Sign Out */}
                       <button
                         type="button"
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          handleLogout();
-                        }}
+                        disabled={loggingOut}
+                        onClick={handleLogout}
                         className="nav-dropdown-item nav-dropdown-item-danger"
+                        style={{
+                          opacity: loggingOut ? 0.7 : 1,
+                          cursor: loggingOut ? 'wait' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                        }}
                       >
-                        <LogOut size={15} style={{ flexShrink: 0 }} />
-                        <span>Sign Out</span>
+                        {loggingOut ? (
+                          <div
+                            style={{
+                              width: '14px',
+                              height: '14px',
+                              border: '2px solid rgba(239, 68, 68, 0.3)',
+                              borderTopColor: '#EF4444',
+                              borderRadius: '50%',
+                              animation: 'spin 0.6s linear infinite',
+                              flexShrink: 0,
+                            }}
+                          />
+                        ) : (
+                          <LogOut size={15} style={{ flexShrink: 0 }} />
+                        )}
+                        <span>{loggingOut ? 'Signing Out...' : 'Sign Out'}</span>
                       </button>
                     </div>
                   )}

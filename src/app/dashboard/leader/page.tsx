@@ -168,8 +168,8 @@ export default function LeaderDashboardPage() {
   const loadDashboard = async () => {
     try {
       const [authRes, teamRes] = await Promise.all([
-        currentUser ? Promise.resolve(null) : fetch('/api/auth/me'),
-        fetch('/api/team'),
+        currentUser ? Promise.resolve(null) : fetch('/api/auth/me', { cache: 'no-store' }),
+        fetch('/api/team', { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } }),
       ]);
 
       if (authRes) {
@@ -210,6 +210,38 @@ export default function LeaderDashboardPage() {
 
   useEffect(() => {
     loadDashboard();
+
+    if (typeof window === 'undefined') return;
+
+    // Real-time broadcast and event sync with Faculty / Admin actions
+    const handleUpdate = () => {
+      loadDashboard();
+    };
+
+    window.addEventListener('codeshastra_notification_update', handleUpdate);
+
+    let bc: BroadcastChannel | null = null;
+    if ('BroadcastChannel' in window) {
+      try {
+        bc = new BroadcastChannel('codeshastra_notifications_channel');
+        bc.onmessage = (event) => {
+          if (event.data?.type === 'UPDATE' || event.data?.type === 'INSTANT_NOTIFICATION') {
+            loadDashboard();
+          }
+        };
+      } catch {}
+    }
+
+    // Periodic 12-second background sync to guarantee freshest supervisor remarks & clearances
+    const pollInterval = setInterval(() => {
+      loadDashboard();
+    }, 12000);
+
+    return () => {
+      window.removeEventListener('codeshastra_notification_update', handleUpdate);
+      if (bc) bc.close();
+      clearInterval(pollInterval);
+    };
   }, []);
 
   // Sync editor content when problem statement data loads or changes
@@ -497,40 +529,93 @@ export default function LeaderDashboardPage() {
         {/* TAB 2: PROBLEM STATEMENT (WITH RICH AUTO-EXPANDING BOLD TEXTAREA) */}
         {activeTab === 'problem' && (
           <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
               <div>
-                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--color-ink)' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--color-ink)' }}>
                   Problem Statement Proposal
                 </h3>
                 <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: '2px 0 0' }}>
-                  Immutable once approved by supervisor.
+                  Formal project definition. Immutable once approved by your assigned supervisor.
                 </p>
               </div>
 
               <div style={{ flexShrink: 0 }}>
                 {problemStatement?.status === 'approved' ? (
-                  <span className="badge badge-success" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '3px 8px' }}>
-                    <CheckCircle2 size={12} /> Approved & Locked
+                  <span className="badge badge-success" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', padding: '4px 10px', fontWeight: 600 }}>
+                    <CheckCircle2 size={13} /> Approved & Locked
                   </span>
                 ) : problemStatement?.status === 'revision_requested' ? (
-                  <span className="badge badge-warning" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '3px 8px' }}>
-                    <AlertCircle size={12} /> Needs Revision
+                  <span className="badge badge-warning" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', padding: '4px 10px', fontWeight: 700, backgroundColor: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D' }}>
+                    <AlertCircle size={13} /> Action Required: Revision Requested
                   </span>
                 ) : problemStatement?.status === 'pending' ? (
-                  <span className="badge badge-warning" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '3px 8px' }}>
-                    <Clock size={12} /> Pending Review
+                  <span className="badge badge-warning" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', padding: '4px 10px' }}>
+                    <Clock size={13} /> Pending Supervisor Review
                   </span>
                 ) : (
-                  <span className="badge badge-neutral" style={{ whiteSpace: 'nowrap', fontSize: '11px', padding: '3px 8px' }}>Not Submitted</span>
+                  <span className="badge badge-neutral" style={{ whiteSpace: 'nowrap', fontSize: '12px', padding: '4px 10px' }}>Draft (Not Submitted)</span>
                 )}
               </div>
             </div>
 
-            {problemStatement?.status === 'revision_requested' && problemStatement?.supervisor_remarks && (
-              <div className="alert-banner alert-warning" style={{ marginBottom: '16px' }}>
-                <AlertCircle size={18} style={{ flexShrink: 0 }} />
+            {/* HIGH-PRIORITY REVISION REQUESTED CALLOUT */}
+            {problemStatement?.status === 'revision_requested' && (
+              <div
+                style={{
+                  marginBottom: '20px',
+                  padding: '16px 18px',
+                  backgroundColor: '#FFFBEB',
+                  border: '1px solid #FDE68A',
+                  borderLeft: '4px solid #F59E0B',
+                  borderRadius: '10px',
+                  boxShadow: '0 2px 6px rgba(245, 158, 11, 0.08)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#D97706', flexShrink: 0, marginTop: '2px' }}>
+                    <AlertCircle size={16} strokeWidth={2.5} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                      <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#92400E', margin: 0 }}>
+                        Mentor Revision Requested
+                      </h4>
+                      {supervisor?.fullName && (
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#B45309', backgroundColor: '#FEF3C7', padding: '2px 8px', borderRadius: '4px' }}>
+                          By {supervisor.fullName}
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ marginTop: '6px', fontSize: '13px', color: '#78350F', lineHeight: '1.5', backgroundColor: '#FFFFFF', padding: '10px 14px', borderRadius: '6px', border: '1px solid #FDE68A' }}>
+                      <strong>Directives:</strong> {problemStatement.supervisor_remarks || 'Please refine the problem scope and methodology according to mentor discussion.'}
+                    </div>
+                    <p style={{ margin: '8px 0 0 0', fontSize: '11.5px', color: '#B45309' }}>
+                      💡 Make the necessary adjustments to your Title and Scope below, then click <strong>&quot;Submit Revised Proposal&quot;</strong>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PREVIOUS SUPERVISOR REMARKS (IF CURRENTLY PENDING REVIEW AFTER RE-SUBMISSION) */}
+            {problemStatement?.status === 'pending' && problemStatement?.supervisor_remarks && (
+              <div
+                style={{
+                  marginBottom: '18px',
+                  padding: '12px 16px',
+                  backgroundColor: 'var(--color-canvas-soft)',
+                  border: '1px solid var(--color-hairline)',
+                  borderRadius: '8px',
+                  fontSize: '12.5px',
+                  color: 'var(--color-text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                }}
+              >
+                <Clock size={15} style={{ color: 'var(--color-accent)', flexShrink: 0 }} />
                 <div>
-                  <strong>Supervisor Feedback:</strong> {problemStatement.supervisor_remarks}
+                  <strong>Previous Mentor Feedback:</strong> &ldquo;{problemStatement.supervisor_remarks}&rdquo; (Updated proposal is now awaiting supervisor re-review).
                 </div>
               </div>
             )}
@@ -539,7 +624,7 @@ export default function LeaderDashboardPage() {
               <div className="alert-banner alert-success" style={{ marginBottom: '16px' }}>
                 <Lock size={16} style={{ flexShrink: 0 }} />
                 <div>
-                  <strong>Immutable Lock Enforced:</strong> This proposal has been formally reviewed and approved by your supervisor. Fields are permanently read-only.
+                  <strong>Immutable Lock Enforced:</strong> This proposal has been formally reviewed and approved by {supervisor?.fullName || 'your supervisor'}. Fields are permanently locked.
                 </div>
               </div>
             )}
@@ -581,23 +666,42 @@ export default function LeaderDashboardPage() {
                   title="Dismiss notification"
                   aria-label="Dismiss"
                 >
-                  <X size={15} />
+                  <X size={14} />
                 </button>
               </div>
             )}
 
             <form onSubmit={handleProblemStatementSubmit}>
-              <div className="input-group">
-                <label className="input-label">Project Title</label>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={psTitle}
-                  onChange={(e) => setPsTitle(e.target.value)}
-                  placeholder="Enter project title..."
-                  disabled={isLocked || submittingPs}
-                  required
-                />
+              <div className="input-group" style={{ marginBottom: '16px' }}>
+                <label className="input-label" style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-ink)' }}>
+                  Project Title
+                </label>
+                {isLocked ? (
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      backgroundColor: 'var(--color-canvas-soft)',
+                      borderRadius: 'var(--rounded-sm)',
+                      border: '1px solid var(--color-hairline)',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      color: 'var(--color-ink)',
+                    }}
+                  >
+                    {psTitle || 'Untitled Project'}
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={psTitle}
+                    onChange={(e) => setPsTitle(e.target.value)}
+                    placeholder="Enter project title..."
+                    required
+                    disabled={submittingPs}
+                    style={{ fontSize: '14px', fontWeight: 600 }}
+                  />
+                )}
               </div>
 
               {/* Dynamic Auto-Expanding Rich Bold Text Area */}
@@ -683,11 +787,27 @@ export default function LeaderDashboardPage() {
                     type="submit"
                     className="btn btn-primary"
                     disabled={submittingPs}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 20px',
+                      fontWeight: 600,
+                      backgroundColor: problemStatement?.status === 'revision_requested' ? '#D97706' : undefined,
+                      borderColor: problemStatement?.status === 'revision_requested' ? '#D97706' : undefined,
+                    }}
                   >
                     {submittingPs && <span className="spinner spinner-sm" style={{ borderTopColor: '#FFFFFF', borderColor: 'rgba(255,255,255,0.25)' }} />}
                     <Send size={14} />
-                    <span>{submittingPs ? 'Submitting...' : problemStatement?.status === 'pending' ? 'Update Proposal' : 'Submit for Review'}</span>
+                    <span>
+                      {submittingPs
+                        ? 'Submitting...'
+                        : problemStatement?.status === 'revision_requested'
+                          ? 'Submit Revised Proposal'
+                          : problemStatement?.status === 'pending'
+                            ? 'Update Proposal'
+                            : 'Submit for Review'}
+                    </span>
                   </button>
                 </div>
               )}
