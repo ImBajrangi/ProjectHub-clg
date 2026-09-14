@@ -25,7 +25,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 if (!SUPABASE_SERVICE_KEY) {
   console.error(
-    '\x1b[31m[CRITICAL] SUPABASE_SERVICE_ROLE_KEY is missing from environment variables.\n' +
+    '\x1b[31m[CRITICAL] Database_Api_Key is missing from environment variables.\n' +
     'The app will NOT be able to read/write data. Set it in .env.local.\x1b[0m'
   );
 }
@@ -424,7 +424,7 @@ export const db = {
     try {
       const { data } = await supabase.from('teams').select('*').eq('leader_id', leaderId).maybeSingle();
       if (data) return { ...data, team_name: `Team ${data.team_code}` };
-    } catch {}
+    } catch { }
     return null;
   },
 

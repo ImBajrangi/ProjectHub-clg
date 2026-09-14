@@ -14,6 +14,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import LoadingScreen from '@/components/LoadingScreen';
+import { clientCache } from '@/lib/clientCache';
 
 interface DevProfile {
   name: string;
@@ -205,22 +206,17 @@ function SignUpForm() {
     );
   });
 
-  // Check if session exists
+  const [existingUser, setExistingUser] = useState<any>(null);
+
+  // Check if session exists (informative only - do not force redirect)
   useEffect(() => {
     async function checkExistingSession() {
       try {
-        const res = await fetch('/api/auth/me');
+        const res = await fetch('/api/auth/me', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
-          if (data.user?.role === 'leader') {
-            router.replace('/dashboard/leader');
-            return;
-          } else if (data.user?.role === 'supervisor') {
-            router.replace('/dashboard/faculty');
-            return;
-          } else if (data.user?.role === 'admin') {
-            router.replace('/admin');
-            return;
+          if (data?.authenticated && data?.user) {
+            setExistingUser(data.user);
           }
         }
       } catch (e) {
@@ -241,7 +237,7 @@ function SignUpForm() {
       }
     }
     loadAvailableTeams();
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     if (!selectedTeamId) {
@@ -306,6 +302,10 @@ function SignUpForm() {
 
       // Perform immediate direct login
       try {
+        clientCache.clear();
+        localStorage.clear();
+        sessionStorage.clear();
+
         const loginRes = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -316,13 +316,14 @@ function SignUpForm() {
         if (loginData.token) {
           localStorage.setItem('codeshastra_token', loginData.token);
         }
+        if (loginData.user) {
+          clientCache.set(clientCache.keys.USER_ME, loginData.user);
+        }
       } catch (loginErr) {
         console.error('Direct login error:', loginErr);
       }
 
-      setTimeout(() => {
-        window.location.href = '/dashboard/leader';
-      }, 1800);
+      window.location.replace('/dashboard/leader');
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');
       setSubmitting(false);
@@ -359,6 +360,19 @@ function SignUpForm() {
 
         {/* Centered Spacious White Card */}
         <div className="cohere-login-card">
+          {existingUser && (
+            <div style={{ backgroundColor: 'var(--color-canvas)', border: '1px solid var(--color-hairline)', borderRadius: '10px', padding: '10px 14px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                Active session: <strong style={{ color: 'var(--color-ink)' }}>{existingUser.fullName}</strong> ({existingUser.role})
+              </span>
+              <Link
+                href={existingUser.role === 'admin' ? '/admin' : existingUser.role === 'supervisor' ? '/dashboard/faculty' : '/dashboard/leader'}
+                style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-accent)', textDecoration: 'none' }}
+              >
+                Go to Dashboard →
+              </Link>
+            </div>
+          )}
           <h1 className="cohere-login-title">Sign up</h1>
 
           {/* Error Message Banner */}

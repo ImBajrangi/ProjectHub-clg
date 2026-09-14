@@ -36,6 +36,7 @@ async function performLogout(req: NextRequest) {
     secure: process.env.NODE_ENV === 'production',
   });
   res.cookies.delete('codeshastra_token');
+  res.headers.append('Set-Cookie', 'codeshastra_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; SameSite=Lax');
 
   return res;
 }

@@ -125,17 +125,26 @@ function LoginForm() {
     }
   }, [searchParams]);
 
-  // If already logged in, redirect to dashboard
+  const [activeSessionUser, setActiveSessionUser] = useState<any>(null);
+
+  // Check if session exists (allow switching accounts without force-redirecting)
   useEffect(() => {
+    // If explicitly logging out or switching, flush session immediately
+    if (searchParams.get('logout') === '1' || searchParams.get('switch') === '1') {
+      clientCache.clear();
+      localStorage.clear();
+      sessionStorage.clear();
+      fetch('/api/auth/logout', { method: 'POST', cache: 'no-store' }).catch(() => {});
+      return;
+    }
+
     async function checkSession() {
       try {
         const res = await fetch('/api/auth/me', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (data.authenticated && data.user) {
-            if (data.user.role === 'admin') router.push('/admin');
-            else if (data.user.role === 'supervisor') router.push('/dashboard/faculty');
-            else router.push('/dashboard/leader');
+            setActiveSessionUser(data.user);
           }
         }
       } catch (e) {
@@ -143,7 +152,7 @@ function LoginForm() {
       }
     }
     checkSession();
-  }, [router]);
+  }, [searchParams]);
 
   // Lock body scroll when modal open
   useEffect(() => {
@@ -184,23 +193,25 @@ function LoginForm() {
           return true;
         }
 
+        // Clean stale session caches completely before setting new account state
+        clientCache.clear();
+        localStorage.clear();
+        sessionStorage.clear();
+
         if (data.token) {
           localStorage.setItem('codeshastra_token', data.token);
         }
-
-        // Clean stale session caches before setting new account state
-        clientCache.clear();
         if (data.user) {
           clientCache.set(clientCache.keys.USER_ME, data.user);
         }
 
         const role = data.user?.role;
         if (role === 'admin') {
-          router.push('/admin');
+          window.location.replace('/admin');
         } else if (role === 'supervisor') {
-          router.push('/dashboard/faculty');
+          window.location.replace('/dashboard/faculty');
         } else {
-          router.push('/dashboard/leader');
+          window.location.replace('/dashboard/leader');
         }
         return true;
       } catch (err: any) {
@@ -279,6 +290,66 @@ function LoginForm() {
 
         {/* Center Cohere Login Card */}
         <div className="cohere-login-card">
+          {activeSessionUser && (
+            <div style={{
+              backgroundColor: 'var(--color-canvas)',
+              border: '1px solid var(--color-hairline)',
+              borderRadius: '10px',
+              padding: '12px 14px',
+              marginBottom: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+            }}>
+              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                Active session: <strong style={{ color: 'var(--color-ink)' }}>{activeSessionUser.fullName}</strong> ({activeSessionUser.role})
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  style={{
+                    backgroundColor: 'var(--color-ink)',
+                    color: '#FFF',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => {
+                    const role = activeSessionUser.role;
+                    window.location.replace(role === 'admin' ? '/admin' : role === 'supervisor' ? '/dashboard/faculty' : '/dashboard/leader');
+                  }}
+                >
+                  Continue to Workspace →
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    backgroundColor: 'transparent',
+                    color: 'var(--color-text-muted)',
+                    border: '1px solid var(--color-hairline)',
+                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                  }}
+                  onClick={async () => {
+                    clientCache.clear();
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+                    setActiveSessionUser(null);
+                    setEmail('');
+                    setPassword('');
+                  }}
+                >
+                  Log Out / Switch Account
+                </button>
+              </div>
+            </div>
+          )}
           <h1 className="cohere-login-title">Log in</h1>
 
           {/* Error Message Banner */}

@@ -305,12 +305,18 @@ export default function Navbar({
   };
 
   const handleMarkAllRead = async () => {
+    if (notifications.length === 0 || unreadCount === 0) return;
+
     // 1. Instant 0ms Optimistic UI update
     const previousNotifs = [...notifications];
     const previousUnread = unreadCount;
 
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    const allRead = notifications.map((n) => ({ ...n, is_read: true }));
+    setNotifications(allRead);
     setUnreadCount(0);
+    if (activeUser?.id) {
+      clientCache.set(clientCache.keys.NOTIFICATIONS(activeUser.id), allRead);
+    }
 
     try {
       // 2. Genuine backend & Supabase persistence
@@ -324,13 +330,26 @@ export default function Navbar({
         // Rollback gracefully on actual server error
         setNotifications(previousNotifs);
         setUnreadCount(previousUnread);
+        if (activeUser?.id) {
+          clientCache.set(clientCache.keys.NOTIFICATIONS(activeUser.id), previousNotifs);
+        }
       }
     } catch (e) {
       console.error('Failed to mark all as read:', e);
       // Soft rollback
       setNotifications(previousNotifs);
       setUnreadCount(previousUnread);
+      if (activeUser?.id) {
+        clientCache.set(clientCache.keys.NOTIFICATIONS(activeUser.id), previousNotifs);
+      }
     }
+  };
+
+  const handleCloseDrawer = () => {
+    if (unreadCount > 0) {
+      handleMarkAllRead();
+    }
+    setDrawerOpen(false);
   };
 
   const handleLogout = async () => {
@@ -346,7 +365,7 @@ export default function Navbar({
 
     // Safety fallback: Redirect after 1.5s regardless of network delays
     const fallbackTimer = setTimeout(() => {
-      window.location.replace('/login');
+      window.location.replace('/login?logout=1');
     }, 1500);
 
     try {
@@ -358,7 +377,7 @@ export default function Navbar({
     } catch {}
 
     clearTimeout(fallbackTimer);
-    window.location.replace('/login');
+    window.location.replace('/login?logout=1');
   };
 
   const getInitials = (name?: string) => {
@@ -1161,7 +1180,7 @@ export default function Navbar({
       {/* Notification Drawer with Complete User Name */}
       <NotificationDrawer
         isOpen={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={handleCloseDrawer}
         notifications={notifications}
         onMarkRead={handleMarkRead}
         onMarkAllRead={handleMarkAllRead}

@@ -359,10 +359,30 @@ export default function NotificationDrawer({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
+  const handleClose = () => {
+    if (unreadCount > 0) {
+      onMarkAllRead();
+    }
+    onClose();
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, unreadCount, onMarkAllRead, onClose]);
+
+
+  if (!isOpen) return null;
   return (
     <div
       style={{
@@ -375,7 +395,7 @@ export default function NotificationDrawer({
         backdropFilter: 'blur(1.5px)',
         WebkitBackdropFilter: 'blur(1.5px)',
       }}
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         style={{
@@ -474,7 +494,7 @@ export default function NotificationDrawer({
               )}
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 style={{
                   background: '#F8FAFC',
                   border: '1px solid #E2E8F0',
