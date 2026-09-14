@@ -393,7 +393,7 @@ function LoginForm() {
                   </svg>
 
                   <span className="cohere-slant-text-overlay" style={{ width: '158px', fontSize: '14.5px', fontWeight: 600, height: '44px' }}>
-                    Continue to Workspace
+                    Continue
                   </span>
 
                   <span className="cohere-slant-icon-overlay" style={{ left: '165px', width: '55px', height: '44px' }}>
