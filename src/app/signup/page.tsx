@@ -206,6 +206,7 @@ function SignUpForm() {
     );
   });
 
+  const [showOtherAccountForm, setShowOtherAccountForm] = useState(false);
   const [existingUser, setExistingUser] = useState<any>(null);
 
   // Check if session exists (informative only - do not force redirect)
@@ -360,20 +361,213 @@ function SignUpForm() {
 
         {/* Centered Spacious White Card */}
         <div className="cohere-login-card">
-          {existingUser && (
-            <div style={{ backgroundColor: 'var(--color-canvas)', border: '1px solid var(--color-hairline)', borderRadius: '10px', padding: '10px 14px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                Active session: <strong style={{ color: 'var(--color-ink)' }}>{existingUser.fullName}</strong> ({existingUser.role})
-              </span>
-              <Link
-                href={existingUser.role === 'admin' ? '/admin' : existingUser.role === 'supervisor' ? '/dashboard/faculty' : '/dashboard/leader'}
-                style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-accent)', textDecoration: 'none' }}
-              >
-                Go to Dashboard →
-              </Link>
+          {existingUser && !showOtherAccountForm ? (
+            <div className="cohere-active-session-view">
+              <h1 className="cohere-login-title" style={{ marginBottom: '8px' }}>
+                Welcome back
+              </h1>
+              <p style={{
+                fontSize: '14px',
+                color: '#64748b',
+                textAlign: 'center',
+                marginBottom: '26px',
+                lineHeight: 1.5,
+              }}>
+                You are currently logged into CodeShastra Hub.
+              </p>
+
+              {/* Large Stacked Compartment Box for Active Session */}
+              <div className="cohere-stacked-box" style={{ marginBottom: '24px' }}>
+                {/* User Identity Compartment */}
+                <div className="cohere-compartment" style={{ flexDirection: 'row', alignItems: 'center', gap: '16px', padding: '18px 20px' }}>
+                  <div style={{
+                    width: '46px',
+                    height: '46px',
+                    borderRadius: '50%',
+                    backgroundColor: '#111827',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    fontFamily: 'monospace',
+                    flexShrink: 0,
+                  }}>
+                    {existingUser.fullName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'U'}
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                        {existingUser.fullName}
+                      </span>
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        backgroundColor: existingUser.role === 'admin' ? 'rgba(139, 92, 246, 0.12)' : existingUser.role === 'supervisor' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(59, 130, 246, 0.12)',
+                        color: existingUser.role === 'admin' ? '#7c3aed' : existingUser.role === 'supervisor' ? '#059669' : '#2563eb',
+                      }}>
+                        {existingUser.role === 'admin' ? 'Admin' : existingUser.role === 'supervisor' ? 'Faculty' : 'Leader'}
+                      </span>
+                    </div>
+                    <div className="mono" style={{ fontSize: '13px', color: '#64748b', marginTop: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {existingUser.email}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="cohere-comp-divider" />
+
+                {/* Target Workspace Info */}
+                <div className="cohere-compartment" style={{ padding: '12px 20px', backgroundColor: 'rgba(0, 0, 0, 0.015)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px' }}>
+                    <span style={{ color: '#64748b' }}>Workspace:</span>
+                    <strong style={{ color: '#111827' }}>
+                      {existingUser.role === 'admin' ? 'Administrative Control Center' : existingUser.role === 'supervisor' ? 'Faculty Review Dashboard' : 'Team Leader Workspace'}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Signature Cohere Primary Slanted Button */}
+              <div className="cohere-btn-container" style={{ marginBottom: '22px' }}>
+                <button
+                  type="button"
+                  className="cohere-slant-btn-root"
+                  style={{ width: '220px', height: '44px' }}
+                  onClick={() => {
+                    const role = existingUser.role;
+                    window.location.replace(role === 'admin' ? '/admin' : role === 'supervisor' ? '/dashboard/faculty' : '/dashboard/leader');
+                  }}
+                >
+                  <svg
+                    viewBox="0 0 220 44"
+                    className="cohere-slant-unified-svg"
+                    style={{ width: '220px', height: '44px' }}
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M 8,0 L 160,0 Q 164.5,0 163.25,3.5 L 150.75,40.5 Q 149.5,44 145,44 L 8,44 Q 0,44 0,36 L 0,8 Q 0,0 8,0 Z"
+                      className="cohere-slant-svg-path"
+                    />
+                    <path
+                      d="M 179.5,0 L 212,0 Q 220,0 220,8 L 220,36 Q 220,44 212,44 L 164.5,44 Q 160,44 161.25,40.5 L 173.75,3.5 Q 175,0 179.5,0 Z"
+                      className="cohere-slant-svg-path"
+                    />
+                  </svg>
+
+                  <span className="cohere-slant-text-overlay" style={{ width: '158px', fontSize: '14.5px', fontWeight: 600, height: '44px' }}>
+                    Go to Dashboard
+                  </span>
+
+                  <span className="cohere-slant-icon-overlay" style={{ left: '165px', width: '55px', height: '44px' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="4" y1="12" x2="20" y2="12" />
+                      <polyline points="14 6 20 12 14 18" />
+                    </svg>
+                  </span>
+                </button>
+              </div>
+
+              {/* Secondary Options */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '16px',
+                paddingTop: '14px',
+                borderTop: '1px solid #f1f5f9',
+                fontSize: '13px',
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setShowOtherAccountForm(true)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#334155',
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    textDecoration: 'underline',
+                    padding: '4px 0',
+                  }}
+                >
+                  Claim another team (Sign up)
+                </button>
+                <span style={{ color: '#cbd5e1' }}>•</span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    clientCache.clear();
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
+                    setExistingUser(null);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#dc2626',
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    textDecoration: 'underline',
+                    padding: '4px 0',
+                  }}
+                >
+                  Log out
+                </button>
+              </div>
+
+              {/* Bottom Login Navigation */}
+              <div className="cohere-signup-footer" style={{ marginTop: '20px' }}>
+                Already registered?{' '}
+                <Link href="/login" className="cohere-signup-link">
+                  Sign in to your account
+                </Link>
+              </div>
             </div>
-          )}
-          <h1 className="cohere-login-title">Sign up</h1>
+          ) : (
+            <>
+              {/* If active session exists and user is viewing signup, show small compact active session top bar */}
+              {existingUser && (
+                <div style={{
+                  backgroundColor: 'var(--color-canvas, #f8fafc)',
+                  border: '1px solid var(--color-hairline, #e2e8f0)',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  marginBottom: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '10px',
+                }}>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>
+                    Active session: <strong style={{ color: '#0f172a' }}>{existingUser.fullName}</strong> ({existingUser.role})
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowOtherAccountForm(false)}
+                    style={{
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      color: '#2563eb',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                  >
+                    Return to Session →
+                  </button>
+                </div>
+              )}
+              <h1 className="cohere-login-title">Sign up</h1>
 
           {/* Error Message Banner */}
           {error && (
@@ -1053,6 +1247,8 @@ function SignUpForm() {
               </Link>
             </div>
           </form>
+            </>
+          )}
         </div>
       </main>
 
@@ -1224,6 +1420,44 @@ function SignUpForm() {
           color: #111827;
           text-align: center;
           margin-bottom: 34px;
+        }
+
+        .cohere-session-badge-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          background-color: #ecfdf5;
+          border: 1px solid #a7f3d0;
+          color: #065f46;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          padding: 4px 12px;
+          border-radius: 9999px;
+        }
+
+        .cohere-pulse-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background-color: #10b981;
+          box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+          animation: cohere-pulse-green 1.8s infinite;
+        }
+
+        @keyframes cohere-pulse-green {
+          0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+          }
+          70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+          }
+          100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+          }
         }
 
         /* Stacked Compartment Box */

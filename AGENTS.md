@@ -28,3 +28,5 @@ Password: CodeShastra@6128
 
 - For real-time applications, isolate client and server caches strictly to identity/auth tokens; transactional domain entities (meetings, notifications, submissions) must always read and write directly to the primary database to prevent state divergence.
 
+- In cloud-native deployments, ban runtime writes to local filesystem databases (.json, .sqlite, .db); ensure all persistent CRUD operations interface exclusively with remote database clients (Supabase) to prevent split-brain states across serverless environments.
+

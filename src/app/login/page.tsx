@@ -125,6 +125,7 @@ function LoginForm() {
     }
   }, [searchParams]);
 
+  const [showOtherAccountForm, setShowOtherAccountForm] = useState(false);
   const [activeSessionUser, setActiveSessionUser] = useState<any>(null);
 
   // Check if session exists (allow switching accounts without force-redirecting)
@@ -134,7 +135,7 @@ function LoginForm() {
       clientCache.clear();
       localStorage.clear();
       sessionStorage.clear();
-      fetch('/api/auth/logout', { method: 'POST', cache: 'no-store' }).catch(() => {});
+      fetch('/api/auth/logout', { method: 'POST', cache: 'no-store' }).catch(() => { });
       return;
     }
 
@@ -290,205 +291,356 @@ function LoginForm() {
 
         {/* Center Cohere Login Card */}
         <div className="cohere-login-card">
-          {activeSessionUser && (
-            <div style={{
-              backgroundColor: 'var(--color-canvas)',
-              border: '1px solid var(--color-hairline)',
-              borderRadius: '10px',
-              padding: '12px 14px',
-              marginBottom: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-            }}>
-              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                Active session: <strong style={{ color: 'var(--color-ink)' }}>{activeSessionUser.fullName}</strong> ({activeSessionUser.role})
+          {activeSessionUser && !showOtherAccountForm ? (
+            <div className="cohere-active-session-view">
+              <h1 className="cohere-login-title" style={{ marginBottom: '8px' }}>
+                Welcome back
+              </h1>
+              <p style={{
+                fontSize: '14px',
+                color: '#64748b',
+                textAlign: 'center',
+                marginBottom: '26px',
+                lineHeight: 1.5,
+              }}>
+                You are currently logged into CodeShastra Hub.
+              </p>
+
+              {/* Large Stacked Compartment Box for Active Session */}
+              <div className="cohere-stacked-box" style={{ marginBottom: '24px' }}>
+                {/* User Identity Compartment */}
+                <div className="cohere-compartment" style={{ flexDirection: 'row', alignItems: 'center', gap: '16px', padding: '18px 20px' }}>
+                  <div style={{
+                    width: '46px',
+                    height: '46px',
+                    borderRadius: '50%',
+                    backgroundColor: '#111827',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    fontFamily: 'monospace',
+                    flexShrink: 0,
+                  }}>
+                    {activeSessionUser.fullName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'U'}
+                  </div>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '16px', fontWeight: 600, color: '#111827' }}>
+                        {activeSessionUser.fullName}
+                      </span>
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        backgroundColor: activeSessionUser.role === 'admin' ? 'rgba(139, 92, 246, 0.12)' : activeSessionUser.role === 'supervisor' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(59, 130, 246, 0.12)',
+                        color: activeSessionUser.role === 'admin' ? '#7c3aed' : activeSessionUser.role === 'supervisor' ? '#059669' : '#2563eb',
+                      }}>
+                        {activeSessionUser.role === 'admin' ? 'Admin' : activeSessionUser.role === 'supervisor' ? 'Faculty' : 'Leader'}
+                      </span>
+                    </div>
+                    <div className="mono" style={{ fontSize: '13px', color: '#64748b', marginTop: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {activeSessionUser.email}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="cohere-comp-divider" />
+
+                {/* Target Workspace Info */}
+                <div className="cohere-compartment" style={{ padding: '12px 20px', backgroundColor: 'rgba(0, 0, 0, 0.015)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12.5px' }}>
+                    <span style={{ color: '#64748b' }}>Workspace:</span>
+                    <strong style={{ color: '#111827' }}>
+                      {activeSessionUser.role === 'admin' ? 'Administrative Control Center' : activeSessionUser.role === 'supervisor' ? 'Faculty Review Dashboard' : 'Team Leader Workspace'}
+                    </strong>
+                  </div>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+
+              {/* Signature Cohere Primary Slanted Button */}
+              <div className="cohere-btn-container" style={{ marginBottom: '22px' }}>
                 <button
                   type="button"
-                  style={{
-                    backgroundColor: 'var(--color-ink)',
-                    color: '#FFF',
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '6px 12px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
+                  className="cohere-slant-btn-root"
+                  style={{ width: '220px', height: '44px' }}
                   onClick={() => {
                     const role = activeSessionUser.role;
                     window.location.replace(role === 'admin' ? '/admin' : role === 'supervisor' ? '/dashboard/faculty' : '/dashboard/leader');
                   }}
                 >
-                  Continue to Workspace →
+                  <svg
+                    viewBox="0 0 220 44"
+                    className="cohere-slant-unified-svg"
+                    style={{ width: '220px', height: '44px' }}
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M 8,0 L 160,0 Q 164.5,0 163.25,3.5 L 150.75,40.5 Q 149.5,44 145,44 L 8,44 Q 0,44 0,36 L 0,8 Q 0,0 8,0 Z"
+                      className="cohere-slant-svg-path"
+                    />
+                    <path
+                      d="M 179.5,0 L 212,0 Q 220,0 220,8 L 220,36 Q 220,44 212,44 L 164.5,44 Q 160,44 161.25,40.5 L 173.75,3.5 Q 175,0 179.5,0 Z"
+                      className="cohere-slant-svg-path"
+                    />
+                  </svg>
+
+                  <span className="cohere-slant-text-overlay" style={{ width: '158px', fontSize: '14.5px', fontWeight: 600, height: '44px' }}>
+                    Continue to Workspace
+                  </span>
+
+                  <span className="cohere-slant-icon-overlay" style={{ left: '165px', width: '55px', height: '44px' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="4" y1="12" x2="20" y2="12" />
+                      <polyline points="14 6 20 12 14 18" />
+                    </svg>
+                  </span>
                 </button>
+              </div>
+
+              {/* Secondary Options: Switch Account or Log Out */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '16px',
+                paddingTop: '14px',
+                borderTop: '1px solid #f1f5f9',
+                fontSize: '13px',
+              }}>
                 <button
                   type="button"
+                  onClick={() => setShowOtherAccountForm(true)}
                   style={{
-                    backgroundColor: 'transparent',
-                    color: 'var(--color-text-muted)',
-                    border: '1px solid var(--color-hairline)',
-                    borderRadius: '6px',
-                    padding: '6px 12px',
-                    fontSize: '12px',
+                    background: 'none',
+                    border: 'none',
+                    color: '#334155',
                     cursor: 'pointer',
+                    fontWeight: 500,
+                    textDecoration: 'underline',
+                    padding: '4px 0',
                   }}
+                >
+                  Log in with another account
+                </button>
+                <span style={{ color: '#cbd5e1' }}>•</span>
+                <button
+                  type="button"
                   onClick={async () => {
                     clientCache.clear();
                     localStorage.clear();
                     sessionStorage.clear();
-                    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+                    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
                     setActiveSessionUser(null);
                     setEmail('');
                     setPassword('');
                   }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#dc2626',
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    textDecoration: 'underline',
+                    padding: '4px 0',
+                  }}
                 >
-                  Log Out / Switch Account
+                  Log out
                 </button>
               </div>
-            </div>
-          )}
-          <h1 className="cohere-login-title">Log in</h1>
 
-          {/* Error Message Banner */}
-          {error && (
-            <div className="cohere-alert-box">
-              <AlertCircle size={15} style={{ flexShrink: 0 }} />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="cohere-form">
-            {/* Signature Cohere Stacked Input Box */}
-            <div className="cohere-stacked-box">
-              {/* Email Compartment */}
-              <div className="cohere-compartment">
-                <label htmlFor="cohere-email" className="cohere-comp-label">
-                  EMAIL
-                </label>
-                <input
-                  id="cohere-email"
-                  type="email"
-                  className="cohere-comp-input mono"
-                  placeholder="leader@gla.ac.in"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  required
-                />
+              {/* Bottom Signup Navigation */}
+              <div className="cohere-signup-footer" style={{ marginTop: '20px' }}>
+                New team leader?{' '}
+                <Link href="/signup" className="cohere-signup-link">
+                  Claim your team at Sign up
+                </Link>
               </div>
-
-              {/* Compartment Divider */}
-              <div className="cohere-comp-divider" />
-
-              {/* Password Compartment */}
-              <div className="cohere-compartment">
-                <label htmlFor="cohere-password" className="cohere-comp-label">
-                  PASSWORD
-                </label>
-                <div className="cohere-pwd-row">
-                  <input
-                    id="cohere-password"
-                    type={showPassword ? 'text' : 'password'}
-                    className="cohere-comp-input mono"
-                    placeholder="••••••••••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                    required
-                  />
+            </div>
+          ) : (
+            <>
+              {/* If active session exists but user clicked switch, show small compact active session top bar */}
+              {activeSessionUser && (
+                <div style={{
+                  backgroundColor: 'var(--color-canvas, #f8fafc)',
+                  border: '1px solid var(--color-hairline, #e2e8f0)',
+                  borderRadius: '10px',
+                  padding: '10px 14px',
+                  marginBottom: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '10px',
+                }}>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>
+                    Active session: <strong style={{ color: '#0f172a' }}>{activeSessionUser.fullName}</strong> ({activeSessionUser.role})
+                  </div>
                   <button
                     type="button"
-                    className="cohere-eye-toggle"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    onClick={() => setShowOtherAccountForm(false)}
+                    style={{
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      color: '#2563eb',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
                   >
-                    {showPassword ? (
-                      <EyeOff size={15} strokeWidth={2} />
-                    ) : (
-                      <Eye size={15} strokeWidth={2} />
-                    )}
+                    Return to Session →
                   </button>
                 </div>
-              </div>
-            </div>
+              )}
 
-            {/* Forgot Password Link */}
-            <div className="cohere-forgot-row">
-              <button
-                type="button"
-                className="cohere-forgot-btn"
-                onClick={() => setForgotModalOpen(true)}
-              >
-                Forgot Password
-              </button>
-            </div>
+              <h1 className="cohere-login-title">Log in</h1>
 
-            {/* Signature Cohere Slanted Split Button with Perfect Proportions */}
-            <div className="cohere-btn-container">
-              <button
-                type="submit"
-                className="cohere-slant-btn-root"
-                disabled={loading}
-              >
-                <svg
-                  viewBox="0 0 148 42"
-                  className="cohere-slant-unified-svg"
-                  aria-hidden="true"
-                >
-                  {/* Left piece */}
-                  <path
-                    d="M 8,0 L 91.25,0 Q 95.75,0 94.5,3.5 L 82,38.5 Q 80.75,42 76.25,42 L 8,42 Q 0,42 0,34 L 0,8 Q 0,0 8,0 Z"
-                    className="cohere-slant-svg-path"
-                  />
-                  {/* Right piece */}
-                  <path
-                    d="M 107.75,0 L 140,0 Q 148,0 148,8 L 148,34 Q 148,42 140,42 L 92.75,42 Q 88.25,42 89.5,38.5 L 102,3.5 Q 103.25,0 107.75,0 Z"
-                    className="cohere-slant-svg-path"
-                  />
-                </svg>
+              {/* Error Message Banner */}
+              {error && (
+                <div className="cohere-alert-box">
+                  <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                  <span>{error}</span>
+                </div>
+              )}
 
-                <span className="cohere-slant-text-overlay">
-                  {loading ? 'Logging in...' : 'Log in'}
-                </span>
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="cohere-form">
+                {/* Signature Cohere Stacked Input Box */}
+                <div className="cohere-stacked-box">
+                  {/* Email Compartment */}
+                  <div className="cohere-compartment">
+                    <label htmlFor="cohere-email" className="cohere-comp-label">
+                      EMAIL
+                    </label>
+                    <input
+                      id="cohere-email"
+                      type="email"
+                      className="cohere-comp-input mono"
+                      placeholder="leader@gla.ac.in"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      autoComplete="email"
+                      required
+                    />
+                  </div>
 
-                <span className="cohere-slant-icon-overlay">
-                  {loading ? (
-                    <span className="cohere-mini-spinner" />
-                  ) : (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="4" y1="12" x2="20" y2="12" />
-                      <polyline points="14 6 20 12 14 18" />
+                  {/* Compartment Divider */}
+                  <div className="cohere-comp-divider" />
+
+                  {/* Password Compartment */}
+                  <div className="cohere-compartment">
+                    <label htmlFor="cohere-password" className="cohere-comp-label">
+                      PASSWORD
+                    </label>
+                    <div className="cohere-pwd-row">
+                      <input
+                        id="cohere-password"
+                        type={showPassword ? 'text' : 'password'}
+                        className="cohere-comp-input mono"
+                        placeholder="••••••••••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        autoComplete="current-password"
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="cohere-eye-toggle"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showPassword ? (
+                          <EyeOff size={15} strokeWidth={2} />
+                        ) : (
+                          <Eye size={15} strokeWidth={2} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Forgot Password Link */}
+                <div className="cohere-forgot-row">
+                  <button
+                    type="button"
+                    className="cohere-forgot-btn"
+                    onClick={() => setForgotModalOpen(true)}
+                  >
+                    Forgot Password
+                  </button>
+                </div>
+
+                {/* Signature Cohere Slanted Split Button with Perfect Proportions */}
+                <div className="cohere-btn-container">
+                  <button
+                    type="submit"
+                    className="cohere-slant-btn-root"
+                    disabled={loading}
+                  >
+                    <svg
+                      viewBox="0 0 148 42"
+                      className="cohere-slant-unified-svg"
+                      aria-hidden="true"
+                    >
+                      {/* Left piece */}
+                      <path
+                        d="M 8,0 L 91.25,0 Q 95.75,0 94.5,3.5 L 82,38.5 Q 80.75,42 76.25,42 L 8,42 Q 0,42 0,34 L 0,8 Q 0,0 8,0 Z"
+                        className="cohere-slant-svg-path"
+                      />
+                      {/* Right piece */}
+                      <path
+                        d="M 107.75,0 L 140,0 Q 148,0 148,8 L 148,34 Q 148,42 140,42 L 92.75,42 Q 88.25,42 89.5,38.5 L 102,3.5 Q 103.25,0 107.75,0 Z"
+                        className="cohere-slant-svg-path"
+                      />
                     </svg>
-                  )}
-                </span>
-              </button>
-            </div>
 
-            {/* Terms and Policies */}
-            <p className="cohere-terms-text">
-              By signing up, you agree to the{' '}
-              <a href="#" className="cohere-text-link" onClick={(e) => e.preventDefault()}>
-                Terms of Use
-              </a>{' '}
-              and{' '}
-              <a href="#" className="cohere-text-link" onClick={(e) => e.preventDefault()}>
-                Privacy Policy
-              </a>
-              .
-            </p>
+                    <span className="cohere-slant-text-overlay">
+                      {loading ? 'Logging in...' : 'Log in'}
+                    </span>
 
-            {/* Signup Navigation Link */}
-            <div className="cohere-signup-footer">
-              New team leader?{' '}
-              <Link href="/signup" className="cohere-signup-link">
-                Claim your team at Sign up
-              </Link>
-            </div>
-          </form>
+                    <span className="cohere-slant-icon-overlay">
+                      {loading ? (
+                        <span className="cohere-mini-spinner" />
+                      ) : (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="4" y1="12" x2="20" y2="12" />
+                          <polyline points="14 6 20 12 14 18" />
+                        </svg>
+                      )}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Terms and Policies */}
+                <p className="cohere-terms-text">
+                  By signing up, you agree to the{' '}
+                  <a href="#" className="cohere-text-link" onClick={(e) => e.preventDefault()}>
+                    Terms of Use
+                  </a>{' '}
+                  and{' '}
+                  <a href="#" className="cohere-text-link" onClick={(e) => e.preventDefault()}>
+                    Privacy Policy
+                  </a>
+                  .
+                </p>
+
+                {/* Signup Navigation Link */}
+                <div className="cohere-signup-footer">
+                  New team leader?{' '}
+                  <Link href="/signup" className="cohere-signup-link">
+                    Claim your team at Sign up
+                  </Link>
+                </div>
+              </form>
+            </>
+          )}
         </div>
       </main>
 
@@ -775,6 +927,44 @@ function LoginForm() {
           color: #111827;
           text-align: center;
           margin-bottom: 34px;
+        }
+
+        .cohere-session-badge-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          background-color: #ecfdf5;
+          border: 1px solid #a7f3d0;
+          color: #065f46;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          padding: 4px 12px;
+          border-radius: 9999px;
+        }
+
+        .cohere-pulse-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background-color: #10b981;
+          box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+          animation: cohere-pulse-green 1.8s infinite;
+        }
+
+        @keyframes cohere-pulse-green {
+          0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+          }
+          70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+          }
+          100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+          }
         }
 
         /* SSO Row */
