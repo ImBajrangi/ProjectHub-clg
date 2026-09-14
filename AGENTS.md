@@ -26,3 +26,5 @@ Password: CodeShastra@6128
 
 - Whenever notifications or modal states are dismissed or closed, ensure optimistic state updates run in parallel with client cache and background database synchronization to guarantee 0ms latency without UI flickering.
 
+- For real-time applications, isolate client and server caches strictly to identity/auth tokens; transactional domain entities (meetings, notifications, submissions) must always read and write directly to the primary database to prevent state divergence.
+

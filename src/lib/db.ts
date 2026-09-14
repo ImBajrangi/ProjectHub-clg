@@ -1,8 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import fs from 'fs';
-import path from 'path';
 import {
   User,
   Student,
@@ -57,22 +55,6 @@ let memoryStore: DatabaseStore | null = null;
 let lastStoreFetch = 0;
 let isFetchingStore = false;
 const STORE_TTL_MS = 2000; // 2 seconds TTL for real-time live synchronization
-
-function getLocalSeedData(): Partial<DatabaseStore> {
-  try {
-    const dbPath = path.join(process.cwd(), 'data', 'projecthub.db.json');
-    if (fs.existsSync(dbPath)) {
-      return JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-    }
-    const seedPath = path.join(process.cwd(), 'data', 'initial_seed.json');
-    if (fs.existsSync(seedPath)) {
-      return JSON.parse(fs.readFileSync(seedPath, 'utf8'));
-    }
-  } catch (err) {
-    console.error('Failed to read local fallback seed data:', err);
-  }
-  return {};
-}
 
 // Helper to log Supabase errors consistently
 function logSupabaseError(table: string, error: any) {
@@ -138,16 +120,13 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
   logSupabaseError('notifications', notifsRes.error);
   logSupabaseError('push_subscriptions', pushSubsRes.error);
 
-  // Load local fallback for tables if Supabase has 0 rows or is unseeded
-  const localFallback = getLocalSeedData();
-
   // Log row counts for quick diagnostics
   const counts = {
     users: usersRes.data?.length ?? 0,
     teams: teamsRes.data?.length ?? 0,
     students: studentsRes.data?.length ?? 0,
     supervisors: supervisorsRes.data?.length ?? 0,
-    panels: (panelsRes.data && panelsRes.data.length > 0) ? panelsRes.data.length : (localFallback.panels?.length ?? 0),
+    panels: panelsRes.data?.length ?? 0,
   };
   console.log(`[DB Store] Loaded: ${counts.users} users, ${counts.teams} teams, ${counts.students} students, ${counts.supervisors} supervisors, ${counts.panels} panels`);
 
@@ -156,13 +135,13 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
   }
 
   const fresh: DatabaseStore = {
-    users: usersRes.data ?? (localFallback.users || []),
-    supervisors: supervisorsRes.data ?? (localFallback.supervisors || []),
-    teams: (teamsRes.data ?? (localFallback.teams || [])).map((t: any) => ({
+    users: usersRes.data ?? [],
+    supervisors: supervisorsRes.data ?? [],
+    teams: (teamsRes.data ?? []).map((t: any) => ({
       ...t,
       team_name: t.team_name || `Team ${t.team_code}`,
     })),
-    students: studentsRes.data ?? (localFallback.students || []),
+    students: studentsRes.data ?? [],
     problem_statements: psRes.data ?? [],
     meetings: meetingsRes.data ?? [],
     meeting_attendance: meetingAttRes.data ?? [],
@@ -227,8 +206,8 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
           updated_at: new Date().toISOString(),
         },
       ]),
-    panels: panelsRes.data ?? (localFallback.panels || []),
-    panel_members: panelMembersRes.data ?? (localFallback.panel_members || []),
+    panels: panelsRes.data ?? [],
+    panel_members: panelMembersRes.data ?? [],
     evaluations: evalsRes.data ?? [],
     notifications: notifsRes.data ?? [],
     push_subscriptions: pushSubsRes.data ?? [],
@@ -728,7 +707,6 @@ export const db = {
     };
 
     store.meetings.push(m);
-    this.syncLocalBackup();
     fireAndLog(supabase.from('meetings').insert(m), 'meetings insert (request)');
     return m;
   },
@@ -760,7 +738,6 @@ export const db = {
     };
 
     store.meetings.push(m);
-    this.syncLocalBackup();
     fireAndLog(supabase.from('meetings').insert(m), 'meetings insert (schedule)');
     return m;
   },
@@ -783,7 +760,6 @@ export const db = {
     meeting.scheduled_date = scheduledDate;
     meeting.time_slot = timeSlot;
     meeting.venue = venue;
-    this.syncLocalBackup();
 
     supabase
       .from('meetings')
@@ -818,7 +794,6 @@ export const db = {
 
     // Remove from in-memory store
     store.meetings.splice(meetingIndex, 1);
-    this.syncLocalBackup();
 
     // Delete from Supabase
     fireAndLog(supabase.from('meetings').delete().eq('id', meetingId), 'meetings delete');
@@ -862,7 +837,6 @@ export const db = {
         });
       }
     }
-    this.syncLocalBackup();
 
     // Persist to Supabase
     supabase
@@ -927,8 +901,7 @@ export const db = {
     if (phase) {
       phase.marks_weightage = marksWeightage;
       phase.updated_at = now;
-      this.syncLocalBackup();
-    }
+      }
 
     supabase
       .from('evaluation_phases')
@@ -1300,18 +1273,7 @@ export const db = {
     return true;
   },
 
-  // Persist memory store changes locally if fallback file exists
-  syncLocalBackup() {
-    try {
-      if (!memoryStore) return;
-      const dbPath = path.join(process.cwd(), 'data', 'projecthub.db.json');
-      if (fs.existsSync(dbPath)) {
-        fs.writeFileSync(dbPath, JSON.stringify(memoryStore, null, 2), 'utf8');
-      }
-    } catch (err) {
-      console.error('Failed to sync local projecthub.db.json:', err);
-    }
-  },
+
 
   // Admin Governance: Create new Faculty Supervisor or Admin directly
   async createSupervisorOrAdmin(params: {
@@ -1381,7 +1343,6 @@ export const db = {
 
     store.users.push(newUser);
     store.supervisors.push(newSupervisor);
-    this.syncLocalBackup();
 
     fireAndLog(supabase.from('users').insert(newUser), 'users insert');
     fireAndLog(supabase.from('supervisors').insert(newSupervisor), 'supervisors insert');
@@ -1486,7 +1447,6 @@ export const db = {
       })
     );
 
-    this.syncLocalBackup();
     return { success: true, targetUser, currentAdminUser: currentAdmin };
   },
 
@@ -1508,7 +1468,6 @@ export const db = {
     user.role = role;
     user.updated_at = new Date().toISOString();
     await this.updateUser(userId, { role });
-    this.syncLocalBackup();
 
     return { success: true, user };
   },
