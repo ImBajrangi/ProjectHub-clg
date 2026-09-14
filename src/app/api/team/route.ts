@@ -23,7 +23,78 @@ export async function GET(req: NextRequest) {
 
     // If Leader: return their assigned team
     if (sessionUser.role === 'leader') {
-      const team = (store.teams || []).find((t) => t && String(t.leader_id) === String(sessionUser.id));
+      let team = (store.teams || []).find((t) => t && String(t.leader_id) === String(sessionUser.id));
+
+      // Fallback 1: Lookup via student record (by user_id or email)
+      if (!team) {
+        const student = (store.students || []).find(
+          (s) =>
+            s &&
+            (String(s.user_id) === String(sessionUser.id) ||
+              s.email?.toLowerCase().trim() === sessionUser.email?.toLowerCase().trim())
+        );
+        if (student?.team_id) {
+          team = (store.teams || []).find((t) => t && String(t.id) === String(student.team_id));
+        }
+      }
+
+      // Fallback 2: Force fresh DB reload if cached memory store was stale
+      if (!team) {
+        const freshStore = await db.getStore(true);
+        team = (freshStore.teams || []).find((t) => t && String(t.leader_id) === String(sessionUser.id));
+        if (!team) {
+          const freshStudent = (freshStore.students || []).find(
+            (s) =>
+              s &&
+              (String(s.user_id) === String(sessionUser.id) ||
+                s.email?.toLowerCase().trim() === sessionUser.email?.toLowerCase().trim())
+          );
+          if (freshStudent?.team_id) {
+            team = (freshStore.teams || []).find((t) => t && String(t.id) === String(freshStudent.team_id));
+          }
+        }
+      }
+
+      // Fallback 3: Direct Supabase query if in-memory lookups had cold-start delay
+      if (!team) {
+        try {
+          const { data: dbTeam } = await db.supabase
+            .from('teams')
+            .select('id, team_code, team_number, program, supervisor_id, leader_id, phase1_approved, phase2_approved, phase3_approved, phase3_report_clearance, report_url, paper_url, report_uploaded_at, created_at, updated_at')
+            .eq('leader_id', sessionUser.id)
+            .maybeSingle();
+
+          if (dbTeam) {
+            team = { ...dbTeam, team_name: `Team ${dbTeam.team_code}` };
+          } else {
+            const { data: dbStudent } = await db.supabase
+              .from('students')
+              .select('team_id')
+              .or(`user_id.eq.${sessionUser.id},email.ilike.${sessionUser.email}`)
+              .maybeSingle();
+
+            if (dbStudent?.team_id) {
+              const { data: dbTeamByStudent } = await db.supabase
+                .from('teams')
+                .select('id, team_code, team_number, program, supervisor_id, leader_id, phase1_approved, phase2_approved, phase3_approved, phase3_report_clearance, report_url, paper_url, report_uploaded_at, created_at, updated_at')
+                .eq('id', dbStudent.team_id)
+                .maybeSingle();
+
+              if (dbTeamByStudent) {
+                team = { ...dbTeamByStudent, team_name: `Team ${dbTeamByStudent.team_code}` };
+                // Self-heal: ensure leader_id is set
+                if (!team.leader_id || team.leader_id !== sessionUser.id) {
+                  team.leader_id = sessionUser.id;
+                  await db.supabase.from('teams').update({ leader_id: sessionUser.id }).eq('id', team.id);
+                }
+              }
+            }
+          }
+        } catch (dbErr) {
+          console.error('Supabase direct team fallback error:', dbErr);
+        }
+      }
+
       if (!team) {
         return NextResponse.json({ error: 'Team not found for this leader' }, { status: 404 });
       }

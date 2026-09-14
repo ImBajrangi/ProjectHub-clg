@@ -273,13 +273,16 @@ function triggerBackgroundRefresh() {
 // --------------------------------------------------------------------------
 
 export const db = {
+  supabase,
   // Store management
   invalidateStore(): void {
     lastStoreFetch = 0;
+    memoryStore = null;
   },
 
   async refreshStore(): Promise<DatabaseStore> {
     lastStoreFetch = 0;
+    memoryStore = null;
     return await fetchFreshStore();
   },
 
@@ -365,7 +368,10 @@ export const db = {
       .select()
       .maybeSingle();
 
-    if (error || !data) return null;
+    if (error) {
+      logSupabaseError('users (updateUser)', error);
+      return null;
+    }
     return data as User;
   },
 
@@ -397,11 +403,29 @@ export const db = {
 
   async getTeamByLeaderId(leaderId: string): Promise<Team | null> {
     if (memoryStore) {
-      const found = memoryStore.teams.find((t) => t.leader_id === leaderId);
+      const found = memoryStore.teams.find((t) => t && String(t.leader_id) === String(leaderId));
+      if (found) return found;
+      const student = memoryStore.students.find((s) => s && String(s.user_id) === String(leaderId));
+      if (student?.team_id) {
+        const teamByStudent = memoryStore.teams.find((t) => t && String(t.id) === String(student.team_id));
+        if (teamByStudent) return teamByStudent;
+      }
+    }
+    const store = await this.getStore(true);
+    let found = store.teams.find((t) => t && String(t.leader_id) === String(leaderId));
+    if (found) return found;
+
+    const student = store.students.find((s) => s && String(s.user_id) === String(leaderId));
+    if (student?.team_id) {
+      found = store.teams.find((t) => t && String(t.id) === String(student.team_id));
       if (found) return found;
     }
-    const store = await this.getStore();
-    return store.teams.find((t) => t.leader_id === leaderId) || null;
+
+    try {
+      const { data } = await supabase.from('teams').select('*').eq('leader_id', leaderId).maybeSingle();
+      if (data) return { ...data, team_name: `Team ${data.team_code}` };
+    } catch {}
+    return null;
   },
 
   async updateTeam(id: string, updates: Partial<Team>): Promise<Team | null> {
@@ -503,6 +527,9 @@ export const db = {
     await supabase.from('users').insert(newUser);
     await supabase.from('students').update({ is_leader: true, user_id: userId }).eq('id', student.id);
     await supabase.from('teams').update({ leader_id: userId, updated_at: now }).eq('id', teamId);
+
+    // Invalidate memory store so subsequent requests get fresh state
+    this.invalidateStore();
 
     return { success: true, user: newUser };
   },

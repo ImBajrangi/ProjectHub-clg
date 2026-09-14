@@ -176,7 +176,7 @@ export default function LeaderDashboardPage() {
         const bc = new BroadcastChannel('codeshastra_notifications_channel');
         bc.postMessage({ type: 'INSTANT_NOTIFICATION', notification: cancelNotif });
         bc.close();
-      } catch {}
+      } catch { }
     }
 
     // 2. Optimistic UI update (0ms)
@@ -212,7 +212,7 @@ export default function LeaderDashboardPage() {
             const bc = new BroadcastChannel('codeshastra_notifications_channel');
             bc.postMessage({ type: 'UPDATE' });
             bc.close();
-          } catch {}
+          } catch { }
         }
       }
     } catch (e: any) {
@@ -223,14 +223,15 @@ export default function LeaderDashboardPage() {
     }
   };
 
-  const loadDashboard = async () => {
+  const loadDashboard = async (retryCount = 0) => {
     try {
       const [authRes, teamRes] = await Promise.all([
         currentUser ? Promise.resolve(null) : fetch('/api/auth/me', { cache: 'no-store' }),
-        fetch('/api/team', { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } }),
+        fetch(`/api/team?_t=${Date.now()}`, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache, no-store' } }),
       ]);
 
       let loggedInUser = currentUser;
+      let fallbackTeam = null;
 
       if (authRes) {
         if (!authRes.ok) {
@@ -247,6 +248,7 @@ export default function LeaderDashboardPage() {
           return;
         }
         loggedInUser = authData.user;
+        fallbackTeam = authData.team;
         setCurrentUser(authData.user);
         clientCache.set(clientCache.keys.USER_ME, authData.user);
       }
@@ -267,9 +269,24 @@ export default function LeaderDashboardPage() {
             editorRef.current.innerHTML = desc;
           }
         }
+      } else if (teamRes && !teamRes.ok && retryCount < 2) {
+        // Retry for serverless cache propagation after election
+        setTimeout(() => {
+          loadDashboard(retryCount + 1);
+        }, (retryCount + 1) * 600);
+        return;
+      } else if (fallbackTeam) {
+        // Fallback to team returned from /api/auth/me if available
+        setTeamData((prev: any) => prev || { team: fallbackTeam, members: [], meetings: [], phases: [] });
       }
     } catch (e) {
-      console.error(e);
+      console.error('loadDashboard error:', e);
+      if (retryCount < 2) {
+        setTimeout(() => {
+          loadDashboard(retryCount + 1);
+        }, 800);
+        return;
+      }
     } finally {
       setLoading(false);
     }
@@ -313,7 +330,7 @@ export default function LeaderDashboardPage() {
             loadDashboard();
           }
         };
-      } catch {}
+      } catch { }
     }
 
     return () => {
@@ -431,7 +448,7 @@ export default function LeaderDashboardPage() {
         const bc = new BroadcastChannel('codeshastra_notifications_channel');
         bc.postMessage({ type: 'INSTANT_NOTIFICATION', notification: optimisticNotif });
         bc.close();
-      } catch {}
+      } catch { }
     }
 
     // 2. Optimistic UI update (0ms)
@@ -486,7 +503,7 @@ export default function LeaderDashboardPage() {
             const bc = new BroadcastChannel('codeshastra_notifications_channel');
             bc.postMessage({ type: 'UPDATE' });
             bc.close();
-          } catch {}
+          } catch { }
         }
       }
     } catch (e: any) {
@@ -519,11 +536,13 @@ export default function LeaderDashboardPage() {
         <div className="card-soft" style={{ marginBottom: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                <span className="badge badge-neutral">{team?.program}</span>
-                <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Code: {team?.team_code}</span>
-              </div>
-              <h1 style={{ fontSize: 'clamp(20px, 4vw, 26px)', fontWeight: 700 }}>{team?.team_name}</h1>
+              {(team?.program || team?.team_code) && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  {team?.program && <span className="badge badge-neutral">{team.program}</span>}
+                  {team?.team_code && <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>Code: {team.team_code}</span>}
+                </div>
+              )}
+              <h1 style={{ fontSize: 'clamp(20px, 4vw, 26px)', fontWeight: 700 }}>{team?.team_name || 'Project Team Workspace'}</h1>
               <div style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
                 Leader: <strong style={{ color: 'var(--color-ink)' }}>{currentUser?.fullName}</strong> ({currentUser?.email})
               </div>
