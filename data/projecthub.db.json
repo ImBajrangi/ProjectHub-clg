@@ -10851,82 +10851,8 @@
     }
   ],
   "problem_statements": [],
-  "meetings": [
-    {
-      "id": "8900f5f2-74a0-4626-9294-cd3d98a87521",
-      "team_id": "044a959b-283a-4bec-87ec-b243c854df6b",
-      "supervisor_id": "d66bec06-0fe8-4dd6-9253-9dd4149e9a55",
-      "meeting_index": 1,
-      "status": "completed",
-      "requested_at": "2026-09-03T21:18:29.516Z",
-      "created_at": "2026-09-03T21:18:29.516Z",
-      "scheduled_date": "2026-09-10",
-      "time_slot": "11:00 AM - 11:45 AM",
-      "venue": "Faculty Cabin 304, AB1",
-      "summary_notes": "Reviewed dataset preprocessing and initial literature survey presentation deck.",
-      "action_directives": "Finalize baseline model metrics and prepare slides for Phase 1 pitch.",
-      "completed_at": "2026-09-03T21:18:29.552Z"
-    },
-    {
-      "id": "d7292a63-8d65-48f7-84ae-e5fc3a063bca",
-      "team_id": "8ae54e62-8213-4fef-9627-d0f2dde659b3",
-      "supervisor_id": "408008d5-b020-49f2-967f-dec35320fe1a",
-      "meeting_index": 1,
-      "status": "requested",
-      "requested_at": "2026-09-11T14:38:09.344+00:00",
-      "scheduled_date": null,
-      "time_slot": null,
-      "venue": null,
-      "summary_notes": null,
-      "action_directives": null,
-      "completed_at": null,
-      "created_at": "2026-09-11T14:38:09.344+00:00"
-    }
-  ],
-  "meeting_attendance": [
-    {
-      "id": "195181ef-3a11-4b56-9c60-c94efd78f738",
-      "meeting_id": "8900f5f2-74a0-4626-9294-cd3d98a87521",
-      "student_id": "fd1e436e-becf-4939-8109-486c7a23381f",
-      "is_present": true,
-      "created_at": "2026-09-03T21:18:29.552Z"
-    },
-    {
-      "id": "645a49bc-fbfa-4f84-9db9-9eb25bdcd1f9",
-      "meeting_id": "8900f5f2-74a0-4626-9294-cd3d98a87521",
-      "student_id": "29fde8ed-e425-4e91-a06b-2c6026932f38",
-      "is_present": false,
-      "created_at": "2026-09-03T21:18:29.552Z"
-    },
-    {
-      "id": "49f0f83d-25d9-4817-a402-163ea360c818",
-      "meeting_id": "8900f5f2-74a0-4626-9294-cd3d98a87521",
-      "student_id": "f35a2af1-f6ed-411d-afd5-684efd26cd8c",
-      "is_present": true,
-      "created_at": "2026-09-03T21:18:29.552Z"
-    },
-    {
-      "id": "a35d2bc3-39f2-4993-8d31-c3456043cfb0",
-      "meeting_id": "8900f5f2-74a0-4626-9294-cd3d98a87521",
-      "student_id": "c5800462-46cd-4e42-8cdc-7aace3c93c0c",
-      "is_present": true,
-      "created_at": "2026-09-03T21:18:29.552Z"
-    },
-    {
-      "id": "1cca3117-4c37-4085-a8d9-78da3c6977c0",
-      "meeting_id": "8900f5f2-74a0-4626-9294-cd3d98a87521",
-      "student_id": "a8e05c3a-7652-4144-8321-f6535b5e8eee",
-      "is_present": true,
-      "created_at": "2026-09-03T21:18:29.552Z"
-    },
-    {
-      "id": "cca458f8-e166-4400-a2cf-472ad07061fb",
-      "meeting_id": "8900f5f2-74a0-4626-9294-cd3d98a87521",
-      "student_id": "dbf7571a-4f96-4cf2-ae1a-899060cbee48",
-      "is_present": true,
-      "created_at": "2026-09-03T21:18:29.552Z"
-    }
-  ],
+  "meetings": [],
+  "meeting_attendance": [],
   "evaluation_phases": [
     {
       "id": "phase-1",

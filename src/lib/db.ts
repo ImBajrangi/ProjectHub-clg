@@ -56,7 +56,7 @@ export interface DatabaseStore {
 let memoryStore: DatabaseStore | null = null;
 let lastStoreFetch = 0;
 let isFetchingStore = false;
-const STORE_TTL_MS = 20000; // 20 seconds warm TTL with active DB synchronization
+const STORE_TTL_MS = 2000; // 2 seconds TTL for real-time live synchronization
 
 function getLocalSeedData(): Partial<DatabaseStore> {
   try {
@@ -163,27 +163,9 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
       team_name: t.team_name || `Team ${t.team_code}`,
     })),
     students: studentsRes.data ?? (localFallback.students || []),
-    problem_statements: psRes.data ?? (localFallback.problem_statements || []),
-    meetings: (() => {
-      const fromSupabase = meetingsRes.data || [];
-      const fromMemory = memoryStore?.meetings || [];
-      const fromLocal = localFallback.meetings || [];
-      const mergedMap = new Map<string, any>();
-      [...fromLocal, ...fromMemory, ...fromSupabase].forEach((m: any) => {
-        if (m && m.id) mergedMap.set(String(m.id), m);
-      });
-      return Array.from(mergedMap.values());
-    })(),
-    meeting_attendance: (() => {
-      const fromSupabase = meetingAttRes.data || [];
-      const fromMemory = memoryStore?.meeting_attendance || [];
-      const fromLocal = localFallback.meeting_attendance || [];
-      const mergedMap = new Map<string, any>();
-      [...fromLocal, ...fromMemory, ...fromSupabase].forEach((a: any) => {
-        if (a && a.id) mergedMap.set(String(a.id), a);
-      });
-      return Array.from(mergedMap.values());
-    })(),
+    problem_statements: psRes.data ?? [],
+    meetings: meetingsRes.data ?? [],
+    meeting_attendance: meetingAttRes.data ?? [],
     evaluation_phases: (phasesRes.data && phasesRes.data.length > 0
       ? phasesRes.data.map((p: any) => ({
         ...p,
@@ -247,9 +229,9 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
       ]),
     panels: panelsRes.data ?? (localFallback.panels || []),
     panel_members: panelMembersRes.data ?? (localFallback.panel_members || []),
-    evaluations: evalsRes.data ?? (localFallback.evaluations || []),
-    notifications: notifsRes.data ?? (localFallback.notifications || []),
-    push_subscriptions: pushSubsRes.data ?? (localFallback.push_subscriptions || []),
+    evaluations: evalsRes.data ?? [],
+    notifications: notifsRes.data ?? [],
+    push_subscriptions: pushSubsRes.data ?? [],
   };
 
   memoryStore = fresh;

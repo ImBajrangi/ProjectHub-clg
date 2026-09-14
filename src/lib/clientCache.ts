@@ -1,7 +1,8 @@
 /**
- * CodeShastra Client-Side Cache Storage & State Manager
- * Provides 0ms initial render with stale-while-revalidate and event-driven refresh.
- * Guarantees zero unnecessary network round trips to Supabase / API Gateway.
+ * CodeShastra Client-Side Session & Auth Cache
+ * Strictly caches active user session token / profile only.
+ * Business and operational data (teams, meetings, notifications, panels, admin)
+ * are NEVER cached to guarantee 100% real-time accuracy directly with Supabase.
  */
 
 interface CacheEntry<T> {
@@ -12,10 +13,22 @@ interface CacheEntry<T> {
 
 const memoryFallback = new Map<string, CacheEntry<any>>();
 
+// Clear legacy stale business data caches on initialization
+if (typeof window !== 'undefined') {
+  try {
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const k = sessionStorage.key(i);
+      if (k && k.startsWith('cs_cache_') && k !== 'cs_cache_user_me') {
+        sessionStorage.removeItem(k);
+      }
+    }
+  } catch {}
+}
+
 export const clientCache = {
-  // Standardized keys
   keys: {
     USER_ME: 'cs_cache_user_me',
+    // Kept for signature compatibility; non-session data is never cached
     LEADER_TEAM: (userId: string) => `cs_cache_team_${userId}`,
     FACULTY_DATA: (userId: string) => `cs_cache_faculty_${userId}`,
     NOTIFICATIONS: (userId: string) => `cs_cache_notifs_${userId}`,
@@ -24,14 +37,18 @@ export const clientCache = {
   },
 
   /**
-   * Get cached data synchronously.
-   * If maxAgeMs is provided, returns null if data is older than maxAgeMs.
+   * Only USER_ME (auth session profile) is retrieved from cache.
+   * All other business entities return null to force real-time database queries.
    */
   get<T>(key: string, maxAgeMs?: number): T | null {
     if (typeof window === 'undefined') return null;
 
+    // Only allow auth session cache
+    if (key !== 'cs_cache_user_me') {
+      return null;
+    }
+
     try {
-      // 1. Check sessionStorage
       const raw = sessionStorage.getItem(key);
       if (raw) {
         const entry: CacheEntry<T> = JSON.parse(raw);
@@ -44,7 +61,6 @@ export const clientCache = {
         }
       }
     } catch {
-      // Fallback to in-memory map
       const entry = memoryFallback.get(key);
       if (entry) {
         if (maxAgeMs && Date.now() - entry.timestamp > maxAgeMs) {
@@ -58,10 +74,15 @@ export const clientCache = {
   },
 
   /**
-   * Set cached data with a timestamp and optional TTL in milliseconds (default 5 minutes).
+   * Only USER_ME is allowed to be cached.
+   * Other keys are ignored so operational data stays strictly live.
    */
   set<T>(key: string, data: T, ttlMs: number = 5 * 60 * 1000): void {
     if (typeof window === 'undefined') return;
+
+    if (key !== 'cs_cache_user_me') {
+      return;
+    }
 
     const entry: CacheEntry<T> = {
       data,
@@ -71,21 +92,15 @@ export const clientCache = {
 
     try {
       sessionStorage.setItem(key, JSON.stringify(entry));
-    } catch {
-      // Storage quota or disabled, use memory
-    }
+    } catch {}
     memoryFallback.set(key, entry);
   },
 
-  /**
-   * Invalidate a specific cache key or prefix.
-   */
   invalidate(keyOrPrefix: string): void {
     if (typeof window === 'undefined') return;
 
     try {
       sessionStorage.removeItem(keyOrPrefix);
-      // If prefix search
       for (let i = sessionStorage.length - 1; i >= 0; i--) {
         const k = sessionStorage.key(i);
         if (k && k.startsWith(keyOrPrefix)) {
@@ -102,9 +117,6 @@ export const clientCache = {
     }
   },
 
-  /**
-   * Complete flush of all cached data (used on logout or session change).
-   */
   clear(): void {
     if (typeof window === 'undefined') return;
 
