@@ -661,9 +661,10 @@ export const db = {
     const store = await this.getStore();
     return (store.meetings || [])
       .filter((m) => m && String(m.team_id) === String(teamId))
-      .sort((a, b) => (a.meeting_index || 0) - (b.meeting_index || 0))
-      .map((m) => ({
+      .sort((a, b) => new Date(a.created_at || a.requested_at || 0).getTime() - new Date(b.created_at || b.requested_at || 0).getTime())
+      .map((m, idx) => ({
         ...m,
+        meeting_index: idx + 1,
         attendance: (store.meeting_attendance || []).filter((a) => a && String(a.meeting_id) === String(m.id)),
       }));
   },

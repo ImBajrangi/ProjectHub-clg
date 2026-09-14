@@ -104,9 +104,10 @@ export async function GET(req: NextRequest) {
       const problemStatement = (store.problem_statements || []).find((p) => p && String(p.team_id) === String(team.id)) || null;
       const meetings = (store.meetings || [])
         .filter((m) => m && String(m.team_id) === String(team.id))
-        .sort((a, b) => (a.meeting_index || 0) - (b.meeting_index || 0))
-        .map((m) => ({
+        .sort((a, b) => new Date(a.created_at || a.requested_at || 0).getTime() - new Date(b.created_at || b.requested_at || 0).getTime())
+        .map((m, idx) => ({
           ...m,
+          meeting_index: idx + 1,
           attendance: (store.meeting_attendance || []).filter((a) => a && String(a.meeting_id) === String(m.id)),
         }));
       const phases = (store.evaluation_phases || []).sort((a, b) => (a.phase_number || 0) - (b.phase_number || 0));
@@ -131,7 +132,11 @@ export async function GET(req: NextRequest) {
             }));
 
           return {
-            ...p,
+            id: p.id,
+            panel_number: p.panel_number,
+            name: (p as any).panel_name || (p as any).name || 'Evaluation Panel',
+            panel_name: p.panel_name,
+            venue: p.venue,
             judges: judgeUsers,
           };
         });
@@ -142,16 +147,21 @@ export async function GET(req: NextRequest) {
           supervisor: supervisor
             ? {
                 id: supervisor.id,
+                full_name: supervisor.full_name,
                 fullName: supervisor.full_name,
                 email: supervisor.email,
                 phone: supervisor.phone,
+                designation: (supervisor as any).designation || 'Faculty Guide',
+                department: (supervisor as any).department || 'Computer Science & Engineering',
+                cabin_location: (supervisor as any).cabin_location || 'Faculty Block',
               }
             : null,
+          students,
           members: students,
           problemStatement,
           meetings,
           phases,
-          schedules: relevantPanels,
+          panels: relevantPanels,
         },
         {
           headers: {
@@ -161,20 +171,25 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // If Supervisor: return all their guided teams or a specific team
     if (sessionUser.role === 'supervisor') {
-      if (teamIdParam) {
-        const team = (store.teams || []).find((t) => t && String(t.id) === String(teamIdParam));
-        if (!team) return NextResponse.json({ error: 'Team not found' }, { status: 404 });
+      const { searchParams } = new URL(req.url);
+      const teamId = searchParams.get('teamId');
+
+      if (teamId) {
+        const team = (store.teams || []).find((t) => t && String(t.id) === String(teamId));
+        if (!team) {
+          return NextResponse.json({ error: 'Team not found' }, { status: 404 });
+        }
 
         const students = (store.students || []).filter((s) => s && String(s.team_id) === String(team.id));
         const leader = team.leader_id ? (store.users || []).find((u) => u && String(u.id) === String(team.leader_id)) : null;
         const problemStatement = (store.problem_statements || []).find((p) => p && String(p.team_id) === String(team.id)) || null;
         const meetings = (store.meetings || [])
           .filter((m) => m && String(m.team_id) === String(team.id))
-          .sort((a, b) => (a.meeting_index || 0) - (b.meeting_index || 0))
-          .map((m) => ({
+          .sort((a, b) => new Date(a.created_at || a.requested_at || 0).getTime() - new Date(b.created_at || b.requested_at || 0).getTime())
+          .map((m, idx) => ({
             ...m,
+            meeting_index: idx + 1,
             attendance: (store.meeting_attendance || []).filter((a) => a && String(a.meeting_id) === String(m.id)),
           }));
 
@@ -202,9 +217,10 @@ export async function GET(req: NextRequest) {
         const ps = (store.problem_statements || []).find((p) => p && String(p.team_id) === String(t.id)) || null;
         const meetings = (store.meetings || [])
           .filter((m) => m && String(m.team_id) === String(t.id))
-          .sort((a, b) => (a.meeting_index || 0) - (b.meeting_index || 0))
-          .map((m) => ({
+          .sort((a, b) => new Date(a.created_at || a.requested_at || 0).getTime() - new Date(b.created_at || b.requested_at || 0).getTime())
+          .map((m, idx) => ({
             ...m,
+            meeting_index: idx + 1,
             attendance: (store.meeting_attendance || []).filter((a) => a && String(a.meeting_id) === String(m.id)),
           }));
 

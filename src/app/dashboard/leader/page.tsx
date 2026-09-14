@@ -57,14 +57,6 @@ export default function LeaderDashboardPage() {
   const [requestingMeeting, setRequestingMeeting] = useState(false);
   const [cancellingMeetingId, setCancellingMeetingId] = useState<string | null>(null);
   const [meetingMessage, setMeetingMessage] = useState('');
-  const [meetingConfirmation, setMeetingConfirmation] = useState<{
-    show: boolean;
-    title: string;
-    message: string;
-    mentorName: string;
-    meetIndex: number;
-    timestamp: string;
-  } | null>(null);
   const [expandedMeetingIds, setExpandedMeetingIds] = useState<Set<string>>(new Set());
 
   // Auto-resize title textarea as text changes
@@ -413,15 +405,6 @@ export default function LeaderDashboardPage() {
     const mentorDisplayName = rawSupervisorName.match(/^(dr\.|mr\.|mrs\.|ms\.|prof\.)/i) ? rawSupervisorName : `Prof. ${cleanSupervisorName}`;
     const nextMeetIdx = (teamData?.meetings?.length || 0) + 1;
 
-    // Set dedicated in-software confirmation state
-    setMeetingConfirmation({
-      show: true,
-      title: `Meeting Request Dispatched (Meet ${nextMeetIdx})`,
-      message: `Your milestone review request has been recorded and transmitted to ${mentorDisplayName}. An official notification is now active in their mentor console in real time.`,
-      mentorName: mentorDisplayName,
-      meetIndex: nextMeetIdx,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    });
     setMeetingMessage(`Milestone review request for Meet ${nextMeetIdx} submitted to ${mentorDisplayName}.`);
 
     // 1. Instant 0ms Notification Dispatch
@@ -469,7 +452,6 @@ export default function LeaderDashboardPage() {
     });
 
     setWantToMeetExpanded(false);
-    scrollToCenter('meeting-confirmation-bar');
 
     try {
       const res = await fetch('/api/meetings', {
@@ -481,7 +463,6 @@ export default function LeaderDashboardPage() {
 
       if (!res.ok) {
         setMeetingMessage(`Error: ${data.error}`);
-        setMeetingConfirmation(null);
         loadDashboard();
       } else if (data.meeting) {
         setTeamData((prev: any) => {
@@ -508,7 +489,6 @@ export default function LeaderDashboardPage() {
       }
     } catch (e: any) {
       setMeetingMessage(`Error: ${e.message}`);
-      setMeetingConfirmation(null);
       loadDashboard();
     } finally {
       setRequestingMeeting(false);
@@ -521,7 +501,7 @@ export default function LeaderDashboardPage() {
 
   const team = teamData?.team;
   const supervisor = teamData?.supervisor;
-  const members = teamData?.members || [];
+  const members = teamData?.members || teamData?.students || [];
   const problemStatement = teamData?.problemStatement;
   const meetings = teamData?.meetings || [];
   const schedules = teamData?.schedules || [];
@@ -1170,95 +1150,6 @@ export default function LeaderDashboardPage() {
               )}
             </div>
 
-            {/* Dedicated In-Software Confirmation Bar */}
-            {meetingConfirmation && meetingConfirmation.show && (
-              <div
-                id="meeting-confirmation-bar"
-                style={{
-                  padding: '14px 16px',
-                  borderRadius: '10px',
-                  background: '#FFFFFF',
-                  border: '1px solid #E2E8F0',
-                  borderLeft: '4px solid #2563EB',
-                  boxShadow: '0 4px 14px -2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  marginBottom: '16px',
-                  animation: 'fadeIn 0.22s ease-out',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                    <div
-                      style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '8px',
-                        backgroundColor: '#EFF6FF',
-                        color: '#2563EB',
-                        border: '1px solid #DBEAFE',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                      }}
-                    >
-                      <CheckCircle2 size={17} />
-                    </div>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                        <h4 style={{ margin: 0, fontSize: '13.5px', fontWeight: 700, color: 'var(--color-ink, #0F172A)' }}>
-                          {meetingConfirmation.title}
-                        </h4>
-                        <span
-                          style={{
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            color: '#1D4ED8',
-                            backgroundColor: '#EFF6FF',
-                            border: '1px solid #DBEAFE',
-                            padding: '1.5px 7px',
-                            borderRadius: '6px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4.5px',
-                          }}
-                        >
-                          <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#2563EB' }} />
-                          Live Transmitted • {meetingConfirmation.timestamp}
-                        </span>
-                      </div>
-                      <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--color-text-muted, #64748B)', lineHeight: 1.5 }}>
-                        {meetingConfirmation.message}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setMeetingConfirmation(null)}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--color-text-muted, #64748B)',
-                      cursor: 'pointer',
-                      padding: '4px',
-                      borderRadius: '6px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      opacity: 0.8,
-                      transition: 'opacity 0.15s ease, color 0.15s ease',
-                    }}
-                    title="Dismiss confirmation bar"
-                    aria-label="Dismiss confirmation bar"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-            )}
-
             {meetingMessage && (
               <div
                 className={`alert-banner ${meetingMessage.includes('Error') ? 'alert-danger' : meetingMessage.includes('Withdrawing') ? 'alert-warning' : 'alert-success'}`}
@@ -1317,7 +1208,7 @@ export default function LeaderDashboardPage() {
                 />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {meetings.map((m: any) => {
+                  {meetings.map((m: any, idx: number) => {
                     const isCompleted = m.status === 'completed';
                     const isExpanded = expandedMeetingIds.has(m.id);
                     const presentStudents = members?.filter((s: any) =>
@@ -1365,7 +1256,7 @@ export default function LeaderDashboardPage() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <span style={{ fontSize: '15px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.02em' }}>
-                                Meet {m.meeting_index}
+                                Meet {m.meeting_index || idx + 1}
                               </span>
 
                               <span
