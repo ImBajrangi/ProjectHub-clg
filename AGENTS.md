@@ -24,3 +24,5 @@ Password: CodeShastra@6128
 - Always enforce `Cache-Control: no-store, no-cache, must-revalidate` and `export const dynamic = 'force-dynamic'` on all transactional API endpoints that return live user data.
 - When merging remote database state with in-memory stores, always preserve uncommitted local changes using unique record ID deduplication.
 
+- Whenever notifications or modal states are dismissed or closed, ensure optimistic state updates run in parallel with client cache and background database synchronization to guarantee 0ms latency without UI flickering.
+
