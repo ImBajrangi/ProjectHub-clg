@@ -49,6 +49,9 @@ import {
   Lock,
   UserX,
   Download,
+  Settings,
+  Edit2,
+  RotateCcw,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -63,7 +66,6 @@ import {
   exportDefaultingTeams,
   exportMasterWorkbook,
 } from '@/lib/exportUtils';
-
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -129,6 +131,7 @@ export default function AdminDashboardPage() {
   // Interactive Visual Panel Builder State
   const [createPanelModalOpen, setCreatePanelModalOpen] = useState(false);
   const [panelFormPhase, setPanelFormPhase] = useState<1 | 2 | 3>(1);
+  const [panelFormNumber, setPanelFormNumber] = useState<number | ''>('');
   const [panelFormProgram, setPanelFormProgram] = useState<'all' | 'BCA' | 'BCA - DS'>('all');
   const [panelFormName, setPanelFormName] = useState('');
   const [panelFormRangeStart, setPanelFormRangeStart] = useState<number>(1);
@@ -144,13 +147,57 @@ export default function AdminDashboardPage() {
   const [judgeSearchQuery, setJudgeSearchQuery] = useState('');
   const [facultyAvailabilityFilter, setFacultyAvailabilityFilter] = useState<'all' | 'available' | 'busy'>('all');
 
+  // Dynamic Rooms & Shifts Management State (Direct Supabase Sync)
+  const [dbRooms, setDbRooms] = useState<any[]>([]);
+  const [dbShifts, setDbShifts] = useState<any[]>([]);
+  const [manageRoomsModalOpen, setManageRoomsModalOpen] = useState(false);
+  const [manageShiftsModalOpen, setManageShiftsModalOpen] = useState(false);
+
+  // Standard Shift Time & Preset Configuration Helpers
+  const STANDARD_TIME_OPTIONS = [
+    '07:00 AM', '07:30 AM', '08:00 AM', '08:30 AM', '09:00 AM', '09:30 AM',
+    '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM',
+    '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM',
+    '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM',
+    '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM', '09:00 PM', '09:30 PM'
+  ];
+
+  const SHIFT_TEMPLATES = [
+    { label: 'Shift 1: Morning', startTime: '08:00 AM', endTime: '10:00 AM', color: '#059669', colorBg: '#ECFDF5', colorBorder: '#A7F3D0' },
+    { label: 'Shift 2: Midday', startTime: '10:30 AM', endTime: '12:30 PM', color: '#2563EB', colorBg: '#EFF6FF', colorBorder: '#BFDBFE' },
+    { label: 'Shift 3: Afternoon', startTime: '01:30 PM', endTime: '03:30 PM', color: '#D97706', colorBg: '#FFFBEB', colorBorder: '#FDE68A' },
+    { label: 'Shift 4: Evening', startTime: '04:00 PM', endTime: '06:00 PM', color: '#7C3AED', colorBg: '#FAF5FF', colorBorder: '#E9D5FF' },
+    { label: 'Shift 5: Late Evening', startTime: '06:30 PM', endTime: '08:30 PM', color: '#0D9488', colorBg: '#F0FDFA', colorBorder: '#99F6E4' },
+  ];
+
+  // Room Edit / Add State
+  const [newRoomName, setNewRoomName] = useState('');
+  const [newRoomBuilding, setNewRoomBuilding] = useState('Academic Block AB10');
+  const [editingRoom, setEditingRoom] = useState<{ id?: string; oldName: string; name: string; building?: string } | null>(null);
+  const [roomModalLoading, setRoomModalLoading] = useState(false);
+
+  // Shift Edit / Add State (Dropdown & Auto-Fill Driven)
+  const [newShiftForm, setNewShiftForm] = useState({
+    label: 'Shift 1: Morning',
+    startTime: '08:00 AM',
+    endTime: '10:00 AM',
+    timeWindow: 'Batch 1: Morning (08:00 AM - 10:00 AM)',
+    timeShort: '08:00 AM - 10:00 AM',
+    icon: 'clock',
+    color: '#059669',
+    colorBg: '#ECFDF5',
+    colorBorder: '#A7F3D0',
+  });
+  const [editingShift, setEditingShift] = useState<any | null>(null);
+  const [shiftModalLoading, setShiftModalLoading] = useState(false);
+
   // JSON Batch Modal State
   const [jsonModalOpen, setJsonModalOpen] = useState(false);
   const [targetPhase, setTargetPhase] = useState<1 | 2 | 3>(1);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedJson, setCopiedJson] = useState(false);
   const [roundJsonMap, setRoundJsonMap] = useState<Record<number, string>>({ 1: '', 2: '', 3: '' });
-  
+
   // Dedicated Original Clock Timings (24-hour format bound to native HTML5 time pickers)
   const [shift1StartTime, setShift1StartTime] = useState('08:00');
   const [shift1EndTime, setShift1EndTime] = useState('10:00');
@@ -217,7 +264,7 @@ export default function AdminDashboardPage() {
 
   // Lock background scroll and handle Escape key to close modals
   useEffect(() => {
-    const isAnyModalOpen = jsonModalOpen || selectedTeamModal || createPanelModalOpen || selectedSupervisorModal || authorityModalOpen;
+    const isAnyModalOpen = jsonModalOpen || selectedTeamModal || createPanelModalOpen || selectedSupervisorModal || authorityModalOpen || manageRoomsModalOpen || manageShiftsModalOpen;
     if (isAnyModalOpen) {
       document.body.style.overflow = 'hidden';
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -227,6 +274,10 @@ export default function AdminDashboardPage() {
           setJsonModalOpen(false);
           setCreatePanelModalOpen(false);
           setAuthorityModalOpen(false);
+          setManageRoomsModalOpen(false);
+          setManageShiftsModalOpen(false);
+          setEditingRoom(null);
+          setEditingShift(null);
         }
       };
       window.addEventListener('keydown', handleKeyDown);
@@ -240,7 +291,247 @@ export default function AdminDashboardPage() {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [jsonModalOpen, selectedTeamModal, createPanelModalOpen, selectedSupervisorModal, authorityModalOpen, segregationModalItem]);
+  }, [jsonModalOpen, selectedTeamModal, createPanelModalOpen, selectedSupervisorModal, authorityModalOpen, manageRoomsModalOpen, manageShiftsModalOpen, segregationModalItem]);
+
+  const loadRoomsAndShifts = async () => {
+    try {
+      const res = await fetch('/api/admin/rooms-shifts');
+      if (res.ok) {
+        const data = await res.json();
+        setDbRooms(Array.isArray(data.rawRooms) ? data.rawRooms : (Array.isArray(data.rooms) ? data.rooms.map((r: string) => ({ name: r, building: 'Academic Block AB10' })) : []));
+        setDbShifts(Array.isArray(data.shifts) ? data.shifts : []);
+      }
+    } catch (err) {
+      console.error('Failed to load presentation rooms and shifts:', err);
+    }
+  };
+
+  // --- ROOM HANDLERS ---
+  const handleAddRoom = async (name: string, building = 'Academic Block AB10') => {
+    if (!name.trim()) return;
+    setRoomModalLoading(true);
+    try {
+      const res = await fetch('/api/admin/rooms-shifts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'add_room', name: name.trim(), building }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setToastMessage({ type: 'error', text: data.error || 'Failed to add room' });
+      } else {
+        setToastMessage({ type: 'success', text: `Room "${name.trim()}" added successfully` });
+        await loadRoomsAndShifts();
+        setNewRoomName('');
+      }
+    } catch (err: any) {
+      setToastMessage({ type: 'error', text: err.message || 'Error adding room' });
+    } finally {
+      setRoomModalLoading(false);
+    }
+  };
+
+  const handleEditRoom = async (id: string | undefined, oldName: string, newName: string, building?: string) => {
+    if (!newName.trim()) return;
+    setRoomModalLoading(true);
+    try {
+      const res = await fetch('/api/admin/rooms-shifts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'edit_room', id, oldName, newName: newName.trim(), building }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setToastMessage({ type: 'error', text: data.error || 'Failed to update room' });
+      } else {
+        setToastMessage({ type: 'success', text: `Room updated to "${newName.trim()}"` });
+        if (panelFormRoom === oldName) setPanelFormRoom(newName.trim());
+        await loadRoomsAndShifts();
+        setEditingRoom(null);
+      }
+    } catch (err: any) {
+      setToastMessage({ type: 'error', text: err.message || 'Error updating room' });
+    } finally {
+      setRoomModalLoading(false);
+    }
+  };
+
+  const handleDeleteRoom = async (id: string | undefined, name: string) => {
+    showConfirmDialog({
+      title: 'Delete Room',
+      message: `Are you sure you want to remove "${name}" from available presentation rooms?`,
+      confirmText: 'Delete Room',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          // Optimistic local update
+          setDbRooms((prev) => prev.filter((r) => (id ? r.id !== id : r.name !== name)));
+          const res = await fetch('/api/admin/rooms-shifts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete_room', id, name }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            setToastMessage({ type: 'error', text: data.error || 'Failed to delete room' });
+            await loadRoomsAndShifts();
+          } else {
+            setToastMessage({ type: 'success', text: `Room "${name}" deleted` });
+            await loadRoomsAndShifts();
+          }
+        } catch (err: any) {
+          setToastMessage({ type: 'error', text: err.message || 'Error deleting room' });
+          await loadRoomsAndShifts();
+        }
+      },
+    });
+  };
+
+  const handleClearAllRooms = () => {
+    showConfirmDialog({
+      title: 'Clear All Presentation Rooms?',
+      message: 'Are you sure you want to delete all presentation rooms from the database? This cannot be undone.',
+      confirmText: 'Delete All Rooms',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          setDbRooms([]);
+          const res = await fetch('/api/admin/rooms-shifts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'clear_all_rooms' }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            setToastMessage({ type: 'error', text: data.error || 'Failed to clear rooms' });
+          } else {
+            setToastMessage({ type: 'success', text: 'All presentation rooms removed successfully' });
+          }
+          await loadRoomsAndShifts();
+        } catch (err: any) {
+          setToastMessage({ type: 'error', text: err.message || 'Error clearing rooms' });
+          await loadRoomsAndShifts();
+        }
+      },
+    });
+  };
+
+  // --- SHIFT HANDLERS ---
+  const handleAddShift = async (shiftData: any) => {
+    setShiftModalLoading(true);
+    try {
+      const res = await fetch('/api/admin/rooms-shifts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'add_shift', ...shiftData }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setToastMessage({ type: 'error', text: data.error || 'Failed to add shift' });
+      } else {
+        setToastMessage({ type: 'success', text: `Shift "${shiftData.label}" added` });
+        await loadRoomsAndShifts();
+        setNewShiftForm({
+          label: 'Shift 1: Morning',
+          startTime: '08:00 AM',
+          endTime: '10:00 AM',
+          timeWindow: 'Batch 1: Morning (08:00 AM - 10:00 AM)',
+          timeShort: '08:00 AM - 10:00 AM',
+          icon: 'clock',
+          color: '#059669',
+          colorBg: '#ECFDF5',
+          colorBorder: '#A7F3D0',
+        });
+      }
+    } catch (err: any) {
+      setToastMessage({ type: 'error', text: err.message || 'Error adding shift' });
+    } finally {
+      setShiftModalLoading(false);
+    }
+  };
+
+  const handleEditShift = async (id: string, shiftData: any) => {
+    setShiftModalLoading(true);
+    try {
+      const res = await fetch('/api/admin/rooms-shifts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'edit_shift', id, ...shiftData }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setToastMessage({ type: 'error', text: data.error || 'Failed to update shift' });
+      } else {
+        setToastMessage({ type: 'success', text: `Shift updated successfully` });
+        await loadRoomsAndShifts();
+        setEditingShift(null);
+      }
+    } catch (err: any) {
+      setToastMessage({ type: 'error', text: err.message || 'Error updating shift' });
+    } finally {
+      setShiftModalLoading(false);
+    }
+  };
+
+  const handleDeleteShift = async (id: string, label: string) => {
+    showConfirmDialog({
+      title: 'Delete Shift',
+      message: `Are you sure you want to remove presentation shift "${label}"?`,
+      confirmText: 'Delete Shift',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          // Optimistic local update
+          setDbShifts((prev) => prev.filter((s) => s.id !== id && s.label !== label));
+          const res = await fetch('/api/admin/rooms-shifts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete_shift', id, label }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            setToastMessage({ type: 'error', text: data.error || 'Failed to delete shift' });
+            await loadRoomsAndShifts();
+          } else {
+            setToastMessage({ type: 'success', text: `Shift "${label}" deleted` });
+            await loadRoomsAndShifts();
+          }
+        } catch (err: any) {
+          setToastMessage({ type: 'error', text: err.message || 'Error deleting shift' });
+          await loadRoomsAndShifts();
+        }
+      },
+    });
+  };
+
+  const handleClearAllShifts = () => {
+    showConfirmDialog({
+      title: 'Clear All Presentation Shifts?',
+      message: 'Are you sure you want to delete all presentation shifts from the database? This cannot be undone.',
+      confirmText: 'Delete All Shifts',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          setDbShifts([]);
+          const res = await fetch('/api/admin/rooms-shifts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'clear_all_shifts' }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            setToastMessage({ type: 'error', text: data.error || 'Failed to clear shifts' });
+          } else {
+            setToastMessage({ type: 'success', text: 'All presentation shifts removed successfully' });
+          }
+          await loadRoomsAndShifts();
+        } catch (err: any) {
+          setToastMessage({ type: 'error', text: err.message || 'Error clearing shifts' });
+          await loadRoomsAndShifts();
+        }
+      },
+    });
+  };
 
   const loadAdminData = async () => {
     try {
@@ -260,6 +551,9 @@ export default function AdminDashboardPage() {
       }
       setCurrentUser(authData.user);
       clientCache.set(clientCache.keys.USER_ME, authData.user);
+
+      // Concurrently load admin data and dynamic rooms/shifts
+      loadRoomsAndShifts();
 
       const res = await fetch('/api/admin');
       if (res.ok) {
@@ -314,8 +608,8 @@ export default function AdminDashboardPage() {
           try {
             const bc = new BroadcastChannel('codeshastra_notifications_channel');
             bc.postMessage({ type: 'UPDATE' });
-            setTimeout(() => { try { bc.close(); } catch {} }, 1000);
-          } catch {}
+            setTimeout(() => { try { bc.close(); } catch { } }, 1000);
+          } catch { }
         }
       }
     } catch (err: any) {
@@ -452,13 +746,16 @@ export default function AdminDashboardPage() {
 
     const finalShift = panelFormShift?.trim() || 'Batch 1: Morning (08:00 AM - 10:00 AM)';
     const finalRoom = panelFormRoom === 'Custom' ? panelFormCustomRoom : panelFormRoom;
+    const finalPanelNumber = Number(panelFormNumber) || nextSequentialPanelNumber;
+    const finalPanelName = panelFormName.trim() || `Panel ${finalPanelNumber} (${getFormattedTeamRange(panelFormRangeStart, panelFormRangeEnd)})`;
 
     try {
       const res = await fetch('/api/panels', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          panelName: panelFormName || `Panel ${panelFormRangeStart}-${panelFormRangeEnd}`,
+          panelNumber: finalPanelNumber,
+          panelName: finalPanelName,
           phaseNumber: panelFormPhase,
           teamRangeStart: Number(panelFormRangeStart),
           teamRangeEnd: Number(panelFormRangeEnd),
@@ -481,6 +778,7 @@ export default function AdminDashboardPage() {
       } else {
         setCreatePanelModalOpen(false);
         setPanelFormName('');
+        setPanelFormNumber('');
         setPanelFormSelectedJudges([]);
         loadAdminData();
       }
@@ -886,28 +1184,21 @@ export default function AdminDashboardPage() {
     return { availableCount, busyCount };
   }, [supervisors, panels, panelFormPhase]);
 
+  // Compute next sequential panel number for the selected phase
+  const nextSequentialPanelNumber = useMemo(() => {
+    const phasePanels = (panels || []).filter((p: any) => p.phase_number === panelFormPhase);
+    return phasePanels.reduce((max: number, p: any) => Math.max(max, p.panel_number || 0), 0) + 1;
+  }, [panels, panelFormPhase]);
+
   // Dynamic AB10 Rooms List synchronized with Database
   const AB10_ROOMS = useMemo(() => {
-    const standardRooms = [
-      'Room 401', 'Room 402', 'Room 403', 'Room 404',
-      'Room 405', 'Room 406', 'Room 407', 'Room 408',
-      'Lab 401', 'Lab 402', 'Seminar Hall 1', 'Seminar Hall 2'
-    ];
-    // Sync with any custom or existing rooms in the database panels
-    const dbRooms = (panels || [])
-      .map((p: any) => p.room_number)
-      .filter((r: any): r is string => Boolean(r && typeof r === 'string' && r.trim()));
-    
-    return Array.from(new Set([...standardRooms, ...dbRooms]));
-  }, [panels]);
+    return (dbRooms || []).map((r: any) => (typeof r === 'string' ? r : r?.name)).filter(Boolean);
+  }, [dbRooms]);
 
   // Standard Shift Presets with Time Slots
-  const SHIFT_PRESETS = useMemo(() => [
-    { label: 'Shift 1: Morning', timeWindow: 'Batch 1: Morning (08:00 AM - 10:00 AM)', timeShort: '08:00 AM - 10:00 AM', icon: '🌅', color: '#059669', colorBg: '#ECFDF5', colorBorder: '#A7F3D0' },
-    { label: 'Shift 2: Midday', timeWindow: 'Batch 2: Midday (10:30 AM - 12:30 PM)', timeShort: '10:30 AM - 12:30 PM', icon: '☀️', color: '#2563EB', colorBg: '#EFF6FF', colorBorder: '#BFDBFE' },
-    { label: 'Shift 3: Afternoon', timeWindow: 'Batch 3: Afternoon (01:30 PM - 03:30 PM)', timeShort: '01:30 PM - 03:30 PM', icon: '🌇', color: '#D97706', colorBg: '#FFFBEB', colorBorder: '#FDE68A' },
-    { label: 'Shift 4: Evening', timeWindow: 'Batch 4: Evening (04:00 PM - 06:00 PM)', timeShort: '04:00 PM - 06:00 PM', icon: '🌆', color: '#7C3AED', colorBg: '#FAF5FF', colorBorder: '#E9D5FF' },
-  ], []);
+  const SHIFT_PRESETS = useMemo(() => {
+    return dbShifts || [];
+  }, [dbShifts]);
 
   // Calculate Live Room Occupancy & Availability for selected Date, Shift & Phase
   const roomOccupancyMap = useMemo(() => {
@@ -919,7 +1210,7 @@ export default function AdminDashboardPage() {
         const pRoom = (p.room_number || '').toLowerCase().replace('room ', '').trim();
         const roomMatch = pRoom === normalizedRoom || (p.room_number || '').toLowerCase() === room.toLowerCase();
         const dateMatch = !p.date || !panelFormDate || p.date === panelFormDate;
-        
+
         // Match shift / time window
         const pShift = (p.time_window || '').toLowerCase();
         const curShift = (panelFormShift || '').toLowerCase();
@@ -1166,36 +1457,7 @@ Output ONLY the raw valid JSON array.`;
                 }}
                 title="Download all platform data across 5 sections in a multi-sheet Excel file"
               >
-                <Download size={14} /> Master Excel Report (.xlsx)
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthorityModalOpen(true);
-                  setAuthorityActiveTab('transfer');
-                  setTransferMessage(null);
-                  setSelectedTeacherForTransfer('');
-                  setTransferConfirmOpen(false);
-                }}
-                className="btn btn-outline"
-                style={{
-                  height: '38px',
-                  padding: '0 14px',
-                  fontSize: '12.5px',
-                  fontWeight: 600,
-                  gap: '6px',
-                  borderRadius: '8px',
-                  borderColor: '#F59E0B',
-                  color: '#B45309',
-                  backgroundColor: '#FFFBEB',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxSizing: 'border-box',
-                }}
-              >
-                <Crown size={15} color="#D97706" /> Transfer Authority
+                <Download size={14} /> Master Report (.xlsx)
               </button>
 
               <button
@@ -1218,7 +1480,7 @@ Output ONLY the raw valid JSON array.`;
                   boxSizing: 'border-box',
                 }}
               >
-                <Plus size={15} /> Assign New Panel
+                <Plus size={15} /> Assign Panel
               </button>
             </div>
           </div>
@@ -1484,8 +1746,8 @@ Output ONLY the raw valid JSON array.`;
                     (ph.phase_number === 1
                       ? '30% Coding / Approval & Ideation'
                       : ph.phase_number === 2
-                      ? '70% Coding / Prototype Demo'
-                      : 'Report + Certificate + Synopsis');
+                        ? '70% Coding / Prototype Demo'
+                        : 'Report + Certificate + Synopsis');
 
                   return (
                     <div
@@ -1616,7 +1878,7 @@ Output ONLY the raw valid JSON array.`;
                         </div>
 
                         <h4 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '6px' }}>{ph.phase_name}</h4>
-                        
+
                         <div
                           style={{
                             fontSize: '11.5px',
@@ -2043,7 +2305,7 @@ Output ONLY the raw valid JSON array.`;
                     className="btn btn-primary"
                     style={{ padding: '8px 16px', fontSize: '12.5px', fontWeight: 600, gap: '6px', borderRadius: '8px' }}
                   >
-                    <UserPlus size={14} /> + Add New Faculty / Admin
+                    <UserPlus size={14} /> + Add Mentor
                   </button>
                 </div>
               </div>
@@ -3256,6 +3518,83 @@ Output ONLY the raw valid JSON array.`;
                   </div>
                 )}
 
+                {/* Phase Selection & Panel Number Header */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '12px 14px' }}>
+                  {/* Phase Tabs */}
+                  <div>
+                    <label className="input-label" style={{ fontSize: '11.5px', fontWeight: 700, marginBottom: '5px', color: '#0F172A' }}>
+                      Evaluation Phase
+                    </label>
+                    <div style={{ display: 'flex', gap: '4px', backgroundColor: '#E2E8F0', padding: '3px', borderRadius: '8px' }}>
+                      {([1, 2, 3] as const).map((pNum) => {
+                        const isCur = panelFormPhase === pNum;
+                        const phaseCount = (panels || []).filter((p: any) => p.phase_number === pNum).length;
+                        return (
+                          <button
+                            key={pNum}
+                            type="button"
+                            onClick={() => {
+                              setPanelFormPhase(pNum);
+                              const phasePanels = (panels || []).filter((p: any) => p.phase_number === pNum);
+                              const nextNum = phasePanels.reduce((max: number, p: any) => Math.max(max, p.panel_number || 0), 0) + 1;
+                              setPanelFormNumber(nextNum);
+                            }}
+                            style={{
+                              flex: 1,
+                              padding: '5px 6px',
+                              fontSize: '11px',
+                              fontWeight: isCur ? 700 : 500,
+                              backgroundColor: isCur ? '#2563EB' : 'transparent',
+                              color: isCur ? '#FFFFFF' : '#475569',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                              textAlign: 'center',
+                            }}
+                          >
+                            Phase {pNum} <span style={{ fontSize: '9.5px', opacity: isCur ? 0.9 : 0.7 }}>({phaseCount})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Panel Number Input */}
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                      <label className="input-label" style={{ fontSize: '11.5px', fontWeight: 700, margin: 0, color: '#0F172A' }}>
+                        Panel Number
+                      </label>
+                      <span style={{ fontSize: '10px', color: '#2563EB', fontWeight: 600 }}>Next: #{nextSequentialPanelNumber}</span>
+                    </div>
+                    <input
+                      type="number"
+                      min={1}
+                      className="input-field"
+                      style={{ height: '34px', fontSize: '12.5px', fontWeight: 700 }}
+                      placeholder={`#${nextSequentialPanelNumber}`}
+                      value={panelFormNumber}
+                      onChange={(e) => setPanelFormNumber(e.target.value === '' ? '' : Number(e.target.value))}
+                    />
+                  </div>
+
+                  {/* Panel Name / Identifier */}
+                  <div>
+                    <label className="input-label" style={{ fontSize: '11.5px', fontWeight: 700, marginBottom: '5px', color: '#0F172A' }}>
+                      Panel Name (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      style={{ height: '34px', fontSize: '12px' }}
+                      placeholder={`Panel ${panelFormNumber || nextSequentialPanelNumber} (${getFormattedTeamRange(panelFormRangeStart, panelFormRangeEnd)})`}
+                      value={panelFormName}
+                      onChange={(e) => setPanelFormName(e.target.value)}
+                    />
+                  </div>
+                </div>
+
                 {/* Modern Batch & Team Range Selection Section */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '14px 16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -3478,71 +3817,125 @@ Output ONLY the raw valid JSON array.`;
 
                 {/* Presentation Shift / Batch Selection System */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '14px 16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
                     <label className="input-label" style={{ fontSize: '12.5px', fontWeight: 700, margin: 0, color: '#0F172A' }}>
                       Presentation Shift & Time Window
                     </label>
-                    <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                      Select standard shift or enter custom window
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                        Select standard shift or enter custom window
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setManageShiftsModalOpen(true)}
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          padding: '4px 9px',
+                          borderRadius: '6px',
+                          border: '1px solid #CBD5E1',
+                          backgroundColor: '#FFFFFF',
+                          color: '#334155',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                        }}
+                      >
+                        <Settings size={12} /> Manage Shifts
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Preset Shift Cards */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
-                    {SHIFT_PRESETS.map((shift, idx) => {
-                      const isSelected = panelFormShift === shift.timeWindow;
-                      const panelsInThisShift = (panels || []).filter((p: any) => 
-                        p.phase_number === panelFormPhase && 
-                        (p.time_window || '').toLowerCase().includes(shift.label.slice(0, 7).toLowerCase())
-                      ).length;
+                  {/* Preset Shift Cards (if configured) */}
+                  {SHIFT_PRESETS.length > 0 && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
+                      {SHIFT_PRESETS.map((shift, idx) => {
+                        const isSelected = panelFormShift === shift.timeWindow;
+                        const panelsInThisShift = (panels || []).filter((p: any) =>
+                          p.phase_number === panelFormPhase &&
+                          (p.time_window || '').toLowerCase().includes(shift.label.slice(0, 7).toLowerCase())
+                        ).length;
 
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setPanelFormShift(shift.timeWindow)}
-                          style={{
-                            padding: '10px',
-                            borderRadius: '9px',
-                            border: `1.5px solid ${isSelected ? shift.color : '#E2E8F0'}`,
-                            backgroundColor: isSelected ? shift.colorBg : '#FFFFFF',
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '4px',
-                            transition: 'all 0.15s ease',
-                            boxShadow: isSelected ? `0 2px 8px ${shift.color}25` : 'none',
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '13px' }}>{shift.icon}</span>
-                            <span style={{ fontSize: '10px', fontWeight: 700, color: isSelected ? shift.color : '#64748B' }}>
-                              {panelsInThisShift > 0 ? `${panelsInThisShift} Panels` : '0 Panels'}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: '12px', fontWeight: 700, color: isSelected ? shift.color : '#1E293B' }}>
-                            {shift.label}
-                          </div>
-                          <div style={{ fontSize: '10.5px', color: isSelected ? shift.color : '#64748B', opacity: 0.9 }}>
-                            {shift.timeShort}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setPanelFormShift(shift.timeWindow)}
+                            style={{
+                              padding: '10px',
+                              borderRadius: '9px',
+                              border: `1.5px solid ${isSelected ? shift.color : '#E2E8F0'}`,
+                              backgroundColor: isSelected ? shift.colorBg : '#FFFFFF',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '4px',
+                              transition: 'all 0.15s ease',
+                              boxShadow: isSelected ? `0 2px 8px ${shift.color}25` : 'none',
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', color: isSelected ? shift.color : '#64748B' }}>
+                                <Clock size={13} />
+                              </span>
+                              <span style={{ fontSize: '10px', fontWeight: 700, color: isSelected ? shift.color : '#64748B' }}>
+                                {panelsInThisShift > 0 ? `${panelsInThisShift} Panels` : '0 Panels'}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '12px', fontWeight: 700, color: isSelected ? shift.color : '#1E293B' }}>
+                              {shift.label}
+                            </div>
+                            <div style={{ fontSize: '10.5px', color: isSelected ? shift.color : '#64748B', opacity: 0.9 }}>
+                              {shift.timeShort}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
 
-                  {/* Custom Shift Input */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                    <input
-                      type="text"
-                      className="input-field"
-                      style={{ fontSize: '12px', height: '36px' }}
-                      placeholder="Or enter custom timing (e.g. Special Batch: 11:00 AM - 01:00 PM)"
+                  {/* Dropdown Selector for Shift / Time Slot */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', padding: '0 10px', height: '38px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
+                    <Clock size={15} color="#64748B" style={{ flexShrink: 0 }} />
+                    <select
+                      style={{
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: '#0F172A',
+                        outline: 'none',
+                        cursor: 'pointer',
+                        width: '100%',
+                        height: '100%',
+                        padding: '0',
+                      }}
                       value={panelFormShift}
                       onChange={(e) => setPanelFormShift(e.target.value)}
-                      required
-                    />
+                    >
+                      {SHIFT_PRESETS.length > 0 && (
+                        <optgroup label="Active Presentation Shifts">
+                          {SHIFT_PRESETS.map((s: any) => (
+                            <option key={s.id || s.label} value={s.timeWindow}>
+                              {s.label} ({s.timeShort})
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label="Standard Time Slots">
+                        {SHIFT_TEMPLATES.map((tmpl) => {
+                          const val = `Batch: ${tmpl.label} (${tmpl.startTime} - ${tmpl.endTime})`;
+                          return (
+                            <option key={tmpl.label} value={val}>
+                              {tmpl.label} ({tmpl.startTime} - {tmpl.endTime})
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                    </select>
                   </div>
                 </div>
 
@@ -3552,9 +3945,9 @@ Output ONLY the raw valid JSON array.`;
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                        <span style={{ fontSize: '15px' }}>🏢</span>
+                        <Building size={16} color="#2563EB" />
                         <label className="input-label" style={{ fontSize: '13px', fontWeight: 800, margin: 0, color: '#0F172A' }}>
-                          Allot Presentation Room in Academic Block AB10
+                          Allot Presentation Room
                         </label>
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
@@ -3578,25 +3971,49 @@ Output ONLY the raw valid JSON array.`;
                       <button
                         type="button"
                         onClick={handleAutoAllotRoom}
+                        disabled={!firstAvailableRoom}
                         style={{
                           fontSize: '11.5px',
                           fontWeight: 700,
                           padding: '6px 12px',
                           borderRadius: '8px',
-                          backgroundColor: '#2563EB',
+                          backgroundColor: firstAvailableRoom ? '#2563EB' : '#94A3B8',
                           color: '#FFFFFF',
                           border: 'none',
-                          cursor: 'pointer',
+                          cursor: firstAvailableRoom ? 'pointer' : 'not-allowed',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '5px',
-                          boxShadow: '0 2px 6px rgba(37,99,235,0.25)',
+                          boxShadow: firstAvailableRoom ? '0 2px 6px rgba(37,99,235,0.25)' : 'none',
                           transition: 'all 0.15s ease',
                         }}
-                        title={`Automatically selects first available vacant room (${firstAvailableRoom})`}
+                        title={firstAvailableRoom ? `Automatically selects first available vacant room (${firstAvailableRoom})` : 'No vacant rooms available'}
                       >
                         <Zap size={13} />
-                        Auto-Allot ({firstAvailableRoom})
+                        Auto-Allot ({firstAvailableRoom || 'None'})
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setManageRoomsModalOpen(true)}
+                        style={{
+                          fontSize: '11.5px',
+                          fontWeight: 600,
+                          padding: '6px 10px',
+                          borderRadius: '8px',
+                          backgroundColor: '#FFFFFF',
+                          color: '#334155',
+                          border: '1px solid #CBD5E1',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                          transition: 'all 0.15s ease',
+                        }}
+                        title="Add, edit, or delete presentation rooms"
+                      >
+                        <Settings size={13} /> Manage Rooms
                       </button>
                     </div>
                   </div>
@@ -3667,14 +4084,19 @@ Output ONLY the raw valid JSON array.`;
                   {/* Room Conflict Notice if selected room is in use */}
                   {!roomOccupancyMap[panelFormRoom]?.isAvailable && (
                     <div style={{ padding: '8px 12px', borderRadius: '8px', backgroundColor: '#FFF1F2', border: '1px solid #FECACA', fontSize: '11.5px', color: '#991B1B', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                      <span>⚠️ <strong>Room Occupancy Notice:</strong> {panelFormRoom} is already booked by {roomOccupancyMap[panelFormRoom]?.occupiedByPanel} for this shift.</span>
-                      <button
-                        type="button"
-                        onClick={handleAutoAllotRoom}
-                        style={{ fontSize: '11.5px', color: '#2563EB', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 700, textDecoration: 'underline' }}
-                      >
-                        Switch to {firstAvailableRoom}
-                      </button>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <AlertTriangle size={14} color="#DC2626" />
+                        <span><strong>Room Occupancy Notice:</strong> {panelFormRoom} is already booked by {roomOccupancyMap[panelFormRoom]?.occupiedByPanel || 'another panel'} for this shift.</span>
+                      </span>
+                      {firstAvailableRoom && firstAvailableRoom !== panelFormRoom && (
+                        <button
+                          type="button"
+                          onClick={handleAutoAllotRoom}
+                          style={{ fontSize: '11.5px', color: '#2563EB', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 700, textDecoration: 'underline' }}
+                        >
+                          Switch to {firstAvailableRoom}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -3927,14 +4349,14 @@ Output ONLY the raw valid JSON array.`;
                         (s.cabin || '').toLowerCase().includes(q)
                       );
                     }).length === 0 && (
-                      <div style={{ textAlign: 'center', padding: '16px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                        {facultyAvailabilityFilter === 'available'
-                          ? 'No available faculty found for this phase/search.'
-                          : facultyAvailabilityFilter === 'busy'
-                          ? 'No assigned faculty found for this phase/search.'
-                          : `No faculty found matching "${judgeSearchQuery}"`}
-                      </div>
-                    )}
+                        <div style={{ textAlign: 'center', padding: '16px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                          {facultyAvailabilityFilter === 'available'
+                            ? 'No available faculty found for this phase/search.'
+                            : facultyAvailabilityFilter === 'busy'
+                              ? 'No assigned faculty found for this phase/search.'
+                              : `No faculty found matching "${judgeSearchQuery}"`}
+                        </div>
+                      )}
                   </div>
                 </div>
               </div>
@@ -5069,7 +5491,7 @@ Output ONLY the raw valid JSON array.`;
                   }}
                   style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
                 >
-                  <ArrowRightLeft size={14} /> Transfer Authority to Existing Teacher
+                  <ArrowRightLeft size={14} /> Transfer Authority
                 </button>
                 <button
                   className={`segmented-pill ${authorityActiveTab === 'create' ? 'active' : ''}`}
@@ -5080,7 +5502,7 @@ Output ONLY the raw valid JSON array.`;
                   }}
                   style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
                 >
-                  <UserPlus size={14} /> + Create New Teacher / Admin Directly
+                  <UserPlus size={14} /> + Add Mentor / Admin
                 </button>
               </div>
             </div>
@@ -5897,6 +6319,815 @@ Output ONLY the raw valid JSON array.`;
       )}
 
       {/* =================================================================== */}
+      {/* MODAL: MANAGE PRESENTATION ROOMS (Direct Supabase Sync)             */}
+      {/* =================================================================== */}
+      {manageRoomsModalOpen && (
+        <div
+          className="modal-overlay-responsive"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1350,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(5px)',
+            WebkitBackdropFilter: 'blur(5px)',
+            padding: '24px 16px',
+            overflowY: 'auto',
+          }}
+          onClick={() => {
+            if (!roomModalLoading) {
+              setManageRoomsModalOpen(false);
+              setEditingRoom(null);
+            }
+          }}
+        >
+          <div
+            className="card animate-scale-in"
+            style={{
+              width: '100%',
+              maxWidth: '680px',
+              maxHeight: '90vh',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
+              border: '1px solid var(--color-border)',
+              padding: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '18px 24px',
+                borderBottom: '1px solid var(--color-border)',
+                backgroundColor: '#F8FAFC',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    backgroundColor: '#EFF6FF',
+                    border: '1px solid #BFDBFE',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#2563EB',
+                  }}
+                >
+                  <Building size={18} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                    Manage Presentation Rooms
+                  </h3>
+                  <p style={{ fontSize: '11.5px', color: '#64748B', margin: '2px 0 0 0' }}>
+                    Add, edit, or delete venue rooms (synced directly to database)
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setManageRoomsModalOpen(false);
+                  setEditingRoom(null);
+                }}
+                className="btn-icon-hover"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
+                aria-label="Close modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              {/* Add Room Quick Bar */}
+              <div
+                style={{
+                  padding: '14px 16px',
+                  borderRadius: '12px',
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                }}
+              >
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#1E293B' }}>
+                  + Add New Presentation Room
+                </div>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleAddRoom(newRoomName, newRoomBuilding);
+                  }}
+                  style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}
+                >
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="e.g. Room 409 or Seminar Hall 3"
+                    value={newRoomName}
+                    onChange={(e) => setNewRoomName(e.target.value)}
+                    style={{ flex: '1 1 200px', height: '36px', fontSize: '12.5px' }}
+                    required
+                  />
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Building (e.g. Academic Block AB10)"
+                    value={newRoomBuilding}
+                    onChange={(e) => setNewRoomBuilding(e.target.value)}
+                    style={{ flex: '1 1 180px', height: '36px', fontSize: '12.5px' }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={roomModalLoading || !newRoomName.trim()}
+                    className="btn btn-primary"
+                    style={{ height: '36px', padding: '0 14px', fontSize: '12px', fontWeight: 700, gap: '4px' }}
+                  >
+                    <Plus size={14} /> Add Room
+                  </button>
+                </form>
+              </div>
+
+              {/* Active Rooms Grid / List */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>
+                    Active Rooms List ({AB10_ROOMS.length})
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {AB10_ROOMS.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleClearAllRooms}
+                        disabled={roomModalLoading}
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          padding: '4px 9px',
+                          borderRadius: '6px',
+                          border: '1px solid #FEE2E2',
+                          backgroundColor: '#FEF2F2',
+                          color: '#DC2626',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                        title="Delete all rooms permanently from database"
+                      >
+                        <Trash2 size={12} /> Clear All
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {AB10_ROOMS.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '36px 16px', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px dashed #CBD5E1' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+                      <Building size={32} color="#94A3B8" />
+                    </div>
+                    <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>No Presentation Rooms Configured</div>
+                    <p style={{ fontSize: '12px', color: '#64748B', maxWidth: '360px', margin: '4px auto 0 auto' }}>
+                      All presentation rooms have been removed. Add new rooms using the form above.
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
+                    {AB10_ROOMS.map((room) => {
+                      const dbRecord = dbRooms.find((r: any) => (typeof r === 'string' ? r === room : r.name === room));
+                      const isEditing = Boolean(editingRoom && editingRoom.oldName === room);
+                      const assignedPanelCount = (panels || []).filter((p: any) => p.room_number === room).length;
+
+                      if (isEditing && editingRoom) {
+                        return (
+                          <div
+                            key={room}
+                            style={{
+                              padding: '12px',
+                              borderRadius: '10px',
+                              backgroundColor: '#EFF6FF',
+                              border: '1.5px solid #2563EB',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '8px',
+                            }}
+                          >
+                            <div style={{ fontSize: '11px', fontWeight: 700, color: '#1D4ED8' }}>Edit Room Name</div>
+                            <input
+                              type="text"
+                              className="input-field"
+                              value={editingRoom.name}
+                              onChange={(e) => {
+                                const newNameVal = e.target.value;
+                                setEditingRoom((prev) => prev ? { ...prev, name: newNameVal } : null);
+                              }}
+                              style={{ height: '32px', fontSize: '12px', backgroundColor: '#FFFFFF' }}
+                              autoFocus
+                            />
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                              <button
+                                type="button"
+                                onClick={() => setEditingRoom(null)}
+                                className="btn btn-outline"
+                                style={{ height: '28px', padding: '0 8px', fontSize: '11px' }}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (editingRoom) {
+                                    handleEditRoom(editingRoom.id, editingRoom.oldName, editingRoom.name, editingRoom.building);
+                                  }
+                                }}
+                                className="btn btn-primary"
+                                style={{ height: '28px', padding: '0 10px', fontSize: '11px', fontWeight: 700 }}
+                              >
+                                Save
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div
+                          key={room}
+                          style={{
+                            padding: '10px 14px',
+                            borderRadius: '10px',
+                            backgroundColor: '#FFFFFF',
+                            border: '1px solid #E2E8F0',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            gap: '8px',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                          }}
+                        >
+                          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {room}
+                            </span>
+                            <span style={{ fontSize: '10.5px', color: '#64748B' }}>
+                              {assignedPanelCount > 0 ? `${assignedPanelCount} Panels using` : 'AB10 Venue'}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <button
+                              type="button"
+                              onClick={() => setEditingRoom({ id: dbRecord?.id, oldName: room, name: room, building: dbRecord?.building || 'Academic Block AB10' })}
+                              style={{
+                                padding: '5px',
+                                borderRadius: '6px',
+                                border: '1px solid #E2E8F0',
+                                backgroundColor: '#F8FAFC',
+                                color: '#475569',
+                                cursor: 'pointer',
+                              }}
+                              title="Rename Room"
+                            >
+                              <Edit3 size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteRoom(dbRecord?.id, room)}
+                              style={{
+                                padding: '5px',
+                                borderRadius: '6px',
+                                border: '1px solid #FEE2E2',
+                                backgroundColor: '#FEF2F2',
+                                color: '#DC2626',
+                                cursor: 'pointer',
+                              }}
+                              title="Delete Room"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div
+              style={{
+                padding: '12px 24px',
+                borderTop: '1px solid var(--color-border)',
+                backgroundColor: '#F8FAFC',
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setManageRoomsModalOpen(false);
+                  setEditingRoom(null);
+                }}
+                className="btn btn-outline"
+                style={{ padding: '6px 16px', fontSize: '12.5px', fontWeight: 600 }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* MODAL: MANAGE PRESENTATION SHIFTS (Direct Supabase Sync)            */}
+      {/* =================================================================== */}
+      {manageShiftsModalOpen && (
+        <div
+          className="modal-overlay-responsive"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1350,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(5px)',
+            WebkitBackdropFilter: 'blur(5px)',
+            padding: '24px 16px',
+            overflowY: 'auto',
+          }}
+          onClick={() => {
+            if (!shiftModalLoading) {
+              setManageShiftsModalOpen(false);
+              setEditingShift(null);
+            }
+          }}
+        >
+          <div
+            className="card animate-scale-in"
+            style={{
+              width: '100%',
+              maxWidth: '720px',
+              maxHeight: '90vh',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
+              border: '1px solid var(--color-border)',
+              padding: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '18px 24px',
+                borderBottom: '1px solid var(--color-border)',
+                backgroundColor: '#F8FAFC',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    backgroundColor: '#FEF3C7',
+                    border: '1px solid #FDE68A',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#D97706',
+                  }}
+                >
+                  <Clock size={18} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: '#0F172A' }}>
+                    Manage Presentation Shifts
+                  </h3>
+                  <p style={{ fontSize: '11.5px', color: '#64748B', margin: '2px 0 0 0' }}>
+                    Configure timing windows, short labels, and color presets (synced directly to database)
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setManageShiftsModalOpen(false);
+                  setEditingShift(null);
+                }}
+                className="btn-icon-hover"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
+                aria-label="Close modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              {/* Add / Edit Shift Form with Dropdowns & Quick Select */}
+              <div
+                style={{
+                  padding: '16px',
+                  borderRadius: '12px',
+                  backgroundColor: editingShift ? '#EFF6FF' : '#F8FAFC',
+                  border: `1px solid ${editingShift ? '#BFDBFE' : '#E2E8F0'}`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12.5px', fontWeight: 700, color: editingShift ? '#1D4ED8' : '#1E293B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Clock size={15} color={editingShift ? '#1D4ED8' : '#2563EB'} />
+                    {editingShift ? 'Edit Shift Timing & Details' : '+ Add New Presentation Shift'}
+                  </span>
+                  {editingShift && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingShift(null)}
+                      style={{ fontSize: '11px', color: '#64748B', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      Cancel Editing
+                    </button>
+                  )}
+                </div>
+
+                {/* Quick Shift Template Dropdown */}
+                <div>
+                  <label className="input-label" style={{ fontSize: '11px', fontWeight: 700, marginBottom: '4px', color: '#475569' }}>
+                    Quick Select Template (Optional Auto-Fill)
+                  </label>
+                  <select
+                    className="input-field"
+                    style={{ height: '34px', fontSize: '12px', fontWeight: 600, backgroundColor: '#FFFFFF' }}
+                    value=""
+                    onChange={(e) => {
+                      const t = SHIFT_TEMPLATES.find((x) => x.label === e.target.value);
+                      if (t) {
+                        const short = `${t.startTime} - ${t.endTime}`;
+                        const win = `Batch: ${t.label} (${short})`;
+                        if (editingShift) {
+                          setEditingShift({
+                            ...editingShift,
+                            label: t.label,
+                            startTime: t.startTime,
+                            endTime: t.endTime,
+                            timeShort: short,
+                            timeWindow: win,
+                            color: t.color,
+                            colorBg: t.colorBg,
+                            colorBorder: t.colorBorder,
+                          });
+                        } else {
+                          setNewShiftForm({
+                            ...newShiftForm,
+                            label: t.label,
+                            startTime: t.startTime,
+                            endTime: t.endTime,
+                            timeShort: short,
+                            timeWindow: win,
+                            color: t.color,
+                            colorBg: t.colorBg,
+                            colorBorder: t.colorBorder,
+                          });
+                        }
+                      }
+                    }}
+                  >
+                    <option value="" disabled>Choose a template to fill in one click...</option>
+                    {SHIFT_TEMPLATES.map((tmpl) => (
+                      <option key={tmpl.label} value={tmpl.label}>
+                        {tmpl.label} ({tmpl.startTime} - {tmpl.endTime})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (editingShift) {
+                      handleEditShift(editingShift.id, editingShift);
+                    } else {
+                      handleAddShift(newShiftForm);
+                    }
+                  }}
+                  style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+                >
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                    {/* Shift Label / Preset */}
+                    <div>
+                      <label className="input-label" style={{ fontSize: '11px', fontWeight: 700, marginBottom: '4px' }}>
+                        Shift Label / Name
+                      </label>
+                      <input
+                        type="text"
+                        className="input-field"
+                        placeholder="e.g. Shift 1: Morning"
+                        value={editingShift ? editingShift.label : newShiftForm.label}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (editingShift) {
+                            setEditingShift({
+                              ...editingShift,
+                              label: val,
+                              timeWindow: `Batch: ${val} (${editingShift.timeShort || '08:00 AM - 10:00 AM'})`,
+                            });
+                          } else {
+                            setNewShiftForm({
+                              ...newShiftForm,
+                              label: val,
+                              timeWindow: `Batch: ${val} (${newShiftForm.timeShort || '08:00 AM - 10:00 AM'})`,
+                            });
+                          }
+                        }}
+                        style={{ height: '34px', fontSize: '12px' }}
+                        required
+                      />
+                    </div>
+
+                    {/* Short Time Slot Dropdowns with Clock Icon */}
+                    <div>
+                      <label className="input-label" style={{ fontSize: '11px', fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Clock size={12} color="#2563EB" /> Short Time Slot (Dropdown)
+                      </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '6px' }}>
+                        <select
+                          className="input-field"
+                          style={{ height: '34px', fontSize: '11.5px', padding: '0 6px' }}
+                          value={
+                            editingShift
+                              ? (editingShift.startTime || editingShift.timeShort?.split(' - ')[0] || '08:00 AM')
+                              : (newShiftForm.startTime || '08:00 AM')
+                          }
+                          onChange={(e) => {
+                            const newStart = e.target.value;
+                            const curEnd = editingShift
+                              ? (editingShift.endTime || editingShift.timeShort?.split(' - ')[1] || '10:00 AM')
+                              : (newShiftForm.endTime || '10:00 AM');
+                            const combined = `${newStart} - ${curEnd}`;
+                            if (editingShift) {
+                              setEditingShift({
+                                ...editingShift,
+                                startTime: newStart,
+                                endTime: curEnd,
+                                timeShort: combined,
+                                timeWindow: `Batch: ${editingShift.label || 'Shift'} (${combined})`,
+                              });
+                            } else {
+                              setNewShiftForm({
+                                ...newShiftForm,
+                                startTime: newStart,
+                                endTime: curEnd,
+                                timeShort: combined,
+                                timeWindow: `Batch: ${newShiftForm.label || 'Shift'} (${combined})`,
+                              });
+                            }
+                          }}
+                        >
+                          {STANDARD_TIME_OPTIONS.map((opt) => (
+                            <option key={`start-${opt}`} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#64748B' }}>to</span>
+                        <select
+                          className="input-field"
+                          style={{ height: '34px', fontSize: '11.5px', padding: '0 6px' }}
+                          value={
+                            editingShift
+                              ? (editingShift.endTime || editingShift.timeShort?.split(' - ')[1] || '10:00 AM')
+                              : (newShiftForm.endTime || '10:00 AM')
+                          }
+                          onChange={(e) => {
+                            const newEnd = e.target.value;
+                            const curStart = editingShift
+                              ? (editingShift.startTime || editingShift.timeShort?.split(' - ')[0] || '08:00 AM')
+                              : (newShiftForm.startTime || '08:00 AM');
+                            const combined = `${curStart} - ${newEnd}`;
+                            if (editingShift) {
+                              setEditingShift({
+                                ...editingShift,
+                                startTime: curStart,
+                                endTime: newEnd,
+                                timeShort: combined,
+                                timeWindow: `Batch: ${editingShift.label || 'Shift'} (${combined})`,
+                              });
+                            } else {
+                              setNewShiftForm({
+                                ...newShiftForm,
+                                startTime: curStart,
+                                endTime: newEnd,
+                                timeShort: combined,
+                                timeWindow: `Batch: ${newShiftForm.label || 'Shift'} (${combined})`,
+                              });
+                            }
+                          }}
+                        >
+                          {STANDARD_TIME_OPTIONS.map((opt) => (
+                            <option key={`end-${opt}`} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                    <button
+                      type="submit"
+                      disabled={shiftModalLoading}
+                      className="btn btn-primary"
+                      style={{ height: '34px', padding: '0 16px', fontSize: '12px', fontWeight: 700, gap: '6px' }}
+                    >
+                      {editingShift ? <Check size={14} /> : <Plus size={14} />}
+                      {editingShift ? 'Save Shift Changes' : 'Add Shift Preset'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Existing Shifts List */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0F172A' }}>
+                    Current Shift Presets ({SHIFT_PRESETS.length})
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {SHIFT_PRESETS.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleClearAllShifts}
+                        disabled={shiftModalLoading}
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          padding: '4px 9px',
+                          borderRadius: '6px',
+                          border: '1px solid #FEE2E2',
+                          backgroundColor: '#FEF2F2',
+                          color: '#DC2626',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                        title="Delete all shifts permanently from database"
+                      >
+                        <Trash2 size={12} /> Clear All
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {SHIFT_PRESETS.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '36px 16px', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px dashed #CBD5E1' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+                      <Clock size={32} color="#94A3B8" />
+                    </div>
+                    <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#0F172A' }}>No Presentation Shifts Configured</div>
+                    <p style={{ fontSize: '12px', color: '#64748B', maxWidth: '360px', margin: '4px auto 0 auto' }}>
+                      All presentation shifts have been removed. Add new shifts using the form above.
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+                    {SHIFT_PRESETS.map((shift: any, idx: number) => {
+                      const panelsInThisShift = (panels || []).filter((p: any) =>
+                        (p.time_window || '').toLowerCase().includes(shift.label?.slice(0, 7)?.toLowerCase())
+                      ).length;
+
+                      return (
+                        <div
+                          key={shift.id || idx}
+                          style={{
+                            padding: '12px 14px',
+                            borderRadius: '10px',
+                            border: `1.5px solid ${shift.color || '#CBD5E1'}`,
+                            backgroundColor: shift.colorBg || '#FFFFFF',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '6px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', color: shift.color || '#2563EB' }}>
+                              <Clock size={15} />
+                            </span>
+                            <span style={{ fontSize: '10.5px', fontWeight: 700, color: shift.color || '#64748B' }}>
+                              {panelsInThisShift} Panels
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B' }}>
+                            {shift.label}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Clock size={11} color="#64748B" />
+                            {shift.timeShort}
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px', marginTop: '6px' }}>
+                            <button
+                              type="button"
+                              onClick={() => setEditingShift(shift)}
+                              style={{
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                border: '1px solid #CBD5E1',
+                                backgroundColor: '#FFFFFF',
+                                color: '#334155',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              <Edit3 size={12} /> Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteShift(shift.id, shift.label)}
+                              style={{
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                border: '1px solid #FEE2E2',
+                                backgroundColor: '#FEF2F2',
+                                color: '#DC2626',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              <Trash2 size={12} /> Delete
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div
+              style={{
+                padding: '12px 24px',
+                borderTop: '1px solid var(--color-border)',
+                backgroundColor: '#F8FAFC',
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setManageShiftsModalOpen(false);
+                  setEditingShift(null);
+                }}
+                className="btn btn-outline"
+                style={{ padding: '6px 16px', fontSize: '12.5px', fontWeight: 600 }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
       {/* IN-SOFTWARE CONFIRMATION DIALOG (Zero browser alert/confirm popups)  */}
       {/* =================================================================== */}
       {confirmDialog && confirmDialog.isOpen && (
@@ -5972,8 +7203,10 @@ Output ONLY the raw valid JSON array.`;
                   setConfirmDialog((prev) => (prev ? { ...prev, loading: true } : null));
                   try {
                     await confirmDialog.onConfirm();
-                  } catch {
-                    setConfirmDialog((prev) => (prev ? { ...prev, loading: false } : null));
+                  } catch (err) {
+                    console.error('Confirm dialog error:', err);
+                  } finally {
+                    setConfirmDialog(null);
                   }
                 }}
                 disabled={confirmDialog.loading}

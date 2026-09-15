@@ -485,17 +485,10 @@ export default function Navbar({
                       </span>
                     )}
                     {activeUser.role === 'admin' && (
-                      <Link
-                        href="/admin"
-                        className="nav-role-badge nav-role-badge-link"
-                        title="Click to open Master Administrator Operations Console"
-                      >
+                      <span className="nav-role-badge">
                         <Shield size={13} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
                         <span className="nav-role-name">{getShortDisplayName(activeUser.fullName)}</span>
-                        <span className="nav-role-team-tag nav-role-tag-admin">
-                          Admin Access ↗
-                        </span>
-                      </Link>
+                      </span>
                     )}
                   </div>
 

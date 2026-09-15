@@ -467,8 +467,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let finalPanelNum = Number(panelNumber);
+    if (!finalPanelNum || isNaN(finalPanelNum) || finalPanelNum <= 0) {
+      const existingPanels = await db.getPanels(phaseNumber as 1 | 2 | 3);
+      const maxNum = existingPanels.reduce((max, p) => Math.max(max, p.panel_number || 0), 0);
+      finalPanelNum = maxNum + 1;
+    }
+
     const panel = await db.createPanel(
-      panelNumber || 1,
+      finalPanelNum,
       panelName,
       phaseNumber,
       teamRangeStart,
@@ -476,7 +483,7 @@ export async function POST(req: NextRequest) {
       supervisorIds,
       schedule || {
         date: 'To Be Announced',
-        timeWindow: 'Shift 1: Morning (09:00 AM - 01:00 PM)',
+        timeWindow: 'Shift 1: Morning (08:00 AM - 10:00 AM)',
         academicBlock: 'Academic Block AB10',
         roomNumber: 'Room 402',
       }

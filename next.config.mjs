@@ -7,7 +7,7 @@ const __dirname = path.dirname(__filename);
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  outputFileTracingRoot: __dirname,
+  outputFileTracingRoot: path.resolve(__dirname),
   async headers() {
     return [
       {
@@ -24,5 +24,3 @@ const nextConfig = {
 };
 
 export default nextConfig;
-
-
