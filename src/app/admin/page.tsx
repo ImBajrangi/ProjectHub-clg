@@ -1031,7 +1031,7 @@ export default function AdminDashboardPage() {
 
   const summary = adminData?.summary || {};
   const teams = adminData?.teams || [];
-  const supervisors = adminData?.supervisors || [];
+  const supervisors = (adminData?.supervisors || []).filter((s: any) => !s.isAdmin && s.role !== 'admin');
   const phases = adminData?.phases || [];
   const panels = adminData?.panels || [];
 
@@ -1442,13 +1442,14 @@ export default function AdminDashboardPage() {
 
   // Filtered supervisors for Tab 3
   const filteredSupervisors = supervisors.filter((s: any) => {
+    if (s.isAdmin || s.role === 'admin') return false;
     const q = supervisorSearch.toLowerCase().trim();
     return (
       !q ||
-      s.name.toLowerCase().includes(q) ||
-      s.email.toLowerCase().includes(q) ||
-      s.phone.toLowerCase().includes(q) ||
-      s.assignedTeams?.some((t: any) => t.team_name.toLowerCase().includes(q) || t.team_code.toLowerCase().includes(q))
+      s.name?.toLowerCase().includes(q) ||
+      s.email?.toLowerCase().includes(q) ||
+      s.phone?.toLowerCase().includes(q) ||
+      s.assignedTeams?.some((t: any) => t.team_name?.toLowerCase().includes(q) || t.team_code?.toLowerCase().includes(q))
     );
   });
 

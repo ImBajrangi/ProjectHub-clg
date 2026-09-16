@@ -18,8 +18,8 @@ export async function GET(req: NextRequest) {
     const store = await db.getStore(true);
     const teams = store.teams || [];
     const students = store.students || [];
-    // Include all faculty members and administrators in supervisors directory
-    const supervisors = (store.users || []).filter((u) => u.role === 'supervisor' || u.role === 'admin');
+    // Only faculty members in supervisors directory (exclude admins)
+    const supervisors = (store.users || []).filter((u) => u.role === 'supervisor');
     const problemStatements = store.problem_statements || [];
     const meetings = store.meetings || [];
     const evaluations = store.evaluations || [];
@@ -206,7 +206,7 @@ export async function GET(req: NextRequest) {
     const enrichedPanels = panels.map((p: any) => {
       const members = panelMembers.filter((pm) => pm && pm.panel_id === p?.id);
       const judgeUsers = members
-        .map((m) => supervisors.find((s) => s.id === m.supervisor_id))
+        .map((m) => (store.users || []).find((s) => s.id === m.supervisor_id))
         .filter(Boolean)
         .map((u: any) => ({
           id: u?.id || '',
