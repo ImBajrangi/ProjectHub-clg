@@ -94,6 +94,11 @@ export default function AdminDashboardPage() {
   const [selectedTeamModal, setSelectedTeamModal] = useState<any>(null);
   const PAGE_SIZE = 10;
 
+  // Defaulting Teams Modal State
+  const [defaultingModalOpen, setDefaultingModalOpen] = useState(false);
+  const [defaultingSearch, setDefaultingSearch] = useState('');
+  const [defaultingReasonFilter, setDefaultingReasonFilter] = useState<'all' | 'no_leader' | 'no_ps' | 'pending_p1'>('all');
+
   // Supervisors Directory State
   const [supervisorSearch, setSupervisorSearch] = useState('');
   const [selectedSupervisorModal, setSelectedSupervisorModal] = useState<any>(null);
@@ -268,7 +273,7 @@ export default function AdminDashboardPage() {
 
   // Lock background scroll and handle Escape key to close modals
   useEffect(() => {
-    const isAnyModalOpen = jsonModalOpen || selectedTeamModal || createPanelModalOpen || selectedSupervisorModal || authorityModalOpen || manageRoomsModalOpen || manageShiftsModalOpen;
+    const isAnyModalOpen = jsonModalOpen || selectedTeamModal || createPanelModalOpen || selectedSupervisorModal || authorityModalOpen || manageRoomsModalOpen || manageShiftsModalOpen || defaultingModalOpen;
     if (isAnyModalOpen) {
       document.body.style.overflow = 'hidden';
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -280,6 +285,7 @@ export default function AdminDashboardPage() {
           setAuthorityModalOpen(false);
           setManageRoomsModalOpen(false);
           setManageShiftsModalOpen(false);
+          setDefaultingModalOpen(false);
           setEditingRoom(null);
           setEditingShift(null);
         }
@@ -295,7 +301,7 @@ export default function AdminDashboardPage() {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [jsonModalOpen, selectedTeamModal, createPanelModalOpen, selectedSupervisorModal, authorityModalOpen, manageRoomsModalOpen, manageShiftsModalOpen, segregationModalItem]);
+  }, [jsonModalOpen, selectedTeamModal, createPanelModalOpen, selectedSupervisorModal, authorityModalOpen, manageRoomsModalOpen, manageShiftsModalOpen, segregationModalItem, defaultingModalOpen]);
 
   const loadRoomsAndShifts = async () => {
     try {
@@ -1702,7 +1708,12 @@ Output ONLY the raw valid JSON array.`;
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* 4 Metric Cards */}
             <div className="landing-stats-grid">
-              <div className="landing-stat-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', textAlign: 'left', padding: '16px 18px', position: 'relative', overflow: 'hidden' }}>
+              <div 
+                className="landing-stat-card" 
+                onClick={() => setActiveTab('teams')}
+                style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', textAlign: 'left', padding: '16px 18px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                title="Click to view full Teams & Students Directory"
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     Project Teams
@@ -1721,7 +1732,12 @@ Output ONLY the raw valid JSON array.`;
                 </div>
               </div>
 
-              <div className="landing-stat-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', textAlign: 'left', padding: '16px 18px', position: 'relative', overflow: 'hidden' }}>
+              <div 
+                className="landing-stat-card" 
+                onClick={() => { setActiveTab('teams'); setSearchQuery(''); }}
+                style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', textAlign: 'left', padding: '16px 18px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                title="Click to view team leader activation status"
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     Team Leaders
@@ -1740,7 +1756,12 @@ Output ONLY the raw valid JSON array.`;
                 </div>
               </div>
 
-              <div className="landing-stat-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', textAlign: 'left', padding: '16px 18px', position: 'relative', overflow: 'hidden' }}>
+              <div 
+                className="landing-stat-card" 
+                onClick={() => setActiveTab('supervisors')}
+                style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', textAlign: 'left', padding: '16px 18px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                title="Click to view Faculty Mentors Directory"
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     Faculty Mentors
@@ -1759,10 +1780,15 @@ Output ONLY the raw valid JSON array.`;
                 </div>
               </div>
 
-              <div className="landing-stat-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', textAlign: 'left', padding: '16px 18px', position: 'relative', overflow: 'hidden' }}>
+              <div 
+                className="landing-stat-card" 
+                onClick={() => setDefaultingModalOpen(true)}
+                style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', textAlign: 'left', padding: '16px 18px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease', border: defaultingTeams.length > 0 ? '1px solid #FECACA' : undefined }}
+                title="Click to pop up the full list of Defaulting Teams"
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#DC2626', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Defaulting Teams
+                  <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#DC2626', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    Defaulting Teams <span style={{ fontSize: '9.5px', padding: '1px 5px', borderRadius: '4px', backgroundColor: '#FEE2E2', color: '#B91C1C' }}>Pop-up</span>
                   </span>
                   <div style={{ width: '28px', height: '28px', borderRadius: '7px', backgroundColor: '#FEF2F2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <AlertTriangle size={15} />
@@ -1772,8 +1798,9 @@ Output ONLY the raw valid JSON array.`;
                   <div style={{ fontSize: '32px', fontWeight: 800, color: defaultingTeams.length > 0 ? '#DC2626' : 'var(--color-ink)', lineHeight: 1 }}>
                     {defaultingTeams.length}
                   </div>
-                  <div style={{ fontSize: '11.5px', color: defaultingTeams.length > 0 ? '#B91C1C' : '#16A34A', marginTop: '4px', fontWeight: 600 }}>
-                    {defaultingTeams.length > 0 ? 'Action Required' : '0 Compliance Issues'}
+                  <div style={{ fontSize: '11.5px', color: defaultingTeams.length > 0 ? '#B91C1C' : '#16A34A', marginTop: '4px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>{defaultingTeams.length > 0 ? 'Action Required' : '0 Compliance Issues'}</span>
+                    <span style={{ fontSize: '10.5px', color: '#DC2626', textDecoration: 'underline' }}>View List →</span>
                   </div>
                 </div>
               </div>
@@ -3717,6 +3744,390 @@ Output ONLY the raw valid JSON array.`;
           </div>
         )}
       </main>
+
+      {/* =================================================================== */}
+      {/* MODAL 0: DEFAULTING TEAMS COMPLIANCE AUDIT POP-UP                   */}
+      {/* =================================================================== */}
+      {defaultingModalOpen && (
+        <div
+          className="modal-overlay-responsive"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1300,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(5px)',
+            WebkitBackdropFilter: 'blur(5px)',
+            padding: '32px 16px',
+            overflowY: 'auto',
+          }}
+          onClick={() => setDefaultingModalOpen(false)}
+        >
+          <div
+            className="card animate-scale-in modal-card-responsive"
+            style={{
+              width: '100%',
+              maxWidth: 'min(96vw, 1000px)',
+              maxHeight: 'min(92vh, 850px)',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '18px',
+              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
+              border: '1px solid var(--color-border)',
+              margin: 'auto 0',
+              padding: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '20px 24px',
+                borderBottom: '1px solid var(--color-hairline)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                backgroundColor: '#FEF2F2',
+                gap: '12px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '10px',
+                    backgroundColor: '#FEE2E2',
+                    color: '#DC2626',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <AlertTriangle size={22} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#991B1B', margin: 0 }}>
+                      Defaulting Teams List ({defaultingTeams.length})
+                    </h3>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        backgroundColor: '#DC2626',
+                        color: '#FFFFFF',
+                        padding: '2px 8px',
+                        borderRadius: '999px',
+                      }}
+                    >
+                      Action Required
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '12.5px', color: '#7F1D1D', marginTop: '4px', margin: 0 }}>
+                    Teams with missing leaders, unapproved problem statements, or pending phase reviews.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDefaultingModalOpen(false)}
+                className="btn-icon"
+                style={{ borderRadius: '50%', color: '#991B1B', backgroundColor: '#FEE2E2', border: 'none', cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Compliance Reason Guide & Summary Metrics */}
+            <div style={{ padding: '16px 24px', backgroundColor: '#FFF5F5', borderBottom: '1px solid #FEE2E2', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <div style={{ flex: '1 1 200px', padding: '10px 14px', backgroundColor: '#FFFFFF', borderRadius: '8px', border: '1px solid #FECACA' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#991B1B', textTransform: 'uppercase' }}>1. Missing Leaders</div>
+                <div style={{ fontSize: '18px', fontWeight: 800, color: '#DC2626', marginTop: '2px' }}>
+                  {defaultingTeams.filter((t: any) => !t.leader_id).length} <span style={{ fontSize: '12px', fontWeight: 500, color: '#64748B' }}>/ {defaultingTeams.length} Teams</span>
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>Students must claim lead at <code style={{ backgroundColor: '#F1F5F9', padding: '1px 4px', borderRadius: '3px' }}>/leader</code></div>
+              </div>
+
+              <div style={{ flex: '1 1 200px', padding: '10px 14px', backgroundColor: '#FFFFFF', borderRadius: '8px', border: '1px solid #FECACA' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#991B1B', textTransform: 'uppercase' }}>2. Unapproved Statement</div>
+                <div style={{ fontSize: '18px', fontWeight: 800, color: '#DC2626', marginTop: '2px' }}>
+                  {defaultingTeams.filter((t: any) => t.problemStatement?.status !== 'approved').length} <span style={{ fontSize: '12px', fontWeight: 500, color: '#64748B' }}>Teams</span>
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>Pending mentor sign-off or submission</div>
+              </div>
+
+              <div style={{ flex: '1 1 200px', padding: '10px 14px', backgroundColor: '#FFFFFF', borderRadius: '8px', border: '1px solid #FECACA' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#991B1B', textTransform: 'uppercase' }}>3. Phase 1 Clearance</div>
+                <div style={{ fontSize: '18px', fontWeight: 800, color: '#DC2626', marginTop: '2px' }}>
+                  {defaultingTeams.filter((t: any) => !t.phase1_approved).length} <span style={{ fontSize: '12px', fontWeight: 500, color: '#64748B' }}>Teams</span>
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>Phase 1 review grading in progress</div>
+              </div>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div style={{ padding: '14px 24px', borderBottom: '1px solid var(--color-hairline)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: 1 }}>
+                <div style={{ position: 'relative', minWidth: '240px', flex: '1 1 260px' }}>
+                  <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                  <input
+                    type="text"
+                    placeholder="Search by team code, program, or mentor..."
+                    value={defaultingSearch}
+                    onChange={(e) => setDefaultingSearch(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '7px 12px 7px 32px',
+                      fontSize: '12px',
+                      borderRadius: '7px',
+                      border: '1px solid var(--color-border)',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => setDefaultingReasonFilter('all')}
+                    style={{
+                      padding: '5px 10px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      borderRadius: '6px',
+                      border: defaultingReasonFilter === 'all' ? '1px solid #DC2626' : '1px solid var(--color-border)',
+                      backgroundColor: defaultingReasonFilter === 'all' ? '#FEF2F2' : '#FFFFFF',
+                      color: defaultingReasonFilter === 'all' ? '#DC2626' : 'var(--color-ink)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    All ({defaultingTeams.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDefaultingReasonFilter('no_leader')}
+                    style={{
+                      padding: '5px 10px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      borderRadius: '6px',
+                      border: defaultingReasonFilter === 'no_leader' ? '1px solid #DC2626' : '1px solid var(--color-border)',
+                      backgroundColor: defaultingReasonFilter === 'no_leader' ? '#FEF2F2' : '#FFFFFF',
+                      color: defaultingReasonFilter === 'no_leader' ? '#DC2626' : 'var(--color-ink)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    No Leader ({defaultingTeams.filter((t: any) => !t.leader_id).length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDefaultingReasonFilter('no_ps')}
+                    style={{
+                      padding: '5px 10px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      borderRadius: '6px',
+                      border: defaultingReasonFilter === 'no_ps' ? '1px solid #DC2626' : '1px solid var(--color-border)',
+                      backgroundColor: defaultingReasonFilter === 'no_ps' ? '#FEF2F2' : '#FFFFFF',
+                      color: defaultingReasonFilter === 'no_ps' ? '#DC2626' : 'var(--color-ink)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Unapproved PS ({defaultingTeams.filter((t: any) => t.problemStatement?.status !== 'approved').length})
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    exportDefaultingTeams(defaultingTeams, 'xlsx');
+                    setToastMessage({ type: 'success', text: 'Defaulting Teams Excel downloaded.' });
+                  }}
+                  className="btn btn-outline"
+                  style={{ padding: '5px 10px', fontSize: '11px', gap: '4px', borderRadius: '6px' }}
+                >
+                  <Download size={12} /> Excel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    exportDefaultingTeams(defaultingTeams, 'csv');
+                    setToastMessage({ type: 'success', text: 'Defaulting Teams CSV downloaded.' });
+                  }}
+                  className="btn btn-outline"
+                  style={{ padding: '5px 10px', fontSize: '11px', gap: '4px', borderRadius: '6px' }}
+                >
+                  CSV
+                </button>
+              </div>
+            </div>
+
+            {/* Team Rows List */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {(() => {
+                const filtered = defaultingTeams.filter((t: any) => {
+                  const q = defaultingSearch.toLowerCase().trim();
+                  const matchesSearch =
+                    !q ||
+                    (t.team_name && t.team_name.toLowerCase().includes(q)) ||
+                    (t.team_code && t.team_code.toLowerCase().includes(q)) ||
+                    (t.program && t.program.toLowerCase().includes(q)) ||
+                    (t.supervisor?.name && t.supervisor.name.toLowerCase().includes(q));
+
+                  if (!matchesSearch) return false;
+
+                  if (defaultingReasonFilter === 'no_leader') return !t.leader_id;
+                  if (defaultingReasonFilter === 'no_ps') return t.problemStatement?.status !== 'approved';
+                  if (defaultingReasonFilter === 'pending_p1') return !t.phase1_approved;
+                  return true;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                      <AlertTriangle size={32} color="#CBD5E1" style={{ margin: '0 auto 10px' }} />
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)' }}>No Defaulting Teams Match Search</div>
+                      <div style={{ fontSize: '12px', marginTop: '4px' }}>Try clearing your search query or filter chip.</div>
+                    </div>
+                  );
+                }
+
+                return filtered.map((t: any) => {
+                  const hasLeader = Boolean(t.leader_id);
+                  const isPsApproved = t.problemStatement?.status === 'approved';
+                  const isP1Cleared = t.phase1_approved;
+
+                  return (
+                    <div
+                      key={t.id}
+                      style={{
+                        padding: '14px 16px',
+                        borderRadius: '10px',
+                        border: '1px solid #F1F5F9',
+                        backgroundColor: '#FFFFFF',
+                        boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '12px',
+                        transition: 'all 0.15s ease',
+                      }}
+                      className="hover-card"
+                    >
+                      <div style={{ minWidth: '220px', flex: '1 1 240px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--color-ink)' }}>{t.team_name}</span>
+                          <span style={{ fontSize: '10.5px', fontWeight: 600, padding: '1px 6px', borderRadius: '4px', backgroundColor: '#EFF6FF', color: '#1D4ED8' }}>
+                            {t.program || 'BCA'}
+                          </span>
+                          <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                            ({t.studentCount || t.students?.length || 0} Members)
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: '3px' }}>
+                          Mentor: <strong style={{ color: 'var(--color-ink)' }}>{t.supervisor?.name || 'Unassigned'}</strong>
+                          {t.supervisor?.phone && <span style={{ marginLeft: '6px' }}>• {t.supervisor.phone}</span>}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', flex: '1 1 260px' }}>
+                        {!hasLeader && (
+                          <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px', backgroundColor: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA' }}>
+                            Leader Not Elected
+                          </span>
+                        )}
+                        {!isPsApproved && (
+                          <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px', backgroundColor: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A' }}>
+                            PS Unapproved
+                          </span>
+                        )}
+                        {!isP1Cleared && (
+                          <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #E2E8F0' }}>
+                            Phase 1 Pending
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedTeamModal(t);
+                            setDefaultingModalOpen(false);
+                          }}
+                          className="btn btn-outline"
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            borderRadius: '7px',
+                            backgroundColor: '#FFFFFF',
+                            color: '#2563EB',
+                            borderColor: '#BFDBFE',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Inspect Team →
+                        </button>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Footer */}
+            <div
+              style={{
+                padding: '14px 24px',
+                borderTop: '1px solid var(--color-hairline)',
+                backgroundColor: '#F8FAFC',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '12px',
+              }}
+            >
+              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>
+                Showing <strong>{defaultingTeams.length}</strong> total defaulting teams needing compliance follow-up.
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('defaulting');
+                    setDefaultingModalOpen(false);
+                  }}
+                  className="btn btn-primary"
+                  style={{ padding: '7px 16px', fontSize: '12px', borderRadius: '7px' }}
+                >
+                  Open Full Audit Management Tab →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDefaultingModalOpen(false)}
+                  className="btn btn-outline"
+                  style={{ padding: '7px 14px', fontSize: '12px', borderRadius: '7px' }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* =================================================================== */}
       {/* MODAL 1: VISUAL PANEL ASSIGNMENT BUILDER (Batches, Rooms, Range)    */}
