@@ -299,7 +299,7 @@ export default function AdminDashboardPage() {
 
   const loadRoomsAndShifts = async () => {
     try {
-      const res = await fetch('/api/admin/rooms-shifts');
+      const res = await fetch(`/api/admin/rooms-shifts?_t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setDbRooms(Array.isArray(data.rawRooms) ? data.rawRooms : (Array.isArray(data.rooms) ? data.rooms.map((r: string) => ({ name: r, building: 'Academic Block AB10' })) : []));

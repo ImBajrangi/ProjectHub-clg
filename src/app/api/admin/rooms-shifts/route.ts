@@ -41,22 +41,32 @@ export async function GET(req: NextRequest) {
       }));
     }
 
-    return NextResponse.json({
-      success: true,
-      rooms: finalRooms,
-      rawRooms,
-      shifts: finalShifts,
-      isRealTable: !roomsError && !shiftsError,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        rooms: finalRooms,
+        rawRooms,
+        shifts: finalShifts,
+        isRealTable: !roomsError && !shiftsError,
+      },
+      {
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+      }
+    );
   } catch (error: any) {
     console.error('Error fetching rooms and shifts:', error);
-    return NextResponse.json({
-      success: true,
-      rooms: [],
-      rawRooms: [],
-      shifts: [],
-      fallback: true,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        rooms: [],
+        rawRooms: [],
+        shifts: [],
+        fallback: true,
+      },
+      {
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+      }
+    );
   }
 }
 
@@ -81,6 +91,27 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Room name is required' }, { status: 400 });
       }
 
+      // Check if room with this name already exists (case-insensitive)
+      const { data: existing } = await db.supabase
+        .from('presentation_rooms')
+        .select('id, name, building')
+        .ilike('name', cleanName)
+        .maybeSingle();
+
+      if (existing) {
+        const { data, error } = await db.supabase
+          .from('presentation_rooms')
+          .update({ name: cleanName, building })
+          .eq('id', existing.id)
+          .select()
+          .single();
+
+        if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+        return NextResponse.json({ success: true, room: data }, {
+          headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+        });
+      }
+
       const { data, error } = await db.supabase
         .from('presentation_rooms')
         .insert([{ name: cleanName, building }])
@@ -91,37 +122,74 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
 
-      return NextResponse.json({ success: true, room: data });
+      return NextResponse.json({ success: true, room: data }, {
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+      });
     }
 
     if (action === 'edit_room') {
-      const { id, oldName, newName, building } = body;
+      const { id, oldName, newName, building = 'Academic Block AB10' } = body;
       const cleanNewName = (newName || '').trim();
       if (!cleanNewName) {
         return NextResponse.json({ error: 'New room name is required' }, { status: 400 });
       }
 
-      let query = db.supabase.from('presentation_rooms').update({ name: cleanNewName, ...(building ? { building } : {}) });
+      let updatedData: any = null;
+      let updateError: any = null;
+
+      // 1. Try update by UUID id if valid
       if (id && isUuid(id)) {
-        query = query.eq('id', id);
-      } else if (oldName) {
-        query = query.eq('name', oldName);
-      } else {
-        return NextResponse.json({ error: 'Room ID or Old Name is required' }, { status: 400 });
+        const res = await db.supabase
+          .from('presentation_rooms')
+          .update({ name: cleanNewName, building })
+          .eq('id', id)
+          .select();
+        if (res.data && res.data.length > 0) {
+          updatedData = res.data[0];
+        }
+        updateError = res.error;
       }
 
-      const { data, error } = await query.select();
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
+      // 2. If no row updated yet, try update by oldName (case-insensitive)
+      if (!updatedData && oldName) {
+        const res = await db.supabase
+          .from('presentation_rooms')
+          .update({ name: cleanNewName, building })
+          .ilike('name', oldName.trim())
+          .select();
+        if (res.data && res.data.length > 0) {
+          updatedData = res.data[0];
+        }
+        if (!updateError) updateError = res.error;
       }
 
-      // If old room name exists, also update any panel records that were using it
-      if (oldName && oldName !== cleanNewName) {
-        await db.supabase.from('panels').update({ room_number: cleanNewName }).eq('room_number', oldName);
+      // 3. If room didn't exist in presentation_rooms table yet, insert it!
+      if (!updatedData) {
+        const res = await db.supabase
+          .from('presentation_rooms')
+          .insert([{ name: cleanNewName, building }])
+          .select()
+          .single();
+        updatedData = res.data;
+        if (!updateError) updateError = res.error;
+      }
+
+      if (updateError) {
+        return NextResponse.json({ error: updateError.message }, { status: 400 });
+      }
+
+      // Also update any panel records that were using the old room name
+      if (oldName && oldName.trim() !== cleanNewName) {
+        await db.supabase
+          .from('panels')
+          .update({ room_number: cleanNewName })
+          .ilike('room_number', oldName.trim());
         db.invalidateStore();
       }
 
-      return NextResponse.json({ success: true, room: data });
+      return NextResponse.json({ success: true, room: updatedData }, {
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+      });
     }
 
     if (action === 'delete_room') {
@@ -132,7 +200,9 @@ export async function POST(req: NextRequest) {
       } else if (name) {
         query = query.ilike('name', name.trim());
       } else {
-        return NextResponse.json({ success: true, message: 'Local room cleared' });
+        return NextResponse.json({ success: true, message: 'Local room cleared' }, {
+          headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+        });
       }
 
       const { error } = await query;
@@ -140,13 +210,17 @@ export async function POST(req: NextRequest) {
         console.warn('Delete room warning in Supabase:', error.message);
       }
 
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true }, {
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+      });
     }
 
     if (action === 'clear_all_rooms') {
       const { error } = await db.supabase.from('presentation_rooms').delete().neq('name', '___NON_EXISTENT___');
       if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-      return NextResponse.json({ success: true, message: 'All rooms cleared' });
+      return NextResponse.json({ success: true, message: 'All rooms cleared' }, {
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
+      });
     }
 
     // --- SHIFT ACTIONS ---
