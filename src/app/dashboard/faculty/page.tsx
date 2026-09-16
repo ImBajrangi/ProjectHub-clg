@@ -469,13 +469,17 @@ export default function FacultyDashboardPage() {
     setActionDirectives(meeting.action_directives || '');
 
     const teamMembers = selectedTeam?.members || [];
+    const existingAtt = meeting.attendance || [];
     setAttendanceList(
-      teamMembers.map((m: any) => ({
-        studentId: m.id,
-        name: m.full_name,
-        roll: m.roll_no,
-        isPresent: true,
-      }))
+      teamMembers.map((m: any) => {
+        const found = existingAtt.find((a: any) => String(a.student_id) === String(m.id));
+        return {
+          studentId: m.id,
+          name: m.full_name,
+          roll: m.roll_no,
+          isPresent: found ? Boolean(found.is_present) : true,
+        };
+      })
     );
     setLogModalOpen(true);
   };
@@ -1817,10 +1821,10 @@ export default function FacultyDashboardPage() {
                             .map((m: any) => {
                               const isExpanded = expandedMeetingIds.has(m.id);
                               const presentStudents = selectedTeam.members?.filter((s: any) =>
-                                m.attendance?.some((a: any) => a.student_id === s.id && a.is_present)
+                                m.attendance?.some((a: any) => String(a.student_id) === String(s.id) && Boolean(a.is_present))
                               ) || [];
                               const absentStudents = selectedTeam.members?.filter((s: any) =>
-                                m.attendance?.some((a: any) => a.student_id === s.id && !a.is_present)
+                                !presentStudents.some((p: any) => String(p.id) === String(s.id))
                               ) || [];
                               const totalCount = selectedTeam.members?.length || (presentStudents.length + absentStudents.length);
 

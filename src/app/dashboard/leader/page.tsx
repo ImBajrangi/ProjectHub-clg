@@ -1291,10 +1291,10 @@ export default function LeaderDashboardPage() {
                     const isCompleted = m.status === 'completed';
                     const isExpanded = expandedMeetingIds.has(m.id);
                     const presentStudents = members?.filter((s: any) =>
-                      m.attendance?.some((a: any) => a.student_id === s.id && a.is_present)
+                      m.attendance?.some((a: any) => String(a.student_id) === String(s.id) && Boolean(a.is_present))
                     ) || [];
                     const absentStudents = members?.filter((s: any) =>
-                      m.attendance?.some((a: any) => a.student_id === s.id && !a.is_present)
+                      !presentStudents.some((p: any) => String(p.id) === String(s.id))
                     ) || [];
                     const totalCount = members?.length || (presentStudents.length + absentStudents.length);
 

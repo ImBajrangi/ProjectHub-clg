@@ -821,8 +821,23 @@ export const db = {
     meeting.completed_at = now;
 
     if (!store.meeting_attendance) store.meeting_attendance = [];
-    // Update in-memory attendance
+    
+    // Resolve all students of this team so no member is ever omitted
+    const teamStudents = (store.students || []).filter((s) => s && String(s.team_id) === String(meeting.team_id));
+    const attMap = new Map<string, boolean>();
     for (const att of attendanceRecords) {
+      attMap.set(String(att.studentId), Boolean(att.isPresent));
+    }
+
+    const fullAttendanceList = teamStudents.length > 0
+      ? teamStudents.map((s) => ({
+          studentId: s.id,
+          isPresent: attMap.has(String(s.id)) ? attMap.get(String(s.id))! : false,
+        }))
+      : attendanceRecords;
+
+    // Update in-memory attendance
+    for (const att of fullAttendanceList) {
       const existingAtt = store.meeting_attendance.find(
         (a) => a && String(a.meeting_id) === String(meetingId) && String(a.student_id) === String(att.studentId)
       );
@@ -851,7 +866,7 @@ export const db = {
       .eq('id', meetingId)
       .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('meetings (log record)', writeErr); });
 
-    for (const att of attendanceRecords) {
+    for (const att of fullAttendanceList) {
       supabase.from('meeting_attendance').upsert(
         {
           meeting_id: meetingId,
