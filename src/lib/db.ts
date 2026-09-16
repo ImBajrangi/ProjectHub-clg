@@ -907,7 +907,7 @@ export const db = {
       throw new Error(`Failed to update phase status: ${writeErr.message}`);
     }
 
-    lastStoreFetch = Date.now();
+    this.invalidateStore();
     return phase || null;
   },
 
@@ -922,7 +922,7 @@ export const db = {
     if (phase) {
       phase.marks_weightage = marksWeightage;
       phase.updated_at = now;
-      }
+    }
 
     supabase
       .from('evaluation_phases')
@@ -930,6 +930,7 @@ export const db = {
       .eq('phase_number', phaseNumber)
       .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('evaluation_phases (updatePhaseMarks)', writeErr); });
 
+    this.invalidateStore();
     return phase || null;
   },
 

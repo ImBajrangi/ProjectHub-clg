@@ -34,36 +34,42 @@ export async function POST(req: NextRequest) {
       const { phaseNumber, isLive } = body;
       const updatedPhase = await db.setPhaseLive(phaseNumber, isLive);
 
-      // If set to Live, notify team leaders about live evaluation schedule
+      // If set to Live, asynchronously notify team leaders about live evaluation schedule
       if (isLive) {
-        const teams = await db.getTeams();
-        const panels = await db.getPanels(phaseNumber);
+        (async () => {
+          try {
+            const teams = await db.getTeams();
+            const panels = await db.getPanels(phaseNumber);
 
-        for (const t of teams) {
-          if (t.leader_id) {
-            const leader = await db.getUserById(t.leader_id);
-            const panel = panels.find(
-              (p) =>
-                t.team_number >= (p.team_range_start || 0) &&
-                t.team_number <= (p.team_range_end || 999)
-            );
+            for (const t of teams) {
+              if (t.leader_id) {
+                const leader = await db.getUserById(t.leader_id);
+                const panel = panels.find(
+                  (p) =>
+                    t.team_number >= (p.team_range_start || 0) &&
+                    t.team_number <= (p.team_range_end || 999)
+                );
 
-            if (leader) {
-              const notif = NotificationTemplates.evaluationSchedulePublished({
-                userId: leader.id,
-                recipientName: `${leader.full_name} (${t.team_name})`,
-                phaseNumber,
-                targetGroup: t.team_name,
-                date: panel?.date || 'To Be Announced',
-                timeWindow: panel?.time_window || '09:00 AM - 01:00 PM',
-                academicBlock: panel?.academic_block || 'Academic Block AB1',
-                roomNumber: panel?.room_number || 'TBA',
-                assignedJudges: panel?.panel_name || 'Assigned Faculty Panel',
-              });
-              await db.createNotification(notif);
+                if (leader) {
+                  const notif = NotificationTemplates.evaluationSchedulePublished({
+                    userId: leader.id,
+                    recipientName: `${leader.full_name} (${t.team_name})`,
+                    phaseNumber,
+                    targetGroup: t.team_name,
+                    date: panel?.date || 'To Be Announced',
+                    timeWindow: panel?.time_window || '09:00 AM - 01:00 PM',
+                    academicBlock: panel?.academic_block || 'Academic Block AB1',
+                    roomNumber: panel?.room_number || 'TBA',
+                    assignedJudges: panel?.panel_name || 'Assigned Faculty Panel',
+                  });
+                  await db.createNotification(notif);
+                }
+              }
             }
+          } catch (notifErr) {
+            console.error('Phase live notification dispatch error:', notifErr);
           }
-        }
+        })();
       }
 
       return NextResponse.json({
