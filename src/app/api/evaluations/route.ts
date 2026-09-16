@@ -10,12 +10,16 @@ export async function GET(req: NextRequest) {
     const sessionUser = await auth.validateSession(token);
     if (!sessionUser) return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
 
+    if (sessionUser.role !== 'supervisor' && sessionUser.role !== 'admin') {
+      return NextResponse.json({ error: 'Access denied: Evaluation marks are confidential and not accessible to students.' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
     const phaseNumber = parseInt(searchParams.get('phaseNumber') || '1') as 1 | 2 | 3;
     const teamId = searchParams.get('teamId') || undefined;
 
     const evaluations = await db.getEvaluations(phaseNumber, teamId);
-    return NextResponse.json({ evaluations });
+    return NextResponse.json({ evaluations }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch evaluations' }, { status: 500 });
   }
