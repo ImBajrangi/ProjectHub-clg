@@ -671,9 +671,6 @@ export default function NotificationDrawer({
           )}
         </div>
 
-        {/* Real-Time Device Notification Status Banner */}
-        <DeviceNotificationBanner />
-
         {/* Notifications List */}
         <div
           style={{
@@ -929,112 +926,6 @@ export default function NotificationDrawer({
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function DeviceNotificationBanner() {
-  const [permission, setPermission] = useState<NotificationPermission>('default');
-  const [supported, setSupported] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setSupported(true);
-      setPermission(Notification.permission);
-    }
-  }, []);
-
-  if (!supported) return null;
-
-  const requestPermission = async () => {
-    try {
-      const res = await Notification.requestPermission();
-      setPermission(res);
-      if (res === 'granted') {
-        await triggerSystemNotification({
-          id: 'perm-granted-' + Date.now(),
-          subject: 'Device Alerts Enabled',
-          body: 'System notifications are active. You will receive live alerts for meeting schedules, clearances, and evaluations.',
-        });
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const sendTest = async () => {
-    if (permission === 'granted' && typeof window !== 'undefined') {
-      await triggerSystemNotification({
-        id: 'test-ping-' + Date.now(),
-        subject: 'System Alert Verified',
-        body: 'Real-time OS notification pipeline is active and verified on this device.',
-      });
-    }
-  };
-
-  return (
-    <div
-      style={{
-        padding: '10px 18px',
-        backgroundColor: permission === 'granted' ? '#F0FDF4' : '#F8FAFC',
-        borderBottom: '1px solid var(--color-hairline)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        fontSize: '11px',
-        flexWrap: 'wrap',
-        gap: '8px',
-      }}
-    >
-      {permission === 'granted' ? (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#166534', fontWeight: 600 }}>
-            <CheckCircle2 size={13} /> Real-time device alerts enabled
-          </div>
-          <button
-            type="button"
-            onClick={sendTest}
-            style={{
-              padding: '3px 8px',
-              fontSize: '10px',
-              fontWeight: 600,
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #BBF7D0',
-              borderRadius: '4px',
-              color: '#166534',
-              cursor: 'pointer',
-            }}
-          >
-            Send Test
-          </button>
-        </>
-      ) : permission === 'denied' ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-text-muted)' }}>
-          <Info size={12} color="#64748B" /> Browser push alerts are turned off. In-app notices will always appear here.
-        </div>
-      ) : (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-text-muted)' }}>
-            <Bell size={12} color="#2563EB" /> Get real-time milestone alerts on your device:
-          </div>
-          <button
-            type="button"
-            onClick={requestPermission}
-            style={{
-              padding: '4px 10px',
-              fontSize: '11px',
-              fontWeight: 600,
-              backgroundColor: '#2563EB',
-              color: '#FFFFFF',
-              border: '1px solid #1D4ED8',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            Enable Alerts
-          </button>
-        </>
-      )}
     </div>
   );
 }
