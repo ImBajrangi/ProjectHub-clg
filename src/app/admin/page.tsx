@@ -1787,8 +1787,8 @@ Output ONLY the raw valid JSON array.`;
                 title="Click to pop up the full list of Defaulting Teams"
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#DC2626', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    Defaulting Teams <span style={{ fontSize: '9.5px', padding: '1px 5px', borderRadius: '4px', backgroundColor: '#FEE2E2', color: '#B91C1C' }}>Pop-up</span>
+                  <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#DC2626', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    Defaulting Teams
                   </span>
                   <div style={{ width: '28px', height: '28px', borderRadius: '7px', backgroundColor: '#FEF2F2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <AlertTriangle size={15} />
@@ -3261,10 +3261,8 @@ Output ONLY the raw valid JSON array.`;
                           <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{t.program}</div>
                         </div>
                         <div>
-                          {!t.leader_id ? (
+                          {!t.leader_id && !t.leader ? (
                             <span className="badge badge-danger" style={{ fontSize: '9.5px' }}>Leader Missing</span>
-                          ) : t.problemStatement?.status !== 'approved' ? (
-                            <span className="badge badge-warning" style={{ fontSize: '9.5px' }}>Topic Unapproved</span>
                           ) : (
                             <span className="badge badge-warning" style={{ fontSize: '9.5px' }}>Clearance Pending</span>
                           )}
@@ -5628,14 +5626,27 @@ Output ONLY the raw valid JSON array.`;
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedTeamModal.students?.map((s: any) => (
-                        <tr key={s.id}>
-                          <td>
-                            <div style={{ fontWeight: 600, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.full_name}</div>
-                            <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                              {s.isLeader ? <span style={{ color: '#059669', fontWeight: 700 }}>● Team Leader</span> : 'Member'}
-                            </div>
-                          </td>
+                      {selectedTeamModal.students?.map((s: any) => {
+                        const isStudentLeader = Boolean(
+                          s.isLeader ||
+                          s.is_leader ||
+                          (selectedTeamModal.leader_id && (String(selectedTeamModal.leader_id) === String(s.id) || String(selectedTeamModal.leader_id) === String(s.user_id))) ||
+                          (selectedTeamModal.leader && (
+                            String(selectedTeamModal.leader.id) === String(s.id) ||
+                            String(selectedTeamModal.leader.id) === String(s.user_id) ||
+                            (selectedTeamModal.leader.name && s.full_name && selectedTeamModal.leader.name.toLowerCase().trim() === s.full_name.toLowerCase().trim()) ||
+                            (selectedTeamModal.leader.email && s.email && selectedTeamModal.leader.email.toLowerCase().trim() === s.email.toLowerCase().trim())
+                          ))
+                        );
+
+                        return (
+                          <tr key={s.id}>
+                            <td>
+                              <div style={{ fontWeight: 600, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.full_name}</div>
+                              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                                {isStudentLeader ? <span style={{ color: '#059669', fontWeight: 700 }}>● Team Leader</span> : 'Member'}
+                              </div>
+                            </td>
                           <td style={{ color: 'var(--color-text-muted)', fontSize: '12px', fontFamily: 'monospace' }}>{s.roll_no}</td>
                           <td style={{ textAlign: 'center' }}>
                             {s.phase1 ? (
@@ -5689,7 +5700,8 @@ Output ONLY the raw valid JSON array.`;
                             )}
                           </td>
                         </tr>
-                      ))}
+                      );
+                    })}
                     </tbody>
                   </table>
                 </div>
