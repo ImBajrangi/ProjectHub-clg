@@ -52,6 +52,7 @@ import {
   Settings,
   Edit2,
   RotateCcw,
+  Pencil,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -130,6 +131,7 @@ export default function AdminDashboardPage() {
 
   // Interactive Visual Panel Builder State
   const [createPanelModalOpen, setCreatePanelModalOpen] = useState(false);
+  const [editingPanel, setEditingPanel] = useState<any | null>(null);
   const [panelFormPhase, setPanelFormPhase] = useState<1 | 2 | 3>(1);
   const [panelFormNumber, setPanelFormNumber] = useState<number | ''>('');
   const [panelFormProgram, setPanelFormProgram] = useState<'all' | 'BCA' | 'BCA - DS'>('all');
@@ -727,7 +729,23 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Interactive Visual Panel Creation
+  // Open Visual Panel Edit Modal
+  const handleOpenEditPanel = (p: any) => {
+    setEditingPanel(p);
+    setPanelFormPhase(p.phase_number as 1 | 2 | 3);
+    setPanelFormNumber(p.panel_number || '');
+    setPanelFormName(p.panel_name || '');
+    setPanelFormRangeStart(p.team_range_start || 1);
+    setPanelFormRangeEnd(p.team_range_end || 1);
+    setPanelFormSelectedJudges((p.judges || []).map((j: any) => j.id));
+    setPanelFormShift(p.time_window || 'Batch 1: Morning (08:00 AM - 10:00 AM)');
+    setPanelFormDate(p.date || '2026-09-17');
+    setPanelFormRoom(p.room_number || 'Room 402');
+    setPanelFormError(null);
+    setCreatePanelModalOpen(true);
+  };
+
+  // Interactive Visual Panel Creation & Editing
   const handleCreateVisualPanel = async (e: React.FormEvent) => {
     e.preventDefault();
     setPanelFormError(null);
@@ -745,9 +763,10 @@ export default function AdminDashboardPage() {
       return;
     }
 
+    const isEditing = Boolean(editingPanel);
     const finalShift = panelFormShift?.trim() || 'Batch 1: Morning (08:00 AM - 10:00 AM)';
     const finalRoom = panelFormRoom === 'Custom' ? panelFormCustomRoom : panelFormRoom;
-    const finalPanelNumber = Number(panelFormNumber) || nextSequentialPanelNumber;
+    const finalPanelNumber = Number(panelFormNumber) || (editingPanel ? editingPanel.panel_number : nextSequentialPanelNumber);
     const finalPanelName = panelFormName.trim() || `Panel ${finalPanelNumber} (${getFormattedTeamRange(panelFormRangeStart, panelFormRangeEnd)})`;
 
     try {
@@ -755,6 +774,7 @@ export default function AdminDashboardPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          ...(isEditing ? { action: 'edit_panel', panelId: editingPanel.id } : {}),
           panelNumber: finalPanelNumber,
           panelName: finalPanelName,
           phaseNumber: panelFormPhase,
@@ -775,17 +795,19 @@ export default function AdminDashboardPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        setPanelFormError(data.error || 'Failed to create panel.');
+        setPanelFormError(data.error || (isEditing ? 'Failed to update panel.' : 'Failed to create panel.'));
       } else {
         setCreatePanelModalOpen(false);
+        setEditingPanel(null);
         setPanelFormName('');
         setPanelFormNumber('');
         setPanelFormSelectedJudges([]);
+        setToastMessage({ type: 'success', text: isEditing ? `Successfully updated ${finalPanelName}.` : `Successfully created ${finalPanelName}.` });
         clientCache.invalidate(clientCache.keys.ADMIN_DATA);
         await loadAdminData();
       }
     } catch (err: any) {
-      setPanelFormError(err.message || 'Error creating panel.');
+      setPanelFormError(err.message || (isEditing ? 'Error updating panel.' : 'Error creating panel.'));
     } finally {
       setPanelFormLoading(false);
     }
@@ -2622,33 +2644,63 @@ Output ONLY the raw valid JSON array.`;
                             </span>
                           </div>
 
-                          <button
-                            onClick={() => handleDeletePanel(p.id, p.panel_name)}
-                            style={{
-                              width: '28px',
-                              height: '28px',
-                              borderRadius: '7px',
-                              background: '#FEE2E2',
-                              border: '1px solid #FECACA',
-                              cursor: 'pointer',
-                              color: '#DC2626',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              transition: 'all 0.15s ease',
-                            }}
-                            title="Delete Panel"
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#DC2626';
-                              e.currentTarget.style.color = '#FFFFFF';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = '#FEE2E2';
-                              e.currentTarget.style.color = '#DC2626';
-                            }}
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <button
+                              onClick={() => handleOpenEditPanel(p)}
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                borderRadius: '7px',
+                                background: '#EFF6FF',
+                                border: '1px solid #BFDBFE',
+                                cursor: 'pointer',
+                                color: '#2563EB',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.15s ease',
+                              }}
+                              title="Edit Panel Details & Judges"
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#2563EB';
+                                e.currentTarget.style.color = '#FFFFFF';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#EFF6FF';
+                                e.currentTarget.style.color = '#2563EB';
+                              }}
+                            >
+                              <Pencil size={13} />
+                            </button>
+
+                            <button
+                              onClick={() => handleDeletePanel(p.id, p.panel_name)}
+                              style={{
+                                width: '28px',
+                                height: '28px',
+                                borderRadius: '7px',
+                                background: '#FEE2E2',
+                                border: '1px solid #FECACA',
+                                cursor: 'pointer',
+                                color: '#DC2626',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.15s ease',
+                              }}
+                              title="Delete Panel"
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#DC2626';
+                                e.currentTarget.style.color = '#FFFFFF';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#FEE2E2';
+                                e.currentTarget.style.color = '#DC2626';
+                              }}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
                         </div>
 
                         {/* Panel Title */}
@@ -2728,7 +2780,7 @@ Output ONLY the raw valid JSON array.`;
                         </div>
 
                         {/* Assigned Faculty Section */}
-                        {p.judges && p.judges.length > 0 && (
+                        {p.judges && p.judges.length > 0 ? (
                           <div>
                             <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                               <span>Assigned Faculty Judges</span>
@@ -2792,6 +2844,39 @@ Output ONLY the raw valid JSON array.`;
                                 );
                               })}
                             </div>
+                          </div>
+                        ) : (
+                          <div
+                            style={{
+                              padding: '10px 12px',
+                              borderRadius: '8px',
+                              backgroundColor: '#FFFBEB',
+                              border: '1px solid #FDE68A',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              fontSize: '11.5px',
+                              color: '#92400E',
+                            }}
+                          >
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                              <AlertTriangle size={13} color="#D97706" /> No Judges Assigned
+                            </span>
+                            <button
+                              onClick={() => handleOpenEditPanel(p)}
+                              style={{
+                                background: '#F59E0B',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                borderRadius: '5px',
+                                padding: '3px 8px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                fontSize: '11px',
+                              }}
+                            >
+                              + Assign Judges
+                            </button>
                           </div>
                         )}
                       </div>
@@ -3473,14 +3558,27 @@ Output ONLY the raw valid JSON array.`;
             >
               <div style={{ flex: 1 }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-ink)' }}>
-                  <PlusCircle size={18} color="#2563EB" /> Add Single Panel (Manual Configuration)
+                  {editingPanel ? (
+                    <>
+                      <Pencil size={18} color="#2563EB" /> Edit Panel: {editingPanel.panel_name}
+                    </>
+                  ) : (
+                    <>
+                      <PlusCircle size={18} color="#2563EB" /> Add Single Panel (Manual Configuration)
+                    </>
+                  )}
                 </h3>
                 <p style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
-                  Configure presentation shifts and assign conflict-free judges for project teams.
+                  {editingPanel
+                    ? 'Reassign faculty judges, modify shifts, update presentation dates or room numbers.'
+                    : 'Configure presentation shifts and assign conflict-free judges for project teams.'}
                 </p>
               </div>
               <button
-                onClick={() => setCreatePanelModalOpen(false)}
+                onClick={() => {
+                  setCreatePanelModalOpen(false);
+                  setEditingPanel(null);
+                }}
                 style={{
                   width: '36px',
                   height: '36px',
@@ -4380,7 +4478,10 @@ Output ONLY the raw valid JSON array.`;
                 <button
                   type="button"
                   className="btn btn-outline"
-                  onClick={() => setCreatePanelModalOpen(false)}
+                  onClick={() => {
+                    setCreatePanelModalOpen(false);
+                    setEditingPanel(null);
+                  }}
                   style={{ padding: '8px 16px', fontSize: '13px' }}
                 >
                   Cancel
@@ -4391,7 +4492,9 @@ Output ONLY the raw valid JSON array.`;
                   disabled={panelFormLoading || panelFormSelectedJudges.length === 0}
                   style={{ padding: '8px 18px', fontSize: '13px', fontWeight: 600 }}
                 >
-                  {panelFormLoading ? 'Creating Panel...' : `Create Panel for Phase ${panelFormPhase}`}
+                  {panelFormLoading
+                    ? (editingPanel ? 'Saving Changes...' : 'Creating Panel...')
+                    : (editingPanel ? 'Save Changes' : `Create Panel for Phase ${panelFormPhase}`)}
                 </button>
               </div>
             </form>

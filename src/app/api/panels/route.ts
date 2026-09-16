@@ -429,6 +429,71 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // -------------------------------------------------------------------------
+    // ACTION 4: EDIT PANEL
+    // -------------------------------------------------------------------------
+    if (action === 'edit_panel') {
+      const {
+        panelId,
+        panelNumber,
+        panelName,
+        phaseNumber,
+        teamRangeStart,
+        teamRangeEnd,
+        supervisorIds,
+        schedule,
+      } = body;
+
+      if (!panelId || !panelName || !phaseNumber || !teamRangeStart || !teamRangeEnd || !supervisorIds) {
+        return NextResponse.json({ error: 'Missing required panel edit fields' }, { status: 400 });
+      }
+
+      // Conflict Check
+      const targetTeams = allTeams.filter(
+        (t) => t.team_number >= teamRangeStart && t.team_number <= teamRangeEnd
+      );
+
+      const conflictingSupervisors: string[] = [];
+      for (const supId of supervisorIds) {
+        const hasConflict = targetTeams.some((t) => t.supervisor_id === supId);
+        if (hasConflict) {
+          const supUser = supervisors.find((s) => s.id === supId);
+          if (supUser) conflictingSupervisors.push(supUser.full_name);
+        }
+      }
+
+      if (conflictingSupervisors.length > 0) {
+        return NextResponse.json(
+          {
+            error: `Conflict-of-Interest Safeguard: ${conflictingSupervisors.join(', ')} supervise teams within range ${teamRangeStart}-${teamRangeEnd} and cannot be assigned to this panel.`,
+          },
+          { status: 400 }
+        );
+      }
+
+      const updated = await db.updatePanelById(
+        panelId,
+        Number(panelNumber) || 1,
+        panelName,
+        phaseNumber,
+        Number(teamRangeStart),
+        Number(teamRangeEnd),
+        supervisorIds,
+        schedule || {
+          date: 'To Be Announced',
+          timeWindow: 'Batch 1: Morning (08:00 AM - 10:00 AM)',
+          academicBlock: 'Academic Block AB10',
+          roomNumber: 'Room 402',
+        }
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: `Successfully updated ${panelName}.`,
+        panel: updated,
+      });
+    }
+
     // Default: Single panel creation fallback
     const {
       panelNumber,

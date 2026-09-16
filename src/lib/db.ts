@@ -1110,6 +1110,96 @@ export const db = {
     }
   },
 
+  async updatePanelById(
+    panelId: string,
+    panelNumber: number,
+    panelName: string,
+    phaseNumber: 1 | 2 | 3,
+    teamRangeStart: number,
+    teamRangeEnd: number,
+    supervisorIds: string[],
+    schedule: { date: string; timeWindow: string; academicBlock: string; roomNumber: string }
+  ): Promise<Panel> {
+    const store = await this.getStore();
+    const existing = store.panels.find((p) => p.id === panelId);
+    const now = new Date().toISOString();
+
+    const { error: updateErr } = await supabase
+      .from('panels')
+      .update({
+        panel_number: panelNumber,
+        panel_name: panelName,
+        phase_number: phaseNumber,
+        date: schedule.date,
+        time_window: schedule.timeWindow,
+        academic_block: schedule.academicBlock,
+        room_number: schedule.roomNumber,
+        team_range_start: teamRangeStart,
+        team_range_end: teamRangeEnd,
+      })
+      .eq('id', panelId);
+
+    if (updateErr) {
+      logSupabaseError('panels (updatePanelById)', updateErr);
+      throw new Error(`Failed to update panel: ${updateErr.message}`);
+    }
+
+    // Delete old members
+    const { error: delErr } = await supabase
+      .from('panel_members')
+      .delete()
+      .eq('panel_id', panelId);
+
+    if (delErr) {
+      logSupabaseError('panel_members (delete for update)', delErr);
+    }
+
+    // Insert new members
+    const newMembers: PanelMember[] = supervisorIds.map((supId) => ({
+      id: crypto.randomUUID(),
+      panel_id: panelId,
+      supervisor_id: supId,
+      created_at: now,
+    }));
+
+    if (newMembers.length > 0) {
+      const { error: insErr } = await supabase.from('panel_members').insert(newMembers);
+      if (insErr) {
+        logSupabaseError('panel_members (insert for update)', insErr);
+        throw new Error(`Failed to update panel judges: ${insErr.message}`);
+      }
+    }
+
+    if (existing) {
+      existing.panel_number = panelNumber;
+      existing.panel_name = panelName;
+      existing.phase_number = phaseNumber;
+      existing.date = schedule.date;
+      existing.time_window = schedule.timeWindow;
+      existing.academic_block = schedule.academicBlock;
+      existing.room_number = schedule.roomNumber;
+      existing.team_range_start = teamRangeStart;
+      existing.team_range_end = teamRangeEnd;
+    }
+
+    store.panel_members = store.panel_members.filter((pm) => pm.panel_id !== panelId).concat(newMembers);
+    lastStoreFetch = Date.now();
+
+    return existing || {
+      id: panelId,
+      panel_number: panelNumber,
+      panel_name: panelName,
+      phase_number: phaseNumber,
+      date: schedule.date,
+      time_window: schedule.timeWindow,
+      academic_block: schedule.academicBlock,
+      room_number: schedule.roomNumber,
+      team_range_start: teamRangeStart,
+      team_range_end: teamRangeEnd,
+      created_at: now,
+    };
+  },
+
   async updatePanelSchedule(
     panelNumber: number,
     phaseNumber: 1 | 2 | 3,
