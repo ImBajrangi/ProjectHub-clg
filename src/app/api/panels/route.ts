@@ -74,11 +74,10 @@ export async function GET(req: NextRequest) {
         const phaseInfo = phases.find((ph) => ph.phase_number === p.phase_number);
         const isPhaseLive = phaseInfo ? phaseInfo.is_live : false;
 
-        const evaluableTeams = p.teams.filter((t) => {
-          // 1. Conflict Check:
-          if (t.supervisor_id === sessionUser.id) return false;
-          return true;
-        });
+        const evaluableTeams = p.teams.map((t) => ({
+          ...t,
+          isMentorForThisTeam: t.supervisor_id === sessionUser.id,
+        }));
 
         return {
           ...p,
@@ -448,27 +447,20 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Missing required panel edit fields' }, { status: 400 });
       }
 
-      // Conflict Check
+      // Informational Mentor Check (non-blocking)
       const targetTeams = allTeams.filter(
         (t) => t.team_number >= teamRangeStart && t.team_number <= teamRangeEnd
       );
 
-      const conflictingSupervisors: string[] = [];
+      const mentorNotices: string[] = [];
       for (const supId of supervisorIds) {
-        const hasConflict = targetTeams.some((t) => t.supervisor_id === supId);
-        if (hasConflict) {
+        const mentored = targetTeams.filter((t) => t.supervisor_id === supId);
+        if (mentored.length > 0) {
           const supUser = supervisors.find((s) => s.id === supId);
-          if (supUser) conflictingSupervisors.push(supUser.full_name);
+          if (supUser) {
+            mentorNotices.push(`${supUser.full_name} mentors ${mentored.map(t => t.team_code).join(', ')}`);
+          }
         }
-      }
-
-      if (conflictingSupervisors.length > 0) {
-        return NextResponse.json(
-          {
-            error: `Conflict-of-Interest Safeguard: ${conflictingSupervisors.join(', ')} supervise teams within range ${teamRangeStart}-${teamRangeEnd} and cannot be assigned to this panel.`,
-          },
-          { status: 400 }
-        );
       }
 
       const updated = await db.updatePanelById(
@@ -489,7 +481,8 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: `Successfully updated ${panelName}.`,
+        message: `Successfully updated ${panelName}.${mentorNotices.length > 0 ? ` (Note: ${mentorNotices.join('; ')})` : ''}`,
+        mentorNotices,
         panel: updated,
       });
     }
@@ -509,27 +502,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required panel configuration fields' }, { status: 400 });
     }
 
-    // Conflict Check
+    // Informational Mentor Check (non-blocking)
     const targetTeams = allTeams.filter(
       (t) => t.team_number >= teamRangeStart && t.team_number <= teamRangeEnd
     );
 
-    const conflictingSupervisors: string[] = [];
+    const mentorNotices: string[] = [];
     for (const supId of supervisorIds) {
-      const hasConflict = targetTeams.some((t) => t.supervisor_id === supId);
-      if (hasConflict) {
+      const mentored = targetTeams.filter((t) => t.supervisor_id === supId);
+      if (mentored.length > 0) {
         const supUser = supervisors.find((s) => s.id === supId);
-        if (supUser) conflictingSupervisors.push(supUser.full_name);
+        if (supUser) {
+          mentorNotices.push(`${supUser.full_name} mentors ${mentored.map(t => t.team_code).join(', ')}`);
+        }
       }
-    }
-
-    if (conflictingSupervisors.length > 0) {
-      return NextResponse.json(
-        {
-          error: `Conflict-of-Interest Safeguard: ${conflictingSupervisors.join(', ')} supervise teams within range ${teamRangeStart}-${teamRangeEnd} and cannot be assigned to this panel.`,
-        },
-        { status: 400 }
-      );
     }
 
     let finalPanelNum = Number(panelNumber);

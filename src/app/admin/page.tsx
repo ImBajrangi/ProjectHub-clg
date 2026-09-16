@@ -43,6 +43,7 @@ import {
   Crown,
   Key,
   UserPlus,
+  Play,
   ArrowRightLeft,
   ShieldAlert,
   BadgeCheck,
@@ -675,21 +676,36 @@ export default function AdminDashboardPage() {
 
   const handleTogglePhaseLive = async (phaseNumber: 1 | 2 | 3, currentLive: boolean) => {
     try {
+      const willBeLive = !currentLive;
       const res = await fetch('/api/phases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'toggle_live',
           phaseNumber,
-          isLive: !currentLive,
+          isLive: willBeLive,
         }),
       });
 
       if (res.ok) {
+        setToastMessage({
+          type: 'success',
+          text: willBeLive
+            ? `Phase ${phaseNumber} evaluation is now LIVE. Panel members can record and update marks.`
+            : `Phase ${phaseNumber} evaluation STOPPED & LOCKED. Panel members can no longer modify marks.`,
+        });
         loadAdminData();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('codeshastra_notification_update'));
+          try {
+            const bc = new BroadcastChannel('codeshastra_notifications_channel');
+            bc.postMessage({ type: 'UPDATE' });
+            setTimeout(() => { try { bc.close(); } catch { } }, 1000);
+          } catch { }
+        }
       }
     } catch {
-      // Ignore network errors
+      setToastMessage({ type: 'error', text: 'Network error while updating phase status' });
     }
   };
 
@@ -1162,7 +1178,22 @@ export default function AdminDashboardPage() {
     return selectedRangeTeams.reduce((acc: number, t: any) => acc + (t.students?.length || 0), 0);
   }, [selectedRangeTeams]);
 
-  // Check for potential conflicts with selected judges in this range
+  // Normalize shift helper for precise multi-shift occupancy matching
+  const normalizeShiftKey = (s: string) => {
+    if (!s) return '';
+    const lower = s.toLowerCase().trim();
+    if (lower.includes('morning') || lower.includes('batch 1') || lower.includes('shift 1') || lower.includes('08:00') || lower.includes('09:00') || lower.includes('10:00')) return 'shift1';
+    if (lower.includes('afternoon') || lower.includes('batch 2') || lower.includes('shift 2') || lower.includes('12:00') || lower.includes('01:00') || lower.includes('02:00') || lower.includes('13:00') || lower.includes('14:00')) return 'shift2';
+    if (lower.includes('evening') || lower.includes('batch 3') || lower.includes('shift 3') || lower.includes('03:00') || lower.includes('04:00') || lower.includes('05:00') || lower.includes('15:00') || lower.includes('16:00') || lower.includes('17:00')) return 'shift3';
+    return lower.replace(/[^a-z0-9]/g, '');
+  };
+
+  const normalizeRoomName = (r: string) => {
+    if (!r) return '';
+    return r.toLowerCase().replace(/^(room|lab|hall|seminar)\s+/i, '').replace(/[^a-z0-9]/g, '').trim();
+  };
+
+  // Check for potential mentor relationships with selected judges in this range (informational note)
   const panelJudgeConflicts = useMemo(() => {
     if (panelFormSelectedJudges.length === 0 || selectedRangeTeams.length === 0) return [];
     const conflicts: { judgeName: string; teamCode: string }[] = [];
@@ -1176,19 +1207,29 @@ export default function AdminDashboardPage() {
     return conflicts;
   }, [panelFormSelectedJudges, selectedRangeTeams, supervisors]);
 
-  // Faculty Availability calculations for the current panel configuration
+  // Faculty Availability calculations renewed for selected Phase, Shift & Date
   const getFacultyAvailability = (facultyId: string) => {
     const assignedPhasePanels = (panels || []).filter(
       (p: any) =>
         p.phase_number === panelFormPhase &&
         (p.judges || []).some((j: any) => j.id === facultyId)
     );
-    const isAssigned = assignedPhasePanels.length > 0;
+    const assignedInThisShift = assignedPhasePanels.find((p: any) => {
+      if (editingPanel && p.id === editingPanel.id) return false;
+      const pShift = (p.time_window || '').trim();
+      const curShift = (panelFormShift || '').trim();
+      const pDate = (p.date || '').trim();
+      const curDate = (panelFormDate || '').trim();
+      const sameDate = !pDate || !curDate || pDate.toLowerCase() === curDate.toLowerCase();
+      const sameShift = !pShift || !curShift || normalizeShiftKey(pShift) === normalizeShiftKey(curShift);
+      return sameDate && sameShift;
+    });
     const conflictTeam = selectedRangeTeams.find(
       (t: any) => t.supervisor_id === facultyId || t.supervisor?.id === facultyId
     );
     return {
-      isAvailable: !isAssigned,
+      isAvailable: !assignedInThisShift,
+      assignedInThisShift,
       assignedPanels: assignedPhasePanels,
       conflictTeam,
     };
@@ -1198,16 +1239,12 @@ export default function AdminDashboardPage() {
     let availableCount = 0;
     let busyCount = 0;
     (supervisors || []).forEach((s: any) => {
-      const isAssigned = (panels || []).some(
-        (p: any) =>
-          p.phase_number === panelFormPhase &&
-          (p.judges || []).some((j: any) => j.id === s.id)
-      );
-      if (isAssigned) busyCount++;
-      else availableCount++;
+      const avail = getFacultyAvailability(s.id);
+      if (avail.isAvailable) availableCount++;
+      else busyCount++;
     });
     return { availableCount, busyCount };
-  }, [supervisors, panels, panelFormPhase]);
+  }, [supervisors, panels, panelFormPhase, panelFormShift, panelFormDate, editingPanel]);
 
   // Compute next sequential panel number for the selected phase
   const nextSequentialPanelNumber = useMemo(() => {
@@ -1243,10 +1280,10 @@ export default function AdminDashboardPage() {
     return dbShifts || [];
   }, [dbShifts]);
 
-  // Real occupancy check helper for any room
+  // Real occupancy check helper for any room renewed dynamically for phase, shift & date
   const getOccupyingPanelForRoom = (roomName: string) => {
     if (!roomName) return null;
-    const cleanRoom = roomName.toLowerCase().replace(/^room\s+/i, '').trim();
+    const cleanRoom = normalizeRoomName(roomName);
 
     return (panels || []).find((p: any) => {
       // Exclude the current panel being edited
@@ -1255,25 +1292,20 @@ export default function AdminDashboardPage() {
       // Match evaluation phase
       if (p.phase_number !== panelFormPhase) return false;
 
-      // Match presentation date
-      const pDate = (p.date || '').trim();
-      const curDate = (panelFormDate || '').trim();
+      // Match presentation date (if both have date values)
+      const pDate = (p.date || '').trim().toLowerCase();
+      const curDate = (panelFormDate || '').trim().toLowerCase();
       if (pDate && curDate && pDate !== curDate) return false;
 
       // Match shift / time window
-      const pShift = (p.time_window || '').toLowerCase().trim();
-      const curShift = (panelFormShift || '').toLowerCase().trim();
-      if (pShift && curShift) {
-        const getShiftKey = (s: string) => {
-          if (s.includes('morning') || s.includes('batch 1') || s.includes('shift 1') || s.includes('08:00') || s.includes('09:00')) return 'shift1';
-          if (s.includes('afternoon') || s.includes('batch 2') || s.includes('shift 2') || s.includes('12:00') || s.includes('01:00') || s.includes('02:00')) return 'shift2';
-          return s;
-        };
-        if (getShiftKey(pShift) !== getShiftKey(curShift)) return false;
+      const pShift = (p.time_window || '').trim();
+      const curShift = (panelFormShift || '').trim();
+      if (pShift && curShift && normalizeShiftKey(pShift) !== normalizeShiftKey(curShift)) {
+        return false;
       }
 
-      // Match room number
-      const pCleanRoom = (p.room_number || '').toLowerCase().replace(/^room\s+/i, '').trim();
+      // Match room number normalized
+      const pCleanRoom = normalizeRoomName(p.room_number || '');
       return pCleanRoom === cleanRoom || (p.room_number || '').toLowerCase().trim() === roomName.toLowerCase().trim();
     });
   };
@@ -1966,9 +1998,30 @@ Output ONLY the raw valid JSON array.`;
                       <button
                         onClick={() => handleTogglePhaseLive(ph.phase_number, ph.is_live)}
                         className={ph.is_live ? 'btn btn-outline' : 'btn btn-primary'}
-                        style={{ width: '100%', fontSize: '13px' }}
+                        style={{
+                          width: '100%',
+                          fontSize: '13px',
+                          fontWeight: 700,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          backgroundColor: ph.is_live ? '#FEF2F2' : undefined,
+                          color: ph.is_live ? '#DC2626' : undefined,
+                          borderColor: ph.is_live ? '#FCA5A5' : undefined,
+                        }}
                       >
-                        {ph.is_live ? 'End Live Session' : `Set Phase ${ph.phase_number} to LIVE`}
+                        {ph.is_live ? (
+                          <>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#DC2626', display: 'inline-block' }} />
+                            <span>Stop Phase {ph.phase_number} (Lock Marks)</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play size={13} fill="currentColor" />
+                            <span>Start Phase {ph.phase_number} (Go Live)</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   );
@@ -2509,420 +2562,539 @@ Output ONLY the raw valid JSON array.`;
         {/* =================================================================== */}
         {/* TAB 4: PANELS & PRESENTATION LOGISTICS (2 Batches, Rooms, Dates)    */}
         {/* =================================================================== */}
-        {activeTab === 'panels' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* Header & Controls */}
-            <div className="card" style={{ padding: '14px 16px', width: '100%', boxSizing: 'border-box' }}>
-              <div className="panels-toolbar" style={{ width: '100%', boxSizing: 'border-box' }}>
-                {/* Phase Selection Pills */}
-                <div className="segmented-control touch-scroll-x" style={{ padding: '3px', boxSizing: 'border-box', overflowX: 'auto', display: 'flex', flexShrink: 0 }}>
-                  <button
-                    className={`segmented-pill ${panelPhaseFilter === 1 ? 'active' : ''}`}
-                    onClick={() => setPanelPhaseFilter(1)}
-                    style={{ padding: '6px 12px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', flexShrink: 0 }}
-                  >
-                    <Target size={13} color={panelPhaseFilter === 1 ? '#2563EB' : 'currentColor'} />
-                    <span>Round 1 (19-Sep)</span>
-                  </button>
-                  <button
-                    className={`segmented-pill ${panelPhaseFilter === 2 ? 'active' : ''}`}
-                    onClick={() => setPanelPhaseFilter(2)}
-                    style={{ padding: '6px 12px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', flexShrink: 0 }}
-                  >
-                    <Layers size={13} color={panelPhaseFilter === 2 ? '#059669' : 'currentColor'} />
-                    <span>Round 2 (17-Oct)</span>
-                  </button>
-                  <button
-                    className={`segmented-pill ${panelPhaseFilter === 3 ? 'active' : ''}`}
-                    onClick={() => setPanelPhaseFilter(3)}
-                    style={{ padding: '6px 12px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', flexShrink: 0 }}
-                  >
-                    <Award size={13} color={panelPhaseFilter === 3 ? '#D97706' : 'currentColor'} />
-                    <span>Round 3 (Final Defense)</span>
-                  </button>
-                </div>
+        {activeTab === 'panels' && (() => {
+          const currentPanelPhaseObj = phases.find((ph: any) => ph.phase_number === panelPhaseFilter);
+          const isCurrentPanelPhaseLive = currentPanelPhaseObj ? currentPanelPhaseObj.is_live : false;
 
-                {/* Right Controls: Search + Unified Action Buttons */}
-                <div className="panels-actions-group">
-                  <div className="search-input-wrapper" style={{ minWidth: '160px', maxWidth: '240px', flex: '1 1 auto' }}>
-                    <input
-                      type="text"
-                      className="input-field"
-                      style={{ height: '38px', fontSize: '12.5px' }}
-                      placeholder="Search panel, room, judge..."
-                      value={panelSearch}
-                      onChange={(e) => setPanelSearch(e.target.value)}
-                    />
-                    <div className="search-icon">
-                      <Search size={14} />
-                    </div>
-                    {panelSearch && (
-                      <button
-                        type="button"
-                        onClick={() => setPanelSearch('')}
-                        className="clear-btn"
-                        aria-label="Clear search"
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="panels-actions-buttons" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                    {/* Export Panels Buttons */}
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          exportPanelsData(filteredPanels, 'xlsx');
-                          setToastMessage({ type: 'success', text: `Phase ${panelPhaseFilter} Panels Excel report downloaded.` });
-                        }}
-                        className="btn btn-outline"
-                        style={{ height: '38px', padding: '0 10px', fontSize: '11.5px', gap: '4px', borderRadius: '8px' }}
-                        title="Export Panels Schedule as Excel (.xlsx)"
-                      >
-                        <Download size={13} /> Excel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          exportPanelsData(filteredPanels, 'csv');
-                          setToastMessage({ type: 'success', text: `Phase ${panelPhaseFilter} Panels CSV report downloaded.` });
-                        }}
-                        className="btn btn-outline"
-                        style={{ height: '38px', padding: '0 10px', fontSize: '11.5px', gap: '4px', borderRadius: '8px' }}
-                        title="Export Panels Schedule as CSV (.csv)"
-                      >
-                        CSV
-                      </button>
-                    </div>
-
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Header & Controls */}
+              <div className="card" style={{ padding: '14px 16px', width: '100%', boxSizing: 'border-box' }}>
+                <div className="panels-toolbar" style={{ width: '100%', boxSizing: 'border-box' }}>
+                  {/* Phase Selection Pills */}
+                  <div className="segmented-control touch-scroll-x" style={{ padding: '3px', boxSizing: 'border-box', overflowX: 'auto', display: 'flex', flexShrink: 0 }}>
                     <button
-                      onClick={() => {
-                        setPanelFormPhase(panelPhaseFilter);
-                        setCreatePanelModalOpen(true);
-                        setPanelFormError(null);
-                      }}
-                      className="btn btn-primary"
-                      style={{ fontSize: '12px', height: '38px', padding: '0 14px', gap: '6px', whiteSpace: 'nowrap' }}
+                      className={`segmented-pill ${panelPhaseFilter === 1 ? 'active' : ''}`}
+                      onClick={() => setPanelPhaseFilter(1)}
+                      style={{ padding: '6px 12px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', flexShrink: 0 }}
                     >
-                      <Plus size={14} /> Add Single Panel
+                      <Target size={13} color={panelPhaseFilter === 1 ? '#2563EB' : 'currentColor'} />
+                      <span>Round 1 (19-Sep)</span>
+                    </button>
+                    <button
+                      className={`segmented-pill ${panelPhaseFilter === 2 ? 'active' : ''}`}
+                      onClick={() => setPanelPhaseFilter(2)}
+                      style={{ padding: '6px 12px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', flexShrink: 0 }}
+                    >
+                      <Layers size={13} color={panelPhaseFilter === 2 ? '#059669' : 'currentColor'} />
+                      <span>Round 2 (17-Oct)</span>
+                    </button>
+                    <button
+                      className={`segmented-pill ${panelPhaseFilter === 3 ? 'active' : ''}`}
+                      onClick={() => setPanelPhaseFilter(3)}
+                      style={{ padding: '6px 12px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', flexShrink: 0 }}
+                    >
+                      <Award size={13} color={panelPhaseFilter === 3 ? '#D97706' : 'currentColor'} />
+                      <span>Round 3 (Final Defense)</span>
                     </button>
                   </div>
+
+                  {/* Right Controls: Search + Unified Action Buttons */}
+                  <div className="panels-actions-group">
+                    <div className="search-input-wrapper" style={{ minWidth: '160px', maxWidth: '240px', flex: '1 1 auto' }}>
+                      <input
+                        type="text"
+                        className="input-field"
+                        style={{ height: '38px', fontSize: '12.5px' }}
+                        placeholder="Search panel, room, judge..."
+                        value={panelSearch}
+                        onChange={(e) => setPanelSearch(e.target.value)}
+                      />
+                      <div className="search-icon">
+                        <Search size={14} />
+                      </div>
+                      {panelSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setPanelSearch('')}
+                          className="clear-btn"
+                          aria-label="Clear search"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="panels-actions-buttons" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                      {/* Direct Stop / Start Phase Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePhaseLive(panelPhaseFilter as (1 | 2 | 3), isCurrentPanelPhaseLive)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          height: '38px',
+                          padding: '0 13px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          backgroundColor: isCurrentPanelPhaseLive ? '#FEF2F2' : '#ECFDF5',
+                          color: isCurrentPanelPhaseLive ? '#DC2626' : '#059669',
+                          border: isCurrentPanelPhaseLive ? '1.5px solid #FCA5A5' : '1.5px solid #A7F3D0',
+                          whiteSpace: 'nowrap',
+                        }}
+                        title={
+                          isCurrentPanelPhaseLive
+                            ? `Phase ${panelPhaseFilter} is currently LIVE. Click to STOP this phase and immediately lock marks from panel members.`
+                            : `Phase ${panelPhaseFilter} is currently STOPPED. Click to GO LIVE so panel members can record marks.`
+                        }
+                      >
+                        {isCurrentPanelPhaseLive ? (
+                          <>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#DC2626', display: 'inline-block' }} />
+                            <span>Stop Phase {panelPhaseFilter} (Lock Marks)</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play size={13} fill="#059669" color="#059669" />
+                            <span>Start Phase {panelPhaseFilter} (Go Live)</span>
+                          </>
+                        )}
+                      </button>
+
+                      {/* Export Panels Buttons */}
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            exportPanelsData(filteredPanels, 'xlsx');
+                            setToastMessage({ type: 'success', text: `Phase ${panelPhaseFilter} Panels Excel report downloaded.` });
+                          }}
+                          className="btn btn-outline"
+                          style={{ height: '38px', padding: '0 10px', fontSize: '11.5px', gap: '4px', borderRadius: '8px' }}
+                          title="Export Panels Schedule as Excel (.xlsx)"
+                        >
+                          <Download size={13} /> Excel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            exportPanelsData(filteredPanels, 'csv');
+                            setToastMessage({ type: 'success', text: `Phase ${panelPhaseFilter} Panels CSV report downloaded.` });
+                          }}
+                          className="btn btn-outline"
+                          style={{ height: '38px', padding: '0 10px', fontSize: '11.5px', gap: '4px', borderRadius: '8px' }}
+                          title="Export Panels Schedule as CSV (.csv)"
+                        >
+                          CSV
+                        </button>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setPanelFormPhase(panelPhaseFilter);
+                          setCreatePanelModalOpen(true);
+                          setPanelFormError(null);
+                        }}
+                        className="btn btn-primary"
+                        style={{ fontSize: '12px', height: '38px', padding: '0 14px', gap: '6px', whiteSpace: 'nowrap' }}
+                      >
+                        <Plus size={14} /> Add Single Panel
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+              {/* Phase Live / Stopped Status Banner */}
+              {isCurrentPanelPhaseLive ? (
+                <div
+                  style={{
+                    backgroundColor: '#ECFDF5',
+                    border: '1.5px solid #A7F3D0',
+                    color: '#065F46',
+                    borderRadius: '12px',
+                    padding: '12px 18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <CheckCircle2 size={18} color="#059669" />
+                    <div style={{ fontSize: '13px' }}>
+                      <strong>Phase {panelPhaseFilter} Evaluation is LIVE:</strong> Panel members can score teams and record attendance.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleTogglePhaseLive(panelPhaseFilter as (1 | 2 | 3), true)}
+                    style={{
+                      fontSize: '12px',
+                      padding: '6px 14px',
+                      height: '32px',
+                      gap: '6px',
+                      backgroundColor: '#FEF2F2',
+                      color: '#DC2626',
+                      border: '1.5px solid #FCA5A5',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#DC2626', display: 'inline-block' }} />
+                    Stop Phase {panelPhaseFilter} (Lock Marks)
+                  </button>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    backgroundColor: '#FEF2F2',
+                    border: '1.5px solid #FCA5A5',
+                    color: '#991B1B',
+                    borderRadius: '12px',
+                    padding: '12px 18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Lock size={18} color="#DC2626" />
+                    <div style={{ fontSize: '13px' }}>
+                      <strong>Phase {panelPhaseFilter} Evaluation is STOPPED &amp; LOCKED:</strong> Faculty panel members cannot add, update, or modify student marks.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleTogglePhaseLive(panelPhaseFilter as (1 | 2 | 3), false)}
+                    className="btn btn-primary"
+                    style={{ fontSize: '12px', padding: '6px 14px', height: '32px', gap: '6px' }}
+                  >
+                    <Play size={12} fill="currentColor" /> Set Phase {panelPhaseFilter} to LIVE
+                  </button>
+                </div>
+              )}
 
-            {/* Panels Display Grid */}
-            {filteredPanels.length === 0 ? (
-              <EmptyStateGraphic
-                type="panels"
-                title={`No Panels Configured for Phase ${panelPhaseFilter}`}
-                description="Click 'Assign Panel' above to configure team ranges, presentation shifts (e.g. 8–10 AM / 12–2 PM), room numbers in AB10, and faculty judges."
-                actionText="Create Phase Panel"
-                actionIcon={<Plus size={14} />}
-                onAction={() => setCreatePanelModalOpen(true)}
-              />
-            ) : (
-              <div className="grid-cols-3">
-                {filteredPanels.map((p: any) => {
-                  const pBatches = getPanelBatches(p.team_range_start, p.team_range_end);
-                  return (
-                    <div
-                      key={p.id}
-                      className="card"
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        padding: '18px 20px',
-                        borderRadius: '14px',
-                        border: '1px solid var(--color-hairline)',
-                        backgroundColor: '#FFFFFF',
-                        boxShadow: '0 1px 4px rgba(0,0,0,0.03)',
-                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                      }}
-                    >
-                      <div>
-                        {/* Top Meta Badges & Actions */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                            <span
-                              style={{
-                                fontSize: '11px',
-                                fontWeight: 700,
-                                padding: '3px 8px',
-                                borderRadius: '6px',
-                                backgroundColor: '#F1F5F9',
-                                color: '#334155',
-                                border: '1px solid #E2E8F0',
-                                letterSpacing: '0.2px',
-                              }}
-                            >
-                              Phase {p.phase_number}
-                            </span>
-                            <span
-                              style={{
-                                fontSize: '11px',
-                                fontWeight: 600,
-                                padding: '3px 8px',
-                                borderRadius: '6px',
-                                backgroundColor: '#EFF6FF',
-                                color: '#1D4ED8',
-                                border: '1px solid #DBEAFE',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                              }}
-                            >
-                              <Users size={11} />
-                              {p.teamsCount || 0} Teams
-                            </span>
-                          </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <button
-                              onClick={() => handleOpenEditPanel(p)}
-                              style={{
-                                width: '28px',
-                                height: '28px',
-                                borderRadius: '7px',
-                                background: '#EFF6FF',
-                                border: '1px solid #BFDBFE',
-                                cursor: 'pointer',
-                                color: '#2563EB',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transition: 'all 0.15s ease',
-                              }}
-                              title="Edit Panel Details & Judges"
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = '#2563EB';
-                                e.currentTarget.style.color = '#FFFFFF';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = '#EFF6FF';
-                                e.currentTarget.style.color = '#2563EB';
-                              }}
-                            >
-                              <Pencil size={13} />
-                            </button>
-
-                            <button
-                              onClick={() => handleDeletePanel(p.id, p.panel_name)}
-                              style={{
-                                width: '28px',
-                                height: '28px',
-                                borderRadius: '7px',
-                                background: '#FEE2E2',
-                                border: '1px solid #FECACA',
-                                cursor: 'pointer',
-                                color: '#DC2626',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transition: 'all 0.15s ease',
-                              }}
-                              title="Delete Panel"
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = '#DC2626';
-                                e.currentTarget.style.color = '#FFFFFF';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = '#FEE2E2';
-                                e.currentTarget.style.color = '#DC2626';
-                              }}
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Panel Title */}
-                        <h4 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-ink)', marginBottom: '12px', lineHeight: 1.3 }}>
-                          {p.panel_name}
-                        </h4>
-
-                        {/* Batch / Team Coverage Chips */}
-                        <div style={{ marginBottom: '14px' }}>
-                          <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '5px' }}>
-                            Allocated Batches
-                          </div>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                            {pBatches.map((b, idx) => (
-                              <div
-                                key={idx}
+              {/* Panels Display Grid */}
+              {filteredPanels.length === 0 ? (
+                <EmptyStateGraphic
+                  type="panels"
+                  title={`No Panels Configured for Phase ${panelPhaseFilter}`}
+                  description="Click 'Assign Panel' above to configure team ranges, presentation shifts (e.g. 8–10 AM / 12–2 PM), room numbers in AB10, and faculty judges."
+                  actionText="Create Phase Panel"
+                  actionIcon={<Plus size={14} />}
+                  onAction={() => setCreatePanelModalOpen(true)}
+                />
+              ) : (
+                <div className="grid-cols-3">
+                  {filteredPanels.map((p: any) => {
+                    const pBatches = getPanelBatches(p.team_range_start, p.team_range_end);
+                    return (
+                      <div
+                        key={p.id}
+                        className="card"
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          padding: '18px 20px',
+                          borderRadius: '14px',
+                          border: '1px solid var(--color-hairline)',
+                          backgroundColor: '#FFFFFF',
+                          boxShadow: '0 1px 4px rgba(0,0,0,0.03)',
+                          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                        }}
+                      >
+                        <div>
+                          {/* Top Meta Badges & Actions */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <span
                                 style={{
-                                  fontSize: '11.5px',
-                                  fontWeight: 600,
-                                  backgroundColor: b.colorBg,
-                                  color: b.colorText,
-                                  border: `1px solid ${b.colorBorder}`,
+                                  fontSize: '11px',
+                                  fontWeight: 700,
                                   padding: '3px 8px',
                                   borderRadius: '6px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '5px',
+                                  backgroundColor: '#F1F5F9',
+                                  color: '#334155',
+                                  border: '1px solid #E2E8F0',
+                                  letterSpacing: '0.2px',
                                 }}
                               >
-                                <span>{b.label}</span>
-                                <span style={{ opacity: 0.75, fontSize: '10.5px' }}>({b.count} teams)</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Session Metadata Box */}
-                        <div
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '7px',
-                            fontSize: '12px',
-                            backgroundColor: '#F8FAFC',
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            border: '1px solid #EDF2F7',
-                            marginBottom: '14px',
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                            <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <MapPin size={12} color="#2563EB" />
+                                Phase {p.phase_number}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  padding: '3px 8px',
+                                  borderRadius: '6px',
+                                  backgroundColor: '#EFF6FF',
+                                  color: '#1D4ED8',
+                                  border: '1px solid #DBEAFE',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                <Users size={11} />
+                                {p.teamsCount || 0} Teams
+                              </span>
                             </div>
-                            <span style={{ color: 'var(--color-text-muted)' }}>
-                              Venue: <strong style={{ color: 'var(--color-ink)' }}>Academic Block AB10</strong> ({p.room_number || 'Room TBA'})
-                            </span>
-                          </div>
 
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                            <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <Clock size={12} color="#059669" />
-                            </div>
-                            <span style={{ color: 'var(--color-text-muted)' }}>
-                              Shift: <strong style={{ color: 'var(--color-ink)' }}>{p.time_window || 'Batch 1: Morning'}</strong>
-                            </span>
-                          </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <button
+                                onClick={() => handleOpenEditPanel(p)}
+                                style={{
+                                  width: '28px',
+                                  height: '28px',
+                                  borderRadius: '7px',
+                                  background: '#EFF6FF',
+                                  border: '1px solid #BFDBFE',
+                                  cursor: 'pointer',
+                                  color: '#2563EB',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.15s ease',
+                                }}
+                                title="Edit Panel Details & Judges"
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#2563EB';
+                                  e.currentTarget.style.color = '#FFFFFF';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#EFF6FF';
+                                  e.currentTarget.style.color = '#2563EB';
+                                }}
+                              >
+                                <Pencil size={13} />
+                              </button>
 
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                            <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <Calendar size={12} color="#D97706" />
-                            </div>
-                            <span style={{ color: 'var(--color-text-muted)' }}>
-                              Date: <strong style={{ color: 'var(--color-ink)' }}>{p.date || 'TBA'}</strong>
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Assigned Faculty Section */}
-                        {p.judges && p.judges.length > 0 ? (
-                          <div>
-                            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <span>Assigned Faculty Judges</span>
-                              <span style={{ fontSize: '10.5px', color: 'var(--color-text-muted)' }}>{p.judges.length} Evaluators</span>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                              {p.judges.map((j: any) => {
-                                const initials = (j.full_name || 'Faculty')
-                                  .split(' ')
-                                  .filter(Boolean)
-                                  .map((n: string) => n[0])
-                                  .slice(0, 2)
-                                  .join('')
-                                  .toUpperCase();
-
-                                return (
-                                  <div
-                                    key={j.id}
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '8px',
-                                      padding: '6px 8px',
-                                      borderRadius: '7px',
-                                      backgroundColor: '#F8FAFC',
-                                      border: '1px solid #E2E8F0',
-                                    }}
-                                  >
-                                    <div
-                                      style={{
-                                        width: '24px',
-                                        height: '24px',
-                                        borderRadius: '50%',
-                                        backgroundColor: '#3B82F6',
-                                        color: '#FFFFFF',
-                                        fontSize: '10px',
-                                        fontWeight: 700,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        flexShrink: 0,
-                                      }}
-                                    >
-                                      {initials}
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-                                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                        {j.full_name}
-                                      </span>
-                                      {j.email && (
-                                        <a
-                                          href={`mailto:${j.email}`}
-                                          style={{ fontSize: '10.5px', color: 'var(--color-text-muted)', textDecoration: 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                                          title={j.email}
-                                        >
-                                          {j.email}
-                                        </a>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                              <button
+                                onClick={() => handleDeletePanel(p.id, p.panel_name)}
+                                style={{
+                                  width: '28px',
+                                  height: '28px',
+                                  borderRadius: '7px',
+                                  background: '#FEE2E2',
+                                  border: '1px solid #FECACA',
+                                  cursor: 'pointer',
+                                  color: '#DC2626',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  transition: 'all 0.15s ease',
+                                }}
+                                title="Delete Panel"
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#DC2626';
+                                  e.currentTarget.style.color = '#FFFFFF';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#FEE2E2';
+                                  e.currentTarget.style.color = '#DC2626';
+                                }}
+                              >
+                                <Trash2 size={13} />
+                              </button>
                             </div>
                           </div>
-                        ) : (
+
+                          {/* Panel Title */}
+                          <h4 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-ink)', marginBottom: '12px', lineHeight: 1.3 }}>
+                            {p.panel_name}
+                          </h4>
+
+                          {/* Batch / Team Coverage Chips */}
+                          <div style={{ marginBottom: '14px' }}>
+                            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '5px' }}>
+                              Allocated Batches
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                              {pBatches.map((b, idx) => (
+                                <div
+                                  key={idx}
+                                  style={{
+                                    fontSize: '11.5px',
+                                    fontWeight: 600,
+                                    backgroundColor: b.colorBg,
+                                    color: b.colorText,
+                                    border: `1px solid ${b.colorBorder}`,
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                  }}
+                                >
+                                  <span>{b.label}</span>
+                                  <span style={{ opacity: 0.75, fontSize: '10.5px' }}>({b.count} teams)</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Session Metadata Box */}
                           <div
                             style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '7px',
+                              fontSize: '12px',
+                              backgroundColor: '#F8FAFC',
                               padding: '10px 12px',
                               borderRadius: '8px',
-                              backgroundColor: '#FFFBEB',
-                              border: '1px solid #FDE68A',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              fontSize: '11.5px',
-                              color: '#92400E',
+                              border: '1px solid #EDF2F7',
+                              marginBottom: '14px',
                             }}
                           >
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
-                              <AlertTriangle size={13} color="#D97706" /> No Judges Assigned
-                            </span>
-                            <button
-                              onClick={() => handleOpenEditPanel(p)}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                              <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <MapPin size={12} color="#2563EB" />
+                              </div>
+                              <span style={{ color: 'var(--color-text-muted)' }}>
+                                Venue: <strong style={{ color: 'var(--color-ink)' }}>Academic Block AB10</strong> ({p.room_number || 'Room TBA'})
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                              <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <Clock size={12} color="#059669" />
+                              </div>
+                              <span style={{ color: 'var(--color-text-muted)' }}>
+                                Shift: <strong style={{ color: 'var(--color-ink)' }}>{p.time_window || 'Batch 1: Morning'}</strong>
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                              <div style={{ width: '22px', height: '22px', borderRadius: '5px', backgroundColor: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <Calendar size={12} color="#D97706" />
+                              </div>
+                              <span style={{ color: 'var(--color-text-muted)' }}>
+                                Date: <strong style={{ color: 'var(--color-ink)' }}>{p.date || 'TBA'}</strong>
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Assigned Faculty Section */}
+                          {p.judges && p.judges.length > 0 ? (
+                            <div>
+                              <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <span>Assigned Faculty Judges</span>
+                                <span style={{ fontSize: '10.5px', color: 'var(--color-text-muted)' }}>{p.judges.length} Evaluators</span>
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                {p.judges.map((j: any) => {
+                                  const initials = (j.full_name || 'Faculty')
+                                    .split(' ')
+                                    .filter(Boolean)
+                                    .map((n: string) => n[0])
+                                    .slice(0, 2)
+                                    .join('')
+                                    .toUpperCase();
+
+                                  return (
+                                    <div
+                                      key={j.id}
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        padding: '6px 8px',
+                                        borderRadius: '7px',
+                                        backgroundColor: '#F8FAFC',
+                                        border: '1px solid #E2E8F0',
+                                      }}
+                                    >
+                                      <div
+                                        style={{
+                                          width: '24px',
+                                          height: '24px',
+                                          borderRadius: '50%',
+                                          backgroundColor: '#3B82F6',
+                                          color: '#FFFFFF',
+                                          fontSize: '10px',
+                                          fontWeight: 700,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          flexShrink: 0,
+                                        }}
+                                      >
+                                        {initials}
+                                      </div>
+                                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                                        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                          {j.full_name}
+                                        </span>
+                                        {j.email && (
+                                          <a
+                                            href={`mailto:${j.email}`}
+                                            style={{ fontSize: '10.5px', color: 'var(--color-text-muted)', textDecoration: 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                            title={j.email}
+                                          >
+                                            {j.email}
+                                          </a>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            <div
                               style={{
-                                background: '#F59E0B',
-                                color: '#FFFFFF',
-                                border: 'none',
-                                borderRadius: '5px',
-                                padding: '3px 8px',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                fontSize: '11px',
+                                padding: '10px 12px',
+                                borderRadius: '8px',
+                                backgroundColor: '#FFFBEB',
+                                border: '1px solid #FDE68A',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                fontSize: '11.5px',
+                                color: '#92400E',
                               }}
                             >
-                              + Assign Judges
-                            </button>
-                          </div>
-                        )}
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
+                                <AlertTriangle size={13} color="#D97706" /> No Judges Assigned
+                              </span>
+                              <button
+                                onClick={() => handleOpenEditPanel(p)}
+                                style={{
+                                  background: '#F59E0B',
+                                  color: '#FFFFFF',
+                                  border: 'none',
+                                  borderRadius: '5px',
+                                  padding: '3px 8px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  fontSize: '11px',
+                                }}
+                              >
+                                + Assign Judges
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* =================================================================== */}
         {/* TAB 5: DEFAULTING AUDIT                                             */}
@@ -3564,10 +3736,10 @@ Output ONLY the raw valid JSON array.`;
             className="card animate-scale-in modal-card-responsive"
             style={{
               width: '100%',
-              maxWidth: '640px',
-              maxHeight: 'min(90vh, 720px)',
+              maxWidth: 'min(96vw, 1120px)',
+              maxHeight: 'min(92vh, 880px)',
               backgroundColor: '#FFFFFF',
-              borderRadius: '16px',
+              borderRadius: '18px',
               boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
               border: '1px solid var(--color-border)',
               margin: 'auto 0',
@@ -3586,28 +3758,28 @@ Output ONLY the raw valid JSON array.`;
                 borderBottom: '1px solid var(--color-hairline)',
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'flex-start',
+                alignItems: 'center',
                 gap: '12px',
                 backgroundColor: '#FFFFFF',
                 flexShrink: 0,
               }}
             >
-              <div style={{ flex: 1 }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-ink)' }}>
+              <div>
+                <h3 style={{ fontSize: '18px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-ink)', margin: 0 }}>
                   {editingPanel ? (
                     <>
-                      <Pencil size={18} color="#2563EB" /> Edit Panel: {editingPanel.panel_name}
+                      <Pencil size={18} color="#2563EB" /> Edit Panel #{editingPanel.panel_number}: {editingPanel.panel_name}
                     </>
                   ) : (
                     <>
-                      <PlusCircle size={18} color="#2563EB" /> Add Single Panel (Manual Configuration)
+                      <PlusCircle size={18} color="#2563EB" /> Add Evaluation Panel (Phase {panelFormPhase})
                     </>
                   )}
                 </h3>
-                <p style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                <p style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', marginTop: '3px', marginBottom: 0 }}>
                   {editingPanel
-                    ? 'Reassign faculty judges, modify shifts, update presentation dates or room numbers.'
-                    : 'Configure presentation shifts and assign conflict-free judges for project teams.'}
+                    ? 'Reassign faculty judges, modify presentation shifts, update dates or room allotments with live conflict checks.'
+                    : 'Assign team batches, schedule presentation shifts, allocate rooms, and appoint conflict-free faculty judges.'}
                 </p>
               </div>
               <button
@@ -3636,7 +3808,7 @@ Output ONLY the raw valid JSON array.`;
               </button>
             </div>
 
-            {/* Scrollable Form Body */}
+            {/* Scrollable 2-Column Responsive Form Body */}
             <form onSubmit={handleCreateVisualPanel} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
               <div
                 className="modal-body-responsive"
@@ -3655,883 +3827,826 @@ Output ONLY the raw valid JSON array.`;
                   </div>
                 )}
 
-                {/* Phase Selection & Panel Number Header */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '12px 14px' }}>
-                  {/* Phase Tabs */}
-                  <div>
-                    <label className="input-label" style={{ fontSize: '11.5px', fontWeight: 700, marginBottom: '5px', color: '#0F172A' }}>
-                      Evaluation Phase
-                    </label>
-                    <div style={{ display: 'flex', gap: '4px', backgroundColor: '#E2E8F0', padding: '3px', borderRadius: '8px' }}>
-                      {([1, 2, 3] as const).map((pNum) => {
-                        const isCur = panelFormPhase === pNum;
-                        const phaseCount = (panels || []).filter((p: any) => p.phase_number === pNum).length;
-                        return (
-                          <button
-                            key={pNum}
-                            type="button"
-                            onClick={() => {
-                              setPanelFormPhase(pNum);
-                              const phasePanels = (panels || []).filter((p: any) => p.phase_number === pNum);
-                              const nextNum = phasePanels.reduce((max: number, p: any) => Math.max(max, p.panel_number || 0), 0) + 1;
-                              setPanelFormNumber(nextNum);
-                            }}
-                            style={{
-                              flex: 1,
-                              padding: '5px 6px',
-                              fontSize: '11px',
-                              fontWeight: isCur ? 700 : 500,
-                              backgroundColor: isCur ? '#2563EB' : 'transparent',
-                              color: isCur ? '#FFFFFF' : '#475569',
-                              border: 'none',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease',
-                              textAlign: 'center',
-                            }}
-                          >
-                            Phase {pNum} <span style={{ fontSize: '9.5px', opacity: isCur ? 0.9 : 0.7 }}>({phaseCount})</span>
-                          </button>
-                        );
-                      })}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+                    gap: '20px',
+                    alignItems: 'start',
+                  }}
+                >
+                  {/* ========================================================= */}
+                  {/* LEFT COLUMN: PHASE, PANEL IDENTITY & TEAM BATCH ALLOTMENT */}
+                  {/* ========================================================= */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {/* Phase Selection & Panel Number Header */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <label className="input-label" style={{ fontSize: '12.5px', fontWeight: 800, margin: 0, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Layers size={15} color="#2563EB" /> 1. Evaluation Phase &amp; Identity
+                        </label>
+                        <span className="badge badge-brand" style={{ fontSize: '10.5px', fontWeight: 700 }}>
+                          Phase {panelFormPhase} Active
+                        </span>
+                      </div>
+
+                      {/* Phase Selection Tabs */}
+                      <div>
+                        <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '5px' }}>
+                          Select Phase:
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px', backgroundColor: '#E2E8F0', padding: '3px', borderRadius: '8px' }}>
+                          {([1, 2, 3] as const).map((pNum) => {
+                            const isCur = panelFormPhase === pNum;
+                            const phaseCount = (panels || []).filter((p: any) => p.phase_number === pNum).length;
+                            return (
+                              <button
+                                key={pNum}
+                                type="button"
+                                onClick={() => {
+                                  setPanelFormPhase(pNum);
+                                  const phasePanels = (panels || []).filter((p: any) => p.phase_number === pNum);
+                                  const nextNum = phasePanels.reduce((max: number, p: any) => Math.max(max, p.panel_number || 0), 0) + 1;
+                                  setPanelFormNumber(nextNum);
+                                }}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 8px',
+                                  fontSize: '11.5px',
+                                  fontWeight: isCur ? 700 : 500,
+                                  backgroundColor: isCur ? '#2563EB' : 'transparent',
+                                  color: isCur ? '#FFFFFF' : '#475569',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                  textAlign: 'center',
+                                  boxShadow: isCur ? '0 1px 3px rgba(37,99,235,0.3)' : 'none',
+                                }}
+                              >
+                                Phase {pNum} <span style={{ fontSize: '10px', opacity: isCur ? 0.9 : 0.7 }}>({phaseCount})</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Panel Number and Optional Name */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '10px' }}>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                            <label className="input-label" style={{ fontSize: '11px', fontWeight: 700, margin: 0, color: '#0F172A' }}>
+                              Panel #
+                            </label>
+                            <span style={{ fontSize: '9.5px', color: '#2563EB', fontWeight: 600 }}>Next: #{nextSequentialPanelNumber}</span>
+                          </div>
+                          <input
+                            type="number"
+                            min={1}
+                            className="input-field"
+                            style={{ height: '36px', fontSize: '12.5px', fontWeight: 700 }}
+                            placeholder={`#${nextSequentialPanelNumber}`}
+                            value={panelFormNumber}
+                            onChange={(e) => setPanelFormNumber(e.target.value === '' ? '' : Number(e.target.value))}
+                          />
+                        </div>
+                        <div>
+                          <label className="input-label" style={{ fontSize: '11px', fontWeight: 700, marginBottom: '4px', color: '#0F172A' }}>
+                            Panel Label (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            className="input-field"
+                            style={{ height: '36px', fontSize: '12px' }}
+                            placeholder={`Panel ${panelFormNumber || nextSequentialPanelNumber} (${getFormattedTeamRange(panelFormRangeStart, panelFormRangeEnd)})`}
+                            value={panelFormName}
+                            onChange={(e) => setPanelFormName(e.target.value)}
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Panel Number Input */}
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                      <label className="input-label" style={{ fontSize: '11.5px', fontWeight: 700, margin: 0, color: '#0F172A' }}>
-                        Panel Number
-                      </label>
-                      <span style={{ fontSize: '10px', color: '#2563EB', fontWeight: 600 }}>Next: #{nextSequentialPanelNumber}</span>
-                    </div>
-                    <input
-                      type="number"
-                      min={1}
-                      className="input-field"
-                      style={{ height: '34px', fontSize: '12.5px', fontWeight: 700 }}
-                      placeholder={`#${nextSequentialPanelNumber}`}
-                      value={panelFormNumber}
-                      onChange={(e) => setPanelFormNumber(e.target.value === '' ? '' : Number(e.target.value))}
-                    />
-                  </div>
+                    {/* Team Range & Batch Allotment */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <label className="input-label" style={{ fontSize: '12.5px', fontWeight: 800, margin: 0, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Users size={15} color="#2563EB" /> 2. Assign Teams / Batch
+                        </label>
+                        <span className="badge badge-neutral" style={{ fontSize: '11px', fontWeight: 700 }}>
+                          {selectedRangeTeams.length} Teams ({selectedRangeStudentCount} Students)
+                        </span>
+                      </div>
 
-                  {/* Panel Name / Identifier */}
-                  <div>
-                    <label className="input-label" style={{ fontSize: '11.5px', fontWeight: 700, marginBottom: '5px', color: '#0F172A' }}>
-                      Panel Name (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      style={{ height: '34px', fontSize: '12px' }}
-                      placeholder={`Panel ${panelFormNumber || nextSequentialPanelNumber} (${getFormattedTeamRange(panelFormRangeStart, panelFormRangeEnd)})`}
-                      value={panelFormName}
-                      onChange={(e) => setPanelFormName(e.target.value)}
-                    />
-                  </div>
-                </div>
+                      {/* Program Stream Selector */}
+                      <div style={{ display: 'flex', gap: '6px', backgroundColor: '#F1F5F9', padding: '3px', borderRadius: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setPanelFormProgram('all')}
+                          style={{
+                            flex: 1,
+                            padding: '6px 8px',
+                            fontSize: '11px',
+                            fontWeight: panelFormProgram === 'all' ? 700 : 500,
+                            backgroundColor: panelFormProgram === 'all' ? '#FFFFFF' : 'transparent',
+                            color: panelFormProgram === 'all' ? '#2563EB' : 'var(--color-text-muted)',
+                            border: 'none',
+                            borderRadius: '6px',
+                            boxShadow: panelFormProgram === 'all' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          All ({teams.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPanelFormProgram('BCA');
+                            if (bcaTeams.length > 0 && panelFormRangeStart > (bcaTeams[bcaTeams.length - 1]?.team_number || 102)) {
+                              setPanelFormRangeStart(bcaTeams[0].team_number);
+                              setPanelFormRangeEnd(Math.min(bcaTeams[0].team_number + 9, bcaTeams[bcaTeams.length - 1].team_number));
+                            }
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: '6px 8px',
+                            fontSize: '11px',
+                            fontWeight: panelFormProgram === 'BCA' ? 700 : 500,
+                            backgroundColor: panelFormProgram === 'BCA' ? '#FFFFFF' : 'transparent',
+                            color: panelFormProgram === 'BCA' ? '#2563EB' : 'var(--color-text-muted)',
+                            border: 'none',
+                            borderRadius: '6px',
+                            boxShadow: panelFormProgram === 'BCA' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          BCA Core ({bcaTeams.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPanelFormProgram('BCA - DS');
+                            if (dsTeams.length > 0 && (panelFormRangeStart < dsTeams[0].team_number || panelFormRangeStart > dsTeams[dsTeams.length - 1].team_number)) {
+                              setPanelFormRangeStart(dsTeams[0].team_number);
+                              setPanelFormRangeEnd(Math.min(dsTeams[0].team_number + 9, dsTeams[dsTeams.length - 1].team_number));
+                            }
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: '6px 8px',
+                            fontSize: '11px',
+                            fontWeight: panelFormProgram === 'BCA - DS' ? 700 : 500,
+                            backgroundColor: panelFormProgram === 'BCA - DS' ? '#FFFFFF' : 'transparent',
+                            color: panelFormProgram === 'BCA - DS' ? '#2563EB' : 'var(--color-text-muted)',
+                            border: 'none',
+                            borderRadius: '6px',
+                            boxShadow: panelFormProgram === 'BCA - DS' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          BCA DS ({dsTeams.length})
+                        </button>
+                      </div>
 
-                {/* Modern Batch & Team Range Selection Section */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '14px 16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label className="input-label" style={{ fontSize: '12.5px', fontWeight: 700, margin: 0, color: '#0F172A' }}>
-                      Assign Teams / Batch to Panel
-                    </label>
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)' }}>
-                      {selectedRangeTeams.length} teams selected ({selectedRangeStudentCount} students)
-                    </span>
-                  </div>
+                      {/* Quick Preset Batch Chips */}
+                      <div>
+                        <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '6px' }}>
+                          ⚡ Quick Batch Presets (10 Teams / Batch):
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', maxHeight: '90px', overflowY: 'auto', paddingRight: '2px' }}>
+                          {(panelFormProgram === 'BCA - DS' ? dsPresets : panelFormProgram === 'BCA' ? bcaPresets : [...bcaPresets, ...dsPresets]).map((preset, idx) => {
+                            const isSelected = panelFormRangeStart === preset.startNum && panelFormRangeEnd === preset.endNum;
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => {
+                                  setPanelFormRangeStart(preset.startNum);
+                                  setPanelFormRangeEnd(preset.endNum);
+                                  if (!panelFormName || panelFormName.startsWith('Panel ')) {
+                                    setPanelFormName(`Panel (${preset.label})`);
+                                  }
+                                }}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '10.5px',
+                                  fontWeight: isSelected ? 700 : 500,
+                                  backgroundColor: isSelected ? '#2563EB' : '#FFFFFF',
+                                  color: isSelected ? '#FFFFFF' : '#1E293B',
+                                  border: isSelected ? '1px solid #2563EB' : '1px solid #CBD5E1',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <span>{preset.label}</span>
+                                <span style={{ fontSize: '9.5px', opacity: isSelected ? 0.9 : 0.6 }}>({preset.count})</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
 
-                  {/* Program Stream Filter Selector */}
-                  <div style={{ display: 'flex', gap: '6px', backgroundColor: '#F1F5F9', padding: '4px', borderRadius: '8px' }}>
-                    <button
-                      type="button"
-                      onClick={() => setPanelFormProgram('all')}
-                      style={{
-                        flex: 1,
-                        padding: '6px 10px',
-                        fontSize: '11.5px',
-                        fontWeight: panelFormProgram === 'all' ? 700 : 500,
-                        backgroundColor: panelFormProgram === 'all' ? '#FFFFFF' : 'transparent',
-                        color: panelFormProgram === 'all' ? '#2563EB' : 'var(--color-text-muted)',
-                        border: 'none',
-                        borderRadius: '6px',
-                        boxShadow: panelFormProgram === 'all' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      All Programs ({teams.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPanelFormProgram('BCA');
-                        if (bcaTeams.length > 0 && panelFormRangeStart > (bcaTeams[bcaTeams.length - 1]?.team_number || 102)) {
-                          setPanelFormRangeStart(bcaTeams[0].team_number);
-                          setPanelFormRangeEnd(Math.min(bcaTeams[0].team_number + 9, bcaTeams[bcaTeams.length - 1].team_number));
-                        }
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: '6px 10px',
-                        fontSize: '11.5px',
-                        fontWeight: panelFormProgram === 'BCA' ? 700 : 500,
-                        backgroundColor: panelFormProgram === 'BCA' ? '#FFFFFF' : 'transparent',
-                        color: panelFormProgram === 'BCA' ? '#2563EB' : 'var(--color-text-muted)',
-                        border: 'none',
-                        borderRadius: '6px',
-                        boxShadow: panelFormProgram === 'BCA' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      BCA Core ({bcaTeams.length})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPanelFormProgram('BCA - DS');
-                        if (dsTeams.length > 0 && (panelFormRangeStart < dsTeams[0].team_number || panelFormRangeStart > dsTeams[dsTeams.length - 1].team_number)) {
-                          setPanelFormRangeStart(dsTeams[0].team_number);
-                          setPanelFormRangeEnd(Math.min(dsTeams[0].team_number + 9, dsTeams[dsTeams.length - 1].team_number));
-                        }
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: '6px 10px',
-                        fontSize: '11.5px',
-                        fontWeight: panelFormProgram === 'BCA - DS' ? 700 : 500,
-                        backgroundColor: panelFormProgram === 'BCA - DS' ? '#FFFFFF' : 'transparent',
-                        color: panelFormProgram === 'BCA - DS' ? '#2563EB' : 'var(--color-text-muted)',
-                        border: 'none',
-                        borderRadius: '6px',
-                        boxShadow: panelFormProgram === 'BCA - DS' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      BCA Data Science ({dsTeams.length})
-                    </button>
-                  </div>
-
-                  {/* Quick Preset Batch Chips */}
-                  <div>
-                    <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '6px' }}>
-                      ⚡ Quick Batch Presets (10 Teams / Batch):
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {(panelFormProgram === 'BCA - DS' ? dsPresets : panelFormProgram === 'BCA' ? bcaPresets : [...bcaPresets, ...dsPresets]).map((preset, idx) => {
-                        const isSelected = panelFormRangeStart === preset.startNum && panelFormRangeEnd === preset.endNum;
-                        return (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              setPanelFormRangeStart(preset.startNum);
-                              setPanelFormRangeEnd(preset.endNum);
-                              if (!panelFormName || panelFormName.startsWith('Panel ')) {
-                                setPanelFormName(`Panel (${preset.label})`);
+                      {/* Dropdown Selectors for Custom Team Code Start & End */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div>
+                          <label className="input-label" style={{ fontSize: '11px', fontWeight: 600, marginBottom: '3px' }}>
+                            Start Team (From)
+                          </label>
+                          <select
+                            className="input-field"
+                            style={{ fontSize: '11.5px', height: '36px' }}
+                            value={panelFormRangeStart}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setPanelFormRangeStart(val);
+                              if (val > panelFormRangeEnd) {
+                                setPanelFormRangeEnd(val);
                               }
                             }}
+                          >
+                            {(panelFormProgram === 'BCA' ? bcaTeams : panelFormProgram === 'BCA - DS' ? dsTeams : teams).map((t: any) => (
+                              <option key={t.id} value={t.team_number}>
+                                {t.team_code} — {t.team_name ? (t.team_name.length > 20 ? t.team_name.slice(0, 20) + '...' : t.team_name) : `Team #${t.team_number}`}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="input-label" style={{ fontSize: '11px', fontWeight: 600, marginBottom: '3px' }}>
+                            End Team (To)
+                          </label>
+                          <select
+                            className="input-field"
+                            style={{ fontSize: '11.5px', height: '36px' }}
+                            value={panelFormRangeEnd}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setPanelFormRangeEnd(val);
+                              if (val < panelFormRangeStart) {
+                                setPanelFormRangeStart(val);
+                              }
+                            }}
+                          >
+                            {(panelFormProgram === 'BCA' ? bcaTeams : panelFormProgram === 'BCA - DS' ? dsTeams : teams).map((t: any) => (
+                              <option key={t.id} value={t.team_number}>
+                                {t.team_code} — {t.team_name ? (t.team_name.length > 20 ? t.team_name.slice(0, 20) + '...' : t.team_name) : `Team #${t.team_number}`}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Selected Range Live Badge Display & Judge Conflict Warnings */}
+                      <div style={{ backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '10px', padding: '10px 12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#1E40AF', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>Selected Batch:</span>
+                            <span style={{ backgroundColor: '#DBEAFE', padding: '2px 8px', borderRadius: '4px', border: '1px solid #93C5FD' }}>
+                              {getFormattedTeamRange(panelFormRangeStart, panelFormRangeEnd)}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '10.5px', color: '#3B82F6', fontWeight: 600 }}>
+                            {selectedRangeTeams.length} Teams • {selectedRangeStudentCount} Students
+                          </div>
+                        </div>
+
+                        {/* Preview of team code pills */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxHeight: '54px', overflowY: 'auto' }}>
+                          {selectedRangeTeams.map((t: any) => (
+                            <span
+                              key={t.id}
+                              style={{
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                backgroundColor: '#FFFFFF',
+                                border: '1px solid #CBD5E1',
+                                color: '#334155',
+                              }}
+                              title={`${t.team_code}: ${t.team_name || 'No Title'} (Guide: ${t.supervisor?.full_name || 'Unassigned'})`}
+                            >
+                              {t.team_code}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Judge Guide / Mentor Informational Note */}
+                        {panelJudgeConflicts.length > 0 && (
+                          <div style={{ marginTop: '8px', padding: '6px 10px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', fontSize: '11px', color: '#1E40AF', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '13px' }}>ℹ️</span>
+                            <span><strong>Mentor Notice:</strong> {panelJudgeConflicts.map(c => `${c.judgeName} mentors ${c.teamCode}`).join(', ')} (assigned to evaluate this panel).</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ========================================================= */}
+                  {/* RIGHT COLUMN: SHIFTS, VENUE/ROOM & FACULTY JUDGES         */}
+                  {/* ========================================================= */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {/* Presentation Shift & Time Window */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                        <label className="input-label" style={{ fontSize: '12.5px', fontWeight: 800, margin: 0, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Clock size={15} color="#2563EB" /> 3. Presentation Shift &amp; Timing
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setManageShiftsModalOpen(true)}
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            border: '1px solid #CBD5E1',
+                            backgroundColor: '#FFFFFF',
+                            color: '#334155',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                          }}
+                        >
+                          <Settings size={12} /> Manage Shifts
+                        </button>
+                      </div>
+
+                      {/* Preset Shift Cards */}
+                      {SHIFT_PRESETS.length > 0 && (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '6px' }}>
+                          {SHIFT_PRESETS.map((shift, idx) => {
+                            const isSelected = panelFormShift === shift.timeWindow;
+                            const panelsInThisShift = (panels || []).filter((p: any) =>
+                              p.phase_number === panelFormPhase &&
+                              (p.time_window || '').toLowerCase().includes(shift.label.slice(0, 7).toLowerCase())
+                            ).length;
+
+                            return (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setPanelFormShift(shift.timeWindow)}
+                                style={{
+                                  padding: '8px 10px',
+                                  borderRadius: '8px',
+                                  border: `1.5px solid ${isSelected ? shift.color : '#E2E8F0'}`,
+                                  backgroundColor: isSelected ? shift.colorBg : '#FFFFFF',
+                                  textAlign: 'left',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '2px',
+                                  transition: 'all 0.15s ease',
+                                  boxShadow: isSelected ? `0 2px 6px ${shift.color}25` : 'none',
+                                }}
+                              >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '11px', fontWeight: 700, color: isSelected ? shift.color : '#1E293B' }}>
+                                    {shift.label}
+                                  </span>
+                                  <span style={{ fontSize: '9px', fontWeight: 700, color: isSelected ? shift.color : '#64748B' }}>
+                                    {panelsInThisShift > 0 ? `${panelsInThisShift}p` : '0p'}
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: '9.5px', color: isSelected ? shift.color : '#64748B', opacity: 0.9 }}>
+                                  {shift.timeShort}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Dropdown Selector for Shift / Time Slot */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', padding: '0 10px', height: '36px' }}>
+                        <Clock size={14} color="#64748B" style={{ flexShrink: 0 }} />
+                        <select
+                          style={{
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            fontSize: '11.5px',
+                            fontWeight: 600,
+                            color: '#0F172A',
+                            outline: 'none',
+                            cursor: 'pointer',
+                            width: '100%',
+                            height: '100%',
+                            padding: '0',
+                          }}
+                          value={panelFormShift}
+                          onChange={(e) => setPanelFormShift(e.target.value)}
+                        >
+                          {SHIFT_PRESETS.length > 0 && (
+                            <optgroup label="Active Presentation Shifts">
+                              {SHIFT_PRESETS.map((s: any) => (
+                                <option key={s.id || s.label} value={s.timeWindow}>
+                                  {s.label} ({s.timeShort})
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                          <optgroup label="Standard Time Slots">
+                            {SHIFT_TEMPLATES.map((tmpl) => {
+                              const val = `Batch: ${tmpl.label} (${tmpl.startTime} - ${tmpl.endTime})`;
+                              return (
+                                <option key={tmpl.label} value={val}>
+                                  {tmpl.label} ({tmpl.startTime} - {tmpl.endTime})
+                                </option>
+                              );
+                            })}
+                          </optgroup>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Venue & Available Room Allotment */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <label className="input-label" style={{ fontSize: '12.5px', fontWeight: 800, margin: 0, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Building size={15} color="#2563EB" /> 4. Presentation Venue &amp; Date
+                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <button
+                            type="button"
+                            onClick={handleAutoAllotRoom}
+                            disabled={!firstAvailableRoom}
                             style={{
-                              padding: '5px 10px',
                               fontSize: '11px',
-                              fontWeight: isSelected ? 700 : 500,
-                              backgroundColor: isSelected ? '#2563EB' : '#FFFFFF',
-                              color: isSelected ? '#FFFFFF' : '#1E293B',
-                              border: isSelected ? '1px solid #2563EB' : '1px solid #CBD5E1',
+                              fontWeight: 700,
+                              padding: '4px 9px',
                               borderRadius: '6px',
-                              cursor: 'pointer',
+                              backgroundColor: firstAvailableRoom ? '#2563EB' : '#94A3B8',
+                              color: '#FFFFFF',
+                              border: 'none',
+                              cursor: firstAvailableRoom ? 'pointer' : 'not-allowed',
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '4px',
-                              transition: 'all 0.15s ease',
                             }}
                           >
-                            <span>{preset.label}</span>
-                            <span style={{ fontSize: '10px', opacity: isSelected ? 0.9 : 0.6 }}>({preset.count})</span>
+                            <Zap size={12} /> Auto-Allot ({firstAvailableRoom || 'None'})
                           </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Dropdown Selectors for Custom Team Code Start & End */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <div>
-                      <label className="input-label" style={{ fontSize: '11.5px', fontWeight: 600, marginBottom: '4px' }}>
-                        Start Team (From)
-                      </label>
-                      <select
-                        className="input-field"
-                        style={{ fontSize: '12px', height: '38px' }}
-                        value={panelFormRangeStart}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setPanelFormRangeStart(val);
-                          if (val > panelFormRangeEnd) {
-                            setPanelFormRangeEnd(val);
-                          }
-                        }}
-                      >
-                        {(panelFormProgram === 'BCA' ? bcaTeams : panelFormProgram === 'BCA - DS' ? dsTeams : teams).map((t: any) => (
-                          <option key={t.id} value={t.team_number}>
-                            {t.team_code} — {t.team_name ? (t.team_name.length > 25 ? t.team_name.slice(0, 25) + '...' : t.team_name) : `Team #${t.team_number}`}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="input-label" style={{ fontSize: '11.5px', fontWeight: 600, marginBottom: '4px' }}>
-                        End Team (To)
-                      </label>
-                      <select
-                        className="input-field"
-                        style={{ fontSize: '12px', height: '38px' }}
-                        value={panelFormRangeEnd}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setPanelFormRangeEnd(val);
-                          if (val < panelFormRangeStart) {
-                            setPanelFormRangeStart(val);
-                          }
-                        }}
-                      >
-                        {(panelFormProgram === 'BCA' ? bcaTeams : panelFormProgram === 'BCA - DS' ? dsTeams : teams).map((t: any) => (
-                          <option key={t.id} value={t.team_number}>
-                            {t.team_code} — {t.team_name ? (t.team_name.length > 25 ? t.team_name.slice(0, 25) + '...' : t.team_name) : `Team #${t.team_number}`}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Selected Range Live Badge Display & Judge Conflict Warnings */}
-                  <div style={{ backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '8px', padding: '10px 12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#1E40AF', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>Selected Batch:</span>
-                        <span style={{ backgroundColor: '#DBEAFE', padding: '2px 8px', borderRadius: '4px', border: '1px solid #93C5FD' }}>
-                          {getFormattedTeamRange(panelFormRangeStart, panelFormRangeEnd)}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#3B82F6', fontWeight: 600 }}>
-                        {selectedRangeTeams.length} Teams • {selectedRangeStudentCount} Students
-                      </div>
-                    </div>
-
-                    {/* Preview of team code pills */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxHeight: '56px', overflowY: 'auto' }}>
-                      {selectedRangeTeams.map((t: any) => (
-                        <span
-                          key={t.id}
-                          style={{
-                            fontSize: '10.5px',
-                            fontWeight: 600,
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            backgroundColor: '#FFFFFF',
-                            border: '1px solid #CBD5E1',
-                            color: '#334155',
-                          }}
-                          title={`${t.team_code}: ${t.team_name || 'No Title'} (Guide: ${t.supervisor?.full_name || 'Unassigned'})`}
-                        >
-                          {t.team_code}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Judge Guide Conflict Alert */}
-                    {panelJudgeConflicts.length > 0 && (
-                      <div style={{ marginTop: '8px', padding: '6px 8px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FDE68A', fontSize: '11px', color: '#92400E', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>⚠️ <strong>Guide Conflict Notice:</strong> {panelJudgeConflicts.map(c => `${c.judgeName} guides ${c.teamCode}`).join(', ')}. Please confirm internal evaluation policy.</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Presentation Shift / Batch Selection System */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '14px 16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                    <label className="input-label" style={{ fontSize: '12.5px', fontWeight: 700, margin: 0, color: '#0F172A' }}>
-                      Presentation Shift & Time Window
-                    </label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
-                        Select standard shift or enter custom window
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setManageShiftsModalOpen(true)}
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          padding: '4px 9px',
-                          borderRadius: '6px',
-                          border: '1px solid #CBD5E1',
-                          backgroundColor: '#FFFFFF',
-                          color: '#334155',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                        }}
-                      >
-                        <Settings size={12} /> Manage Shifts
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Preset Shift Cards (if configured) */}
-                  {SHIFT_PRESETS.length > 0 && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
-                      {SHIFT_PRESETS.map((shift, idx) => {
-                        const isSelected = panelFormShift === shift.timeWindow;
-                        const panelsInThisShift = (panels || []).filter((p: any) =>
-                          p.phase_number === panelFormPhase &&
-                          (p.time_window || '').toLowerCase().includes(shift.label.slice(0, 7).toLowerCase())
-                        ).length;
-
-                        return (
                           <button
-                            key={idx}
                             type="button"
-                            onClick={() => setPanelFormShift(shift.timeWindow)}
+                            onClick={() => setManageRoomsModalOpen(true)}
                             style={{
-                              padding: '10px',
-                              borderRadius: '9px',
-                              border: `1.5px solid ${isSelected ? shift.color : '#E2E8F0'}`,
-                              backgroundColor: isSelected ? shift.colorBg : '#FFFFFF',
-                              textAlign: 'left',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              padding: '4px 8px',
+                              borderRadius: '6px',
+                              backgroundColor: '#FFFFFF',
+                              color: '#334155',
+                              border: '1px solid #CBD5E1',
                               cursor: 'pointer',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '4px',
-                              transition: 'all 0.15s ease',
-                              boxShadow: isSelected ? `0 2px 8px ${shift.color}25` : 'none',
                             }}
                           >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ display: 'inline-flex', alignItems: 'center', color: isSelected ? shift.color : '#64748B' }}>
-                                <Clock size={13} />
-                              </span>
-                              <span style={{ fontSize: '10px', fontWeight: 700, color: isSelected ? shift.color : '#64748B' }}>
-                                {panelsInThisShift > 0 ? `${panelsInThisShift} Panels` : '0 Panels'}
-                              </span>
-                            </div>
-                            <div style={{ fontSize: '12px', fontWeight: 700, color: isSelected ? shift.color : '#1E293B' }}>
-                              {shift.label}
-                            </div>
-                            <div style={{ fontSize: '10.5px', color: isSelected ? shift.color : '#64748B', opacity: 0.9 }}>
-                              {shift.timeShort}
-                            </div>
+                            <Settings size={12} />
                           </button>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* Dropdown Selector for Shift / Time Slot */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', padding: '0 10px', height: '38px', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
-                    <Clock size={15} color="#64748B" style={{ flexShrink: 0 }} />
-                    <select
-                      style={{
-                        border: 'none',
-                        backgroundColor: 'transparent',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        color: '#0F172A',
-                        outline: 'none',
-                        cursor: 'pointer',
-                        width: '100%',
-                        height: '100%',
-                        padding: '0',
-                      }}
-                      value={panelFormShift}
-                      onChange={(e) => setPanelFormShift(e.target.value)}
-                    >
-                      {SHIFT_PRESETS.length > 0 && (
-                        <optgroup label="Active Presentation Shifts">
-                          {SHIFT_PRESETS.map((s: any) => (
-                            <option key={s.id || s.label} value={s.timeWindow}>
-                              {s.label} ({s.timeShort})
-                            </option>
-                          ))}
-                        </optgroup>
-                      )}
-                      <optgroup label="Standard Time Slots">
-                        {SHIFT_TEMPLATES.map((tmpl) => {
-                          const val = `Batch: ${tmpl.label} (${tmpl.startTime} - ${tmpl.endTime})`;
-                          return (
-                            <option key={tmpl.label} value={val}>
-                              {tmpl.label} ({tmpl.startTime} - {tmpl.endTime})
-                            </option>
-                          );
-                        })}
-                      </optgroup>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Venue & Available Room Allotment System */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '16px 18px' }}>
-                  {/* Header & Integrated Date/Auto-Allot Toolbar */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                        <Building size={16} color="#2563EB" />
-                        <label className="input-label" style={{ fontSize: '13px', fontWeight: 800, margin: 0, color: '#0F172A' }}>
-                          Allot Presentation Room
-                        </label>
+                        </div>
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                        Live occupancy checked across all panels for selected shift &amp; date
-                      </div>
-                    </div>
 
-                    {/* Integrated Date Picker & Auto-Allot Controls */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', padding: '4px 10px' }}>
-                        <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#64748B' }}>Date:</span>
+                      {/* Date Picker Input */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', padding: '4px 10px', height: '34px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>Date:</span>
                         <input
                           type="date"
-                          style={{ border: 'none', background: 'transparent', fontSize: '12px', fontWeight: 600, color: '#0F172A', outline: 'none', cursor: 'pointer' }}
+                          style={{ border: 'none', background: 'transparent', fontSize: '11.5px', fontWeight: 600, color: '#0F172A', outline: 'none', cursor: 'pointer', width: '100%' }}
                           value={panelFormDate}
                           onChange={(e) => setPanelFormDate(e.target.value)}
                           required
                         />
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={handleAutoAllotRoom}
-                        disabled={!firstAvailableRoom}
-                        style={{
-                          fontSize: '11.5px',
-                          fontWeight: 700,
-                          padding: '6px 12px',
-                          borderRadius: '8px',
-                          backgroundColor: firstAvailableRoom ? '#2563EB' : '#94A3B8',
-                          color: '#FFFFFF',
-                          border: 'none',
-                          cursor: firstAvailableRoom ? 'pointer' : 'not-allowed',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          boxShadow: firstAvailableRoom ? '0 2px 6px rgba(37,99,235,0.25)' : 'none',
-                          transition: 'all 0.15s ease',
-                        }}
-                        title={firstAvailableRoom ? `Automatically selects first available vacant room (${firstAvailableRoom})` : 'No vacant rooms available'}
-                      >
-                        <Zap size={13} />
-                        Auto-Allot ({firstAvailableRoom || 'None'})
-                      </button>
+                      {/* Room Selector Grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(Math.max(ALL_DISPLAY_ROOMS.length, 1), 4)}, 1fr)`, gap: '6px' }}>
+                        {ALL_DISPLAY_ROOMS.map((room) => {
+                          const occ = roomOccupancyMap[room];
+                          const isSelected = panelFormRoom === room;
+                          const isVacant = occ?.isAvailable;
 
-                      <button
-                        type="button"
-                        onClick={() => setManageRoomsModalOpen(true)}
-                        style={{
-                          fontSize: '11.5px',
-                          fontWeight: 600,
-                          padding: '6px 10px',
-                          borderRadius: '8px',
-                          backgroundColor: '#FFFFFF',
-                          color: '#334155',
-                          border: '1px solid #CBD5E1',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-                          transition: 'all 0.15s ease',
-                        }}
-                        title="Add, edit, or delete presentation rooms"
-                      >
-                        <Settings size={13} /> Manage Rooms
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Interactive Room Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(Math.max(ALL_DISPLAY_ROOMS.length, 1), 4)}, 1fr)`, gap: '8px' }}>
-                    {ALL_DISPLAY_ROOMS.map((room) => {
-                      const occ = roomOccupancyMap[room];
-                      const isSelected = panelFormRoom === room;
-                      const isVacant = occ?.isAvailable;
-
-                      return (
-                        <button
-                          key={room}
-                          type="button"
-                          onClick={() => setPanelFormRoom(room)}
-                          style={{
-                            padding: '10px 12px',
-                            borderRadius: '10px',
-                            border: `1.5px solid ${isSelected ? '#2563EB' : isVacant ? '#CBD5E1' : '#FECACA'}`,
-                            backgroundColor: isSelected ? '#EFF6FF' : isVacant ? '#FFFFFF' : '#FFF1F2',
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'space-between',
-                            gap: '6px',
-                            transition: 'all 0.15s ease',
-                            boxShadow: isSelected ? '0 2px 8px rgba(37,99,235,0.2)' : '0 1px 2px rgba(0,0,0,0.03)',
-                          }}
-                          title={isVacant ? `${room} is vacant and ready for allotment` : `${room} is currently occupied by ${occ?.occupiedByPanel}`}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '12.5px', fontWeight: 700, color: isSelected ? '#1D4ED8' : isVacant ? '#1E293B' : '#991B1B' }}>
-                              {room}
-                            </span>
-                            {isSelected && (
-                              <span style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#2563EB', color: '#FFFFFF', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
-                                ✓
-                              </span>
-                            )}
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span
+                          return (
+                            <button
+                              key={room}
+                              type="button"
+                              onClick={() => setPanelFormRoom(room)}
                               style={{
-                                width: '6px',
-                                height: '6px',
-                                borderRadius: '50%',
-                                backgroundColor: isVacant ? '#16A34A' : '#DC2626',
-                                display: 'inline-block',
-                              }}
-                            />
-                            <span
-                              style={{
-                                fontSize: '10px',
-                                fontWeight: 700,
-                                color: isVacant ? '#15803D' : '#991B1B',
+                                padding: '8px',
+                                borderRadius: '8px',
+                                border: `1.5px solid ${isSelected ? '#2563EB' : isVacant ? '#CBD5E1' : '#FECACA'}`,
+                                backgroundColor: isSelected ? '#EFF6FF' : isVacant ? '#FFFFFF' : '#FFF1F2',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '3px',
+                                transition: 'all 0.15s ease',
                               }}
                             >
-                              {isVacant ? 'Available' : 'In Use'}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Room Conflict Notice - Strictly shows ONLY when another panel is genuinely booked in this room */}
-                  {occupyingPanelForSelected && (
-                    <div style={{ padding: '8px 12px', borderRadius: '8px', backgroundColor: '#FFF1F2', border: '1px solid #FECACA', fontSize: '11.5px', color: '#991B1B', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                        <AlertTriangle size={14} color="#DC2626" />
-                        <span><strong>Room Occupancy Notice:</strong> {panelFormRoom} is already booked by {occupyingPanelForSelected.panel_name || `Panel #${occupyingPanelForSelected.panel_number}`} for this shift.</span>
-                      </span>
-                      {firstAvailableRoom && firstAvailableRoom !== panelFormRoom && (
-                        <button
-                          type="button"
-                          onClick={handleAutoAllotRoom}
-                          style={{ fontSize: '11.5px', color: '#2563EB', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 700, textDecoration: 'underline' }}
-                        >
-                          Switch to {firstAvailableRoom}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-
-                {/* Select Faculty Judges */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label className="input-label" style={{ fontSize: '12px', fontWeight: 600, margin: 0 }}>
-                      Assign Faculty Judges ({panelFormSelectedJudges.length} selected)
-                    </label>
-                    {panelFormSelectedJudges.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setPanelFormSelectedJudges([])}
-                        style={{ fontSize: '11px', color: '#2563EB', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-                      >
-                        Clear Selection ({panelFormSelectedJudges.length})
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Faculty Availability Filter Pills & Search */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ display: 'flex', gap: '6px', backgroundColor: '#F1F5F9', padding: '3px', borderRadius: '8px' }}>
-                      <button
-                        type="button"
-                        onClick={() => setFacultyAvailabilityFilter('all')}
-                        style={{
-                          flex: 1,
-                          padding: '5px 8px',
-                          fontSize: '11px',
-                          fontWeight: facultyAvailabilityFilter === 'all' ? 700 : 500,
-                          backgroundColor: facultyAvailabilityFilter === 'all' ? '#FFFFFF' : 'transparent',
-                          color: facultyAvailabilityFilter === 'all' ? '#2563EB' : 'var(--color-text-muted)',
-                          border: 'none',
-                          borderRadius: '6px',
-                          boxShadow: facultyAvailabilityFilter === 'all' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        All Faculty ({supervisors.length})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFacultyAvailabilityFilter('available')}
-                        style={{
-                          flex: 1,
-                          padding: '5px 8px',
-                          fontSize: '11px',
-                          fontWeight: facultyAvailabilityFilter === 'available' ? 700 : 500,
-                          backgroundColor: facultyAvailabilityFilter === 'available' ? '#FFFFFF' : 'transparent',
-                          color: facultyAvailabilityFilter === 'available' ? '#059669' : 'var(--color-text-muted)',
-                          border: 'none',
-                          borderRadius: '6px',
-                          boxShadow: facultyAvailabilityFilter === 'available' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '4px',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <span>🟢 Available</span>
-                        <span style={{ fontSize: '10px', opacity: 0.8 }}>({facultyAvailabilityStats.availableCount})</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFacultyAvailabilityFilter('busy')}
-                        style={{
-                          flex: 1,
-                          padding: '5px 8px',
-                          fontSize: '11px',
-                          fontWeight: facultyAvailabilityFilter === 'busy' ? 700 : 500,
-                          backgroundColor: facultyAvailabilityFilter === 'busy' ? '#FFFFFF' : 'transparent',
-                          color: facultyAvailabilityFilter === 'busy' ? '#D97706' : 'var(--color-text-muted)',
-                          border: 'none',
-                          borderRadius: '6px',
-                          boxShadow: facultyAvailabilityFilter === 'busy' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '4px',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        <span>🟡 In Panel / Busy</span>
-                        <span style={{ fontSize: '10px', opacity: 0.8 }}>({facultyAvailabilityStats.busyCount})</span>
-                      </button>
-                    </div>
-
-                    {/* Faculty Search Bar */}
-                    <div className="search-input-wrapper" style={{ width: '100%' }}>
-                      <input
-                        type="text"
-                        className="input-field"
-                        style={{ height: '36px', fontSize: '12.5px' }}
-                        placeholder="Search faculty by name, email, or phone..."
-                        value={judgeSearchQuery}
-                        onChange={(e) => setJudgeSearchQuery(e.target.value)}
-                      />
-                      <div className="search-icon">
-                        <Search size={13} />
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '11.5px', fontWeight: 700, color: isSelected ? '#1D4ED8' : isVacant ? '#1E293B' : '#991B1B' }}>
+                                  {room}
+                                </span>
+                                {isSelected && (
+                                  <span style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#2563EB', color: '#FFFFFF', fontSize: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+                                    ✓
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: isVacant ? '#16A34A' : '#DC2626', display: 'inline-block' }} />
+                                <span style={{ fontSize: '9.5px', fontWeight: 700, color: isVacant ? '#15803D' : '#991B1B' }}>
+                                  {isVacant ? 'Available' : 'In Use'}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
-                      {judgeSearchQuery && (
-                        <button
-                          type="button"
-                          onClick={() => setJudgeSearchQuery('')}
-                          className="clear-btn"
-                          aria-label="Clear search"
-                        >
-                          <X size={13} />
-                        </button>
+
+                      {/* Room Occupancy Warning */}
+                      {occupyingPanelForSelected && (
+                        <div style={{ padding: '6px 10px', borderRadius: '6px', backgroundColor: '#FFF1F2', border: '1px solid #FECACA', fontSize: '10.5px', color: '#991B1B', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                          <span>⚠️ <strong>Occupied:</strong> {panelFormRoom} is booked by {occupyingPanelForSelected.panel_name || `Panel #${occupyingPanelForSelected.panel_number}`}.</span>
+                          {firstAvailableRoom && firstAvailableRoom !== panelFormRoom && (
+                            <button
+                              type="button"
+                              onClick={handleAutoAllotRoom}
+                              style={{ fontSize: '10.5px', color: '#2563EB', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 700, textDecoration: 'underline' }}
+                            >
+                              Use {firstAvailableRoom}
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
-                  </div>
 
-                  {/* Filtered Faculty Checklist with Live Availability Indicators */}
-                  <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--color-hairline)', borderRadius: '8px', padding: '6px', display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: '#FAFAFA' }}>
-                    {supervisors
-                      .filter((s: any) => {
-                        const availability = getFacultyAvailability(s.id);
-                        if (facultyAvailabilityFilter === 'available' && !availability.isAvailable) return false;
-                        if (facultyAvailabilityFilter === 'busy' && availability.isAvailable) return false;
+                    {/* Faculty Judges Assignment Deck */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <label className="input-label" style={{ fontSize: '12.5px', fontWeight: 800, margin: 0, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Award size={15} color="#2563EB" /> 5. Appoint Faculty Judges
+                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className="badge badge-brand" style={{ fontSize: '10.5px', fontWeight: 700 }}>
+                            {panelFormSelectedJudges.length} Selected
+                          </span>
+                          {panelFormSelectedJudges.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => setPanelFormSelectedJudges([])}
+                              style={{ fontSize: '10.5px', color: '#DC2626', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
 
-                        if (!judgeSearchQuery.trim()) return true;
-                        const q = judgeSearchQuery.toLowerCase();
-                        return (
-                          (s.name || '').toLowerCase().includes(q) ||
-                          (s.email || '').toLowerCase().includes(q) ||
-                          (s.phone || '').toLowerCase().includes(q) ||
-                          (s.cabin || '').toLowerCase().includes(q)
-                        );
-                      })
-                      .map((s: any) => {
-                        const isSelected = panelFormSelectedJudges.includes(s.id);
-                        const availability = getFacultyAvailability(s.id);
-                        return (
-                          <label
-                            key={s.id}
+                      {/* Faculty Availability Filter Pills & Search */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ display: 'flex', gap: '4px', backgroundColor: '#F1F5F9', padding: '2px', borderRadius: '6px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setFacultyAvailabilityFilter('all')}
                             style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              padding: '8px 10px',
-                              borderRadius: '6px',
-                              backgroundColor: isSelected ? '#EFF6FF' : '#FFFFFF',
-                              border: isSelected ? '1px solid #BFDBFE' : '1px solid var(--color-hairline)',
+                              flex: 1,
+                              padding: '4px 6px',
+                              fontSize: '10.5px',
+                              fontWeight: facultyAvailabilityFilter === 'all' ? 700 : 500,
+                              backgroundColor: facultyAvailabilityFilter === 'all' ? '#FFFFFF' : 'transparent',
+                              color: facultyAvailabilityFilter === 'all' ? '#2563EB' : 'var(--color-text-muted)',
+                              border: 'none',
+                              borderRadius: '5px',
+                              boxShadow: facultyAvailabilityFilter === 'all' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
                               cursor: 'pointer',
-                              fontSize: '12.5px',
-                              transition: 'all 0.12s ease',
-                              gap: '8px',
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setPanelFormSelectedJudges([...panelFormSelectedJudges, s.id]);
-                                  } else {
-                                    setPanelFormSelectedJudges(panelFormSelectedJudges.filter((id) => id !== s.id));
-                                  }
+                            All ({supervisors.length})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFacultyAvailabilityFilter('available')}
+                            style={{
+                              flex: 1,
+                              padding: '4px 6px',
+                              fontSize: '10.5px',
+                              fontWeight: facultyAvailabilityFilter === 'available' ? 700 : 500,
+                              backgroundColor: facultyAvailabilityFilter === 'available' ? '#FFFFFF' : 'transparent',
+                              color: facultyAvailabilityFilter === 'available' ? '#059669' : 'var(--color-text-muted)',
+                              border: 'none',
+                              borderRadius: '5px',
+                              boxShadow: facultyAvailabilityFilter === 'available' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            🟢 Available ({facultyAvailabilityStats.availableCount})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFacultyAvailabilityFilter('busy')}
+                            style={{
+                              flex: 1,
+                              padding: '4px 6px',
+                              fontSize: '10.5px',
+                              fontWeight: facultyAvailabilityFilter === 'busy' ? 700 : 500,
+                              backgroundColor: facultyAvailabilityFilter === 'busy' ? '#FFFFFF' : 'transparent',
+                              color: facultyAvailabilityFilter === 'busy' ? '#D97706' : 'var(--color-text-muted)',
+                              border: 'none',
+                              borderRadius: '5px',
+                              boxShadow: facultyAvailabilityFilter === 'busy' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            🟡 Busy ({facultyAvailabilityStats.busyCount})
+                          </button>
+                        </div>
+
+                        {/* Search Bar */}
+                        <div className="search-input-wrapper" style={{ width: '100%' }}>
+                          <input
+                            type="text"
+                            className="input-field"
+                            style={{ height: '32px', fontSize: '11.5px' }}
+                            placeholder="Search faculty name, email, or cabin..."
+                            value={judgeSearchQuery}
+                            onChange={(e) => setJudgeSearchQuery(e.target.value)}
+                          />
+                          <div className="search-icon">
+                            <Search size={12} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Scrollable Faculty Checklist */}
+                      <div style={{ maxHeight: '150px', overflowY: 'auto', border: '1px solid var(--color-hairline)', borderRadius: '8px', padding: '4px', display: 'flex', flexDirection: 'column', gap: '3px', backgroundColor: '#FAFAFA' }}>
+                        {supervisors
+                          .filter((s: any) => {
+                            const availability = getFacultyAvailability(s.id);
+                            if (facultyAvailabilityFilter === 'available' && !availability.isAvailable) return false;
+                            if (facultyAvailabilityFilter === 'busy' && availability.isAvailable) return false;
+
+                            if (!judgeSearchQuery.trim()) return true;
+                            const q = judgeSearchQuery.toLowerCase();
+                            return (
+                              (s.name || '').toLowerCase().includes(q) ||
+                              (s.email || '').toLowerCase().includes(q) ||
+                              (s.phone || '').toLowerCase().includes(q) ||
+                              (s.cabin || '').toLowerCase().includes(q)
+                            );
+                          })
+                          .map((s: any) => {
+                            const isSelected = panelFormSelectedJudges.includes(s.id);
+                            const availability = getFacultyAvailability(s.id);
+                            return (
+                              <label
+                                key={s.id}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  padding: '6px 8px',
+                                  borderRadius: '6px',
+                                  backgroundColor: isSelected ? '#EFF6FF' : '#FFFFFF',
+                                  border: isSelected ? '1px solid #BFDBFE' : '1px solid var(--color-hairline)',
+                                  cursor: 'pointer',
+                                  fontSize: '11.5px',
+                                  transition: 'all 0.12s ease',
+                                  gap: '6px',
                                 }}
-                              />
-                              <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                  <span style={{ fontWeight: 600, color: 'var(--color-ink)' }}>{s.name}</span>
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setPanelFormSelectedJudges([...panelFormSelectedJudges, s.id]);
+                                      } else {
+                                        setPanelFormSelectedJudges(panelFormSelectedJudges.filter((id) => id !== s.id));
+                                      }
+                                    }}
+                                    style={{ accentColor: '#2563EB', cursor: 'pointer', flexShrink: 0 }}
+                                  />
+                                  <div style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    <span style={{ fontWeight: 700, color: 'var(--color-ink)' }}>{s.name}</span>
+                                    {s.cabin && (
+                                      <span style={{ color: '#64748B', fontSize: '10px', marginLeft: '4px' }}>
+                                        ({s.cabin})
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
                                   {availability.conflictTeam && (
-                                    <span
-                                      style={{
-                                        fontSize: '10px',
-                                        fontWeight: 600,
-                                        padding: '1px 5px',
-                                        borderRadius: '4px',
-                                        backgroundColor: '#FEE2E2',
-                                        color: '#991B1B',
-                                        border: '1px solid #FECACA',
-                                      }}
-                                      title={`Guides team ${availability.conflictTeam.team_code} in current range`}
-                                    >
-                                      ⚠️ Guides {availability.conflictTeam.team_code}
+                                    <span style={{ fontSize: '9.5px', fontWeight: 700, padding: '1px 6px', borderRadius: '6px', backgroundColor: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE' }}>
+                                      👑 Mentors {availability.conflictTeam.team_code}
+                                    </span>
+                                  )}
+                                  {availability.isAvailable ? (
+                                    <span style={{ fontSize: '9.5px', fontWeight: 600, padding: '1px 5px', borderRadius: '6px', backgroundColor: '#DEF7EC', color: '#03543F' }}>
+                                      🟢 Free
+                                    </span>
+                                  ) : (
+                                    <span style={{ fontSize: '9.5px', fontWeight: 600, padding: '1px 5px', borderRadius: '6px', backgroundColor: '#FEF3C7', color: '#92400E' }}>
+                                      🟡 In {availability.assignedInThisShift?.panel_name || availability.assignedPanels[0]?.panel_name || 'Panel'}
                                     </span>
                                   )}
                                 </div>
-                                <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>{s.email}</span>
-                              </div>
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                              {availability.isAvailable ? (
-                                <span
-                                  style={{
-                                    fontSize: '10.5px',
-                                    fontWeight: 600,
-                                    padding: '2px 7px',
-                                    borderRadius: '10px',
-                                    backgroundColor: '#DEF7EC',
-                                    color: '#03543F',
-                                    border: '1px solid #BCF0DA',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '3px',
-                                  }}
-                                >
-                                  🟢 Available
-                                </span>
-                              ) : (
-                                <span
-                                  style={{
-                                    fontSize: '10.5px',
-                                    fontWeight: 600,
-                                    padding: '2px 7px',
-                                    borderRadius: '10px',
-                                    backgroundColor: '#FEF3C7',
-                                    color: '#92400E',
-                                    border: '1px solid #FDE68A',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '3px',
-                                  }}
-                                  title={`Already assigned to: ${availability.assignedPanels.map((p: any) => `${p.panel_name || 'Panel'} (${p.time_window || 'Shift'})`).join(', ')}`}
-                                >
-                                  🟡 In {availability.assignedPanels[0]?.panel_name || 'Panel'}
-                                </span>
-                              )}
-
-                              <span className="badge badge-neutral" style={{ fontSize: '10px' }}>
-                                {s.assignedTeamsCount} teams
-                              </span>
-                            </div>
-                          </label>
-                        );
-                      })}
-                    {supervisors.filter((s: any) => {
-                      const availability = getFacultyAvailability(s.id);
-                      if (facultyAvailabilityFilter === 'available' && !availability.isAvailable) return false;
-                      if (facultyAvailabilityFilter === 'busy' && availability.isAvailable) return false;
-
-                      if (!judgeSearchQuery.trim()) return true;
-                      const q = judgeSearchQuery.toLowerCase();
-                      return (
-                        (s.name || '').toLowerCase().includes(q) ||
-                        (s.email || '').toLowerCase().includes(q) ||
-                        (s.phone || '').toLowerCase().includes(q) ||
-                        (s.cabin || '').toLowerCase().includes(q)
-                      );
-                    }).length === 0 && (
-                        <div style={{ textAlign: 'center', padding: '16px', fontSize: '12px', color: 'var(--color-text-muted)' }}>
-                          {facultyAvailabilityFilter === 'available'
-                            ? 'No available faculty found for this phase/search.'
-                            : facultyAvailabilityFilter === 'busy'
-                              ? 'No assigned faculty found for this phase/search.'
-                              : `No faculty found matching "${judgeSearchQuery}"`}
-                        </div>
-                      )}
+                              </label>
+                            );
+                          })}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Pinned Modal Footer */}
+              {/* Pinned Modal Footer with Live Summary Indicator */}
               <div
                 className="modal-footer-responsive"
                 style={{
-                  padding: '16px 24px',
+                  padding: '14px 24px',
                   borderTop: '1px solid var(--color-hairline)',
                   backgroundColor: '#FFFFFF',
                   display: 'flex',
-                  justifyContent: 'flex-end',
-                  gap: '10px',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '12px',
                   flexShrink: 0,
                 }}
               >
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={() => {
-                    setCreatePanelModalOpen(false);
-                    setEditingPanel(null);
-                  }}
-                  style={{ padding: '8px 16px', fontSize: '13px' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={panelFormLoading || panelFormSelectedJudges.length === 0}
-                  style={{ padding: '8px 18px', fontSize: '13px', fontWeight: 600 }}
-                >
-                  {panelFormLoading
-                    ? (editingPanel ? 'Saving Changes...' : 'Creating Panel...')
-                    : (editingPanel ? 'Save Changes' : `Create Panel for Phase ${panelFormPhase}`)}
-                </button>
+                {/* Live Panel Configuration Badges */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <span className="badge badge-brand" style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px' }}>
+                    Phase {panelFormPhase}
+                  </span>
+                  <span className="badge badge-neutral" style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px' }}>
+                    Panel #{panelFormNumber || nextSequentialPanelNumber}
+                  </span>
+                  <span className="badge badge-success" style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px' }}>
+                    {selectedRangeTeams.length} Teams ({selectedRangeStudentCount} Students)
+                  </span>
+                  <span className="badge" style={{ backgroundColor: '#F1F5F9', color: '#334155', border: '1px solid #CBD5E1', fontSize: '11px', fontWeight: 700, padding: '3px 8px' }}>
+                    📍 {panelFormRoom}
+                  </span>
+                  <span className="badge" style={{ backgroundColor: panelFormSelectedJudges.length > 0 ? '#EFF6FF' : '#FEF2F2', color: panelFormSelectedJudges.length > 0 ? '#1D4ED8' : '#DC2626', border: panelFormSelectedJudges.length > 0 ? '1px solid #BFDBFE' : '1px solid #FCA5A5', fontSize: '11px', fontWeight: 700, padding: '3px 8px' }}>
+                    👨‍🏫 {panelFormSelectedJudges.length} Judges
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => {
+                      setCreatePanelModalOpen(false);
+                      setEditingPanel(null);
+                    }}
+                    style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 600 }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={panelFormLoading || panelFormSelectedJudges.length === 0}
+                    style={{
+                      padding: '8px 20px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)',
+                      boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+                    }}
+                  >
+                    {panelFormLoading ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin" /> Saving Panel to Database...
+                      </>
+                    ) : editingPanel ? (
+                      <>
+                        <Check size={14} /> Update Panel #{editingPanel.panel_number}
+                      </>
+                    ) : (
+                      <>
+                        <Plus size={14} /> Create Panel for Phase {panelFormPhase}
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

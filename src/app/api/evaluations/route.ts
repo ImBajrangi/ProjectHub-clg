@@ -43,6 +43,16 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Invalid scores payload' }, { status: 400 });
       }
 
+      // Check if Phase is Live - if stopped, prevent faculty/panel members from modifying marks
+      const phases = await db.getPhases();
+      const targetPhaseConfig = phases.find((p: any) => p.phase_number === Number(phaseNumber));
+      if (targetPhaseConfig && !targetPhaseConfig.is_live && sessionUser.role !== 'admin') {
+        return NextResponse.json(
+          { error: `Phase ${phaseNumber} evaluation has been stopped and locked by the Project Incharge Administrator. Panel members cannot add or modify marks while the phase is stopped.` },
+          { status: 403 }
+        );
+      }
+
       // Conflict Check: judge cannot evaluate their own supervised team
       const team = await db.getTeamById(teamId);
       if (team && team.supervisor_id === sessionUser.id) {
@@ -83,6 +93,14 @@ export async function POST(req: NextRequest) {
     // 2. Phase 3: Submit Report Clearance
     if (action === 'report_clearance') {
       const { teamId, cleared } = body;
+      const phases = await db.getPhases();
+      const phase3Config = phases.find((p: any) => p.phase_number === 3);
+      if (phase3Config && !phase3Config.is_live && sessionUser.role !== 'admin') {
+        return NextResponse.json(
+          { error: 'Phase 3 evaluation has been stopped and locked by the Project Incharge Administrator. Report clearance cannot be modified.' },
+          { status: 403 }
+        );
+      }
       const team = await db.getTeamById(teamId);
       if (!team) return NextResponse.json({ error: 'Team not found' }, { status: 404 });
 

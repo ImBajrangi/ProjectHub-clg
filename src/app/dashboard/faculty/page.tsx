@@ -672,6 +672,14 @@ export default function FacultyDashboardPage() {
 
   const handleSubmitScores = async (phaseNumber: number) => {
     if (!selectedPanelTeam) return;
+
+    // Phase Live Safeguard: Block submission if admin stopped the phase
+    const targetPhaseConfig = evaluationPhases.find((p: any) => p.phase_number === phaseNumber);
+    if (targetPhaseConfig && !targetPhaseConfig.is_live) {
+      setScoreMessage(`Phase ${phaseNumber} evaluation is stopped by the administrator. Marks modification is locked.`);
+      return;
+    }
+
     setScoringLoading(true);
     setScoreMessage('');
 
@@ -732,6 +740,12 @@ export default function FacultyDashboardPage() {
 
   const handleConfirmSingleScore = async (studentId: string) => {
     if (!selectedPanelTeam) return;
+    const currentPhaseConfig = evaluationPhases.find((p: any) => p.phase_number === (selectedPanelPhase || 1));
+    if (currentPhaseConfig && !currentPhaseConfig.is_live) {
+      setScoreMessage(`Phase ${selectedPanelPhase} evaluation is stopped by admin. Cannot record score.`);
+      return;
+    }
+
     const current = studentScores[studentId];
     if (!current || (current.score === '' && !current.isAbsent)) return;
 
@@ -792,6 +806,12 @@ export default function FacultyDashboardPage() {
 
   const handleReportClearance = async (cleared: boolean) => {
     if (!selectedPanelTeam) return;
+    const phase3Config = evaluationPhases.find((p: any) => p.phase_number === 3);
+    if (phase3Config && !phase3Config.is_live) {
+      setScoreMessage('Phase 3 evaluation is stopped by admin. Report clearance cannot be modified.');
+      return;
+    }
+
     try {
       const res = await fetch('/api/evaluations', {
         method: 'POST',
@@ -2017,7 +2037,13 @@ export default function FacultyDashboardPage() {
             {/* VIEW A: FULL PAGE TEAM SCORING CONSOLE (when team selected)   */}
             {/* ------------------------------------------------------------- */}
             {selectedPanelTeam ? (
-              <div className="page-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              (() => {
+                const activePhaseConfig = evaluationPhases.find((p: any) => p.phase_number === (selectedPanelPhase || 1));
+                const isPhaseLive = activePhaseConfig ? activePhaseConfig.is_live : false;
+                const maxMarks = activePhaseConfig?.marks_weightage || activePhaseConfig?.max_marks || (selectedPanelPhase === 1 ? 20 : selectedPanelPhase === 2 ? 40 : 40);
+
+                return (
+                  <div className="page-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {/* Top Sticky Navigation Bar with Back Button */}
                 <div
                   style={{
@@ -2066,12 +2092,19 @@ export default function FacultyDashboardPage() {
 
                   {(() => {
                     const activePhaseConfig = evaluationPhases.find((p: any) => p.phase_number === (selectedPanelPhase || 1));
+                    const isPhaseLive = activePhaseConfig ? activePhaseConfig.is_live : false;
                     const maxMarks = activePhaseConfig?.marks_weightage || activePhaseConfig?.max_marks || (selectedPanelPhase === 1 ? 20 : selectedPanelPhase === 2 ? 40 : 40);
                     return (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <span className="badge badge-success" style={{ fontSize: '11.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                          <CheckCircle2 size={13} /> Live Defense Mode
-                        </span>
+                        {isPhaseLive ? (
+                          <span className="badge badge-success" style={{ fontSize: '11.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                            <CheckCircle2 size={13} /> Live Defense Mode
+                          </span>
+                        ) : (
+                          <span className="badge" style={{ backgroundColor: '#FEF2F2', color: '#DC2626', border: '1.5px solid #FCA5A5', fontSize: '11.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                            <Lock size={13} /> Evaluation Stopped / Locked
+                          </span>
+                        )}
                         <span className="badge badge-brand" style={{ fontSize: '11px', fontWeight: 700 }}>
                           Rubric: {maxMarks} Marks Scale
                         </span>
@@ -2079,6 +2112,36 @@ export default function FacultyDashboardPage() {
                     );
                   })()}
                 </div>
+
+                {/* Stopped Phase Notification Banner */}
+                {(() => {
+                  const activePhaseConfig = evaluationPhases.find((p: any) => p.phase_number === (selectedPanelPhase || 1));
+                  const isPhaseLive = activePhaseConfig ? activePhaseConfig.is_live : false;
+                  if (isPhaseLive) return null;
+                  return (
+                    <div
+                      style={{
+                        padding: '14px 18px',
+                        borderRadius: '12px',
+                        backgroundColor: '#FEF2F2',
+                        border: '1.5px solid #FCA5A5',
+                        color: '#991B1B',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        boxShadow: '0 2px 8px rgba(220, 38, 38, 0.06)',
+                      }}
+                    >
+                      <Lock size={20} color="#DC2626" style={{ flexShrink: 0 }} />
+                      <div>
+                        <div style={{ fontSize: '13.5px', fontWeight: 800 }}>Phase {selectedPanelPhase} Evaluation is Currently Stopped by Admin</div>
+                        <div style={{ fontSize: '12px', color: '#7F1D1D', marginTop: '2px' }}>
+                          The Project Incharge Administrator has stopped Phase {selectedPanelPhase}. Mark scoring inputs and attendance modification controls are locked in read-only mode.
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Score Status Notification Banner */}
                 {scoreMessage && (
@@ -2446,8 +2509,9 @@ export default function FacultyDashboardPage() {
                         const numScore = parseFloat(current.score);
                         const hasScore = current.score !== '' && !isNaN(numScore);
 
-                        // Dynamic max marks from active phase configuration
+                        // Dynamic max marks and live state from active phase configuration
                         const activePhaseConfig = evaluationPhases.find((p: any) => p.phase_number === (selectedPanelPhase || 1));
+                        const isPhaseLive = activePhaseConfig ? activePhaseConfig.is_live : false;
                         const maxMarks = activePhaseConfig?.marks_weightage || activePhaseConfig?.max_marks || (selectedPanelPhase === 1 ? 20 : selectedPanelPhase === 2 ? 40 : 40);
                         const dynamicPresets = getPresetsForMaxMarks(maxMarks);
 
@@ -2467,7 +2531,7 @@ export default function FacultyDashboardPage() {
                             ? { label: 'Very Good (80%+)', color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' }
                             : pctScore >= 70
                             ? { label: 'Good (70%+)', color: '#2563EB', bg: '#EFF6FF', border: '#DBEAFE' }
-                            : { label: 'Average (<70%)', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' }
+                            : { label: 'Average (Below 70%)', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' }
                           : null;
 
                         const feedbackPresets = [
@@ -2686,29 +2750,31 @@ export default function FacultyDashboardPage() {
                                         >
                                           <CheckCircle2 size={13} color="#059669" /> Recorded ••••
                                         </span>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setEditingStudentIds((prev) => new Set(prev).add(student.id));
-                                            setRevealedStudentIds((prev) => new Set(prev).add(student.id));
-                                          }}
-                                          style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: '4px',
-                                            padding: '4px 9px',
-                                            fontSize: '11.5px',
-                                            fontWeight: 700,
-                                            borderRadius: '7px',
-                                            border: '1px solid #BFDBFE',
-                                            backgroundColor: '#EFF6FF',
-                                            color: '#1D4ED8',
-                                            cursor: 'pointer',
-                                          }}
-                                          title="Click to edit and view candidate marks"
-                                        >
-                                          <Edit3 size={12} /> Edit
-                                        </button>
+                                        {isPhaseLive && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setEditingStudentIds((prev) => new Set(prev).add(student.id));
+                                              setRevealedStudentIds((prev) => new Set(prev).add(student.id));
+                                            }}
+                                            style={{
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              gap: '4px',
+                                              padding: '4px 9px',
+                                              fontSize: '11.5px',
+                                              fontWeight: 700,
+                                              borderRadius: '7px',
+                                              border: '1px solid #BFDBFE',
+                                              backgroundColor: '#EFF6FF',
+                                              color: '#1D4ED8',
+                                              cursor: 'pointer',
+                                            }}
+                                            title="Click to edit and view candidate marks"
+                                          >
+                                            <Edit3 size={12} /> Edit
+                                          </button>
+                                        )}
                                       </>
                                     ) : (
                                       <>
@@ -2743,7 +2809,7 @@ export default function FacultyDashboardPage() {
                                             {scoreRating.label}
                                           </span>
                                         )}
-                                        {isStudentSubmitted && (
+                                        {isStudentSubmitted && isPhaseLive && (
                                           <button
                                             type="button"
                                             onClick={() => {
@@ -2801,7 +2867,9 @@ export default function FacultyDashboardPage() {
                                 <div style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: '#F1F5F9', padding: '3px', borderRadius: '10px', gap: '2px', border: '1px solid #E2E8F0' }}>
                                   <button
                                     type="button"
+                                    disabled={!isPhaseLive}
                                     onClick={() => {
+                                      if (!isPhaseLive) return;
                                       setStudentScores({
                                         ...studentScores,
                                         [student.id]: {
@@ -2819,20 +2887,23 @@ export default function FacultyDashboardPage() {
                                       borderRadius: '7px',
                                       fontSize: '11.5px',
                                       fontWeight: isPresent ? 700 : 500,
-                                      cursor: 'pointer',
+                                      cursor: isPhaseLive ? 'pointer' : 'not-allowed',
                                       border: 'none',
                                       backgroundColor: isPresent ? '#10B981' : 'transparent',
                                       color: isPresent ? '#FFFFFF' : '#64748B',
                                       transition: 'all 0.15s ease',
+                                      opacity: isPhaseLive ? 1 : 0.7,
                                     }}
-                                    title="Student is present and participating"
+                                    title={isPhaseLive ? "Student is present and participating" : "Phase stopped by administrator"}
                                   >
                                     <CheckCircle2 size={12} /> Present
                                   </button>
 
                                   <button
                                     type="button"
+                                    disabled={!isPhaseLive}
                                     onClick={() => {
+                                      if (!isPhaseLive) return;
                                       setStudentScores({
                                         ...studentScores,
                                         [student.id]: {
@@ -2852,20 +2923,23 @@ export default function FacultyDashboardPage() {
                                       borderRadius: '7px',
                                       fontSize: '11.5px',
                                       fontWeight: isNextShift ? 700 : 500,
-                                      cursor: 'pointer',
+                                      cursor: isPhaseLive ? 'pointer' : 'not-allowed',
                                       border: 'none',
                                       backgroundColor: isNextShift ? '#F59E0B' : 'transparent',
                                       color: isNextShift ? '#FFFFFF' : '#64748B',
                                       transition: 'all 0.15s ease',
+                                      opacity: isPhaseLive ? 1 : 0.7,
                                     }}
-                                    title="Unable to attend current shift; shift to next shift"
+                                    title={isPhaseLive ? "Unable to attend current shift; shift to next shift" : "Phase stopped by administrator"}
                                   >
                                     <Clock size={12} /> Next Shift
                                   </button>
 
                                   <button
                                     type="button"
+                                    disabled={!isPhaseLive}
                                     onClick={() => {
+                                      if (!isPhaseLive) return;
                                       setStudentScores({
                                         ...studentScores,
                                         [student.id]: {
@@ -2884,13 +2958,14 @@ export default function FacultyDashboardPage() {
                                       borderRadius: '7px',
                                       fontSize: '11.5px',
                                       fontWeight: isAbsentOnly ? 700 : 500,
-                                      cursor: 'pointer',
+                                      cursor: isPhaseLive ? 'pointer' : 'not-allowed',
                                       border: 'none',
                                       backgroundColor: isAbsentOnly ? '#EF4444' : 'transparent',
                                       color: isAbsentOnly ? '#FFFFFF' : '#64748B',
                                       transition: 'all 0.15s ease',
+                                      opacity: isPhaseLive ? 1 : 0.7,
                                     }}
-                                    title="Mark student absent"
+                                    title={isPhaseLive ? "Mark student absent" : "Phase stopped by administrator"}
                                   >
                                     <UserX size={12} /> Absent
                                   </button>
@@ -2995,7 +3070,8 @@ export default function FacultyDashboardPage() {
                                         <input
                                           type={isMasked ? 'password' : 'text'}
                                           inputMode="decimal"
-                                          readOnly={isMasked}
+                                          disabled={!isPhaseLive}
+                                          readOnly={isMasked || !isPhaseLive}
                                           style={{
                                             width: '100%',
                                             height: '42px',
@@ -3008,22 +3084,23 @@ export default function FacultyDashboardPage() {
                                                 ? '1.5px solid #CBD5E1'
                                                 : '2px solid #2563EB'
                                               : '1.5px solid #CBD5E1',
-                                            backgroundColor: isMasked && hasScore ? '#F8FAFC' : '#FFFFFF',
-                                            color: 'var(--color-ink)',
+                                            backgroundColor: isMasked && hasScore ? '#F8FAFC' : !isPhaseLive ? '#F1F5F9' : '#FFFFFF',
+                                            color: !isPhaseLive ? '#64748B' : 'var(--color-ink)',
                                             letterSpacing: isMasked ? '3px' : 'normal',
                                             outline: 'none',
-                                            boxShadow: hasScore && !isMasked ? '0 0 0 3px rgba(37, 99, 235, 0.12)' : 'none',
+                                            boxShadow: hasScore && !isMasked && isPhaseLive ? '0 0 0 3px rgba(37, 99, 235, 0.12)' : 'none',
                                             transition: 'all 0.15s ease',
-                                            cursor: isMasked ? 'pointer' : 'text',
+                                            cursor: !isPhaseLive ? 'not-allowed' : isMasked ? 'pointer' : 'text',
                                           }}
                                           value={isMasked && hasScore ? '••••' : current.score}
                                           onClick={() => {
-                                            if (isMasked) {
+                                            if (isMasked && isPhaseLive) {
                                               setEditingStudentIds((prev) => new Set(prev).add(student.id));
                                               setRevealedStudentIds((prev) => new Set(prev).add(student.id));
                                             }
                                           }}
                                           onChange={(e) => {
+                                            if (!isPhaseLive) return;
                                             const rawVal = e.target.value;
                                             // Strictly allow numbers and at most 1 decimal point
                                             const clean = rawVal.replace(/[^0-9.]/g, '');
@@ -3061,7 +3138,7 @@ export default function FacultyDashboardPage() {
                                       </div>
 
                                       {/* Individual Confirm Score Button */}
-                                      {!isMasked && (
+                                      {!isMasked && isPhaseLive && (
                                         <button
                                           type="button"
                                           disabled={!hasScore || savingStudentId === student.id}
@@ -3097,7 +3174,7 @@ export default function FacultyDashboardPage() {
                                       )}
 
                                       {/* Edit button when masked */}
-                                      {isMasked && hasScore && (
+                                      {isMasked && hasScore && isPhaseLive && (
                                         <button
                                           type="button"
                                           onClick={() => {
@@ -3126,7 +3203,7 @@ export default function FacultyDashboardPage() {
                                       )}
 
                                       {/* Clear Score Button if present and editing */}
-                                      {hasScore && !isMasked && (
+                                      {hasScore && !isMasked && isPhaseLive && (
                                         <button
                                           type="button"
                                           onClick={() => {
@@ -3154,42 +3231,44 @@ export default function FacultyDashboardPage() {
                                       )}
                                     </div>
 
-                                    {/* Quick 1-Tap Preset Pills: ONLY highlight when in active unmasked edit mode */}
-                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '3px' }}>
-                                      {dynamicPresets.map((val) => {
-                                        // CRITICAL: NEVER highlight the preset button when masked/submitted to avoid leaking marks!
-                                        const isSelected = !isMasked && isEditing && (current.score === val || current.score === parseFloat(val).toString());
-                                        return (
-                                          <button
-                                            key={val}
-                                            type="button"
-                                            onClick={() => {
-                                              setEditingStudentIds((prev) => new Set(prev).add(student.id));
-                                              setRevealedStudentIds((prev) => new Set(prev).add(student.id));
-                                              setStudentScores({
-                                                ...studentScores,
-                                                [student.id]: { ...current, score: val },
-                                              });
-                                            }}
-                                            style={{
-                                              padding: '5px 10px',
-                                              fontSize: '11.5px',
-                                              fontWeight: isSelected ? 800 : 600,
-                                              borderRadius: '8px',
-                                              border: isSelected ? '1.5px solid #1E40AF' : '1px solid #E2E8F0',
-                                              background: isSelected ? 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)' : isMasked ? '#F8FAFC' : '#FFFFFF',
-                                              color: isSelected ? '#FFFFFF' : isMasked ? '#64748B' : '#334155',
-                                              cursor: 'pointer',
-                                              transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                                              boxShadow: isSelected ? '0 2px 6px rgba(37, 99, 235, 0.22)' : '0 1px 2px rgba(0,0,0,0.02)',
-                                            }}
-                                            title={isMasked ? `Set to ${val} (Switches to Edit Mode)` : `Set score to ${val}`}
-                                          >
-                                            {val}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
+                                    {/* Quick 1-Tap Preset Pills: ONLY highlight and show when in active live mode */}
+                                    {isPhaseLive && (
+                                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '3px' }}>
+                                        {dynamicPresets.map((val) => {
+                                          // CRITICAL: NEVER highlight the preset button when masked/submitted to avoid leaking marks!
+                                          const isSelected = !isMasked && isEditing && (current.score === val || current.score === parseFloat(val).toString());
+                                          return (
+                                            <button
+                                              key={val}
+                                              type="button"
+                                              onClick={() => {
+                                                setEditingStudentIds((prev) => new Set(prev).add(student.id));
+                                                setRevealedStudentIds((prev) => new Set(prev).add(student.id));
+                                                setStudentScores({
+                                                  ...studentScores,
+                                                  [student.id]: { ...current, score: val },
+                                                });
+                                              }}
+                                              style={{
+                                                padding: '5px 10px',
+                                                fontSize: '11.5px',
+                                                fontWeight: isSelected ? 800 : 600,
+                                                borderRadius: '8px',
+                                                border: isSelected ? '1.5px solid #1E40AF' : '1px solid #E2E8F0',
+                                                background: isSelected ? 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)' : isMasked ? '#F8FAFC' : '#FFFFFF',
+                                                color: isSelected ? '#FFFFFF' : isMasked ? '#64748B' : '#334155',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                boxShadow: isSelected ? '0 2px 6px rgba(37, 99, 235, 0.22)' : '0 1px 2px rgba(0,0,0,0.02)',
+                                              }}
+                                              title={isMasked ? `Set to ${val} (Switches to Edit Mode)` : `Set score to ${val}`}
+                                            >
+                                              {val}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
 
@@ -3213,55 +3292,61 @@ export default function FacultyDashboardPage() {
                                     <input
                                       type="text"
                                       className="input-field"
+                                      disabled={!isPhaseLive}
                                       style={{
                                         fontSize: '13px',
                                         height: '42px',
                                         padding: '8px 14px',
                                         borderRadius: '10px',
-                                        backgroundColor: '#FFFFFF',
+                                        backgroundColor: !isPhaseLive ? '#F1F5F9' : '#FFFFFF',
                                         border: '1px solid #CBD5E1',
+                                        color: !isPhaseLive ? '#64748B' : 'var(--color-ink)',
+                                        cursor: !isPhaseLive ? 'not-allowed' : 'text',
                                       }}
                                       value={current.remarks || ''}
                                       onChange={(e) => {
+                                        if (!isPhaseLive) return;
                                         setStudentScores({
                                           ...studentScores,
                                           [student.id]: { ...current, remarks: e.target.value },
                                         });
                                       }}
-                                      placeholder="e.g. Good conceptual clarity, clear presentation on system architecture"
+                                      placeholder={isPhaseLive ? "e.g. Good conceptual clarity, clear presentation on system architecture" : "Phase stopped — remarks locked"}
                                     />
 
                                     {/* Preset Feedback Pills */}
-                                    <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                                      {feedbackPresets.map((preset, pIdx) => {
-                                        const isApplied = current.remarks === preset;
-                                        return (
-                                          <button
-                                            key={pIdx}
-                                            type="button"
-                                            onClick={() => {
-                                              setStudentScores({
-                                                ...studentScores,
-                                                [student.id]: { ...current, remarks: preset },
-                                              });
-                                            }}
-                                            style={{
-                                              padding: '4px 9px',
-                                              fontSize: '10.5px',
-                                              fontWeight: isApplied ? 700 : 500,
-                                              borderRadius: '6px',
-                                              border: isApplied ? '1px solid #93C5FD' : '1px solid #E2E8F0',
-                                              backgroundColor: isApplied ? '#EFF6FF' : '#F8FAFC',
-                                              color: isApplied ? '#1D4ED8' : '#475569',
-                                              cursor: 'pointer',
-                                              transition: 'all 0.15s ease',
-                                            }}
-                                          >
-                                            {preset}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
+                                    {isPhaseLive && (
+                                      <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                                        {feedbackPresets.map((preset, pIdx) => {
+                                          const isApplied = current.remarks === preset;
+                                          return (
+                                            <button
+                                              key={pIdx}
+                                              type="button"
+                                              onClick={() => {
+                                                setStudentScores({
+                                                  ...studentScores,
+                                                  [student.id]: { ...current, remarks: preset },
+                                                });
+                                              }}
+                                              style={{
+                                                padding: '4px 9px',
+                                                fontSize: '10.5px',
+                                                fontWeight: isApplied ? 700 : 500,
+                                                borderRadius: '6px',
+                                                border: isApplied ? '1px solid #93C5FD' : '1px solid #E2E8F0',
+                                                backgroundColor: isApplied ? '#EFF6FF' : '#F8FAFC',
+                                                color: isApplied ? '#1D4ED8' : '#475569',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.15s ease',
+                                              }}
+                                            >
+                                              {preset}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -3285,7 +3370,9 @@ export default function FacultyDashboardPage() {
                                   </div>
                                   <button
                                     type="button"
+                                    disabled={!isPhaseLive}
                                     onClick={() => {
+                                      if (!isPhaseLive) return;
                                       setStudentScores({
                                         ...studentScores,
                                         [student.id]: { ...current, isAbsent: false, attendanceStatus: 'present' },
@@ -3299,7 +3386,8 @@ export default function FacultyDashboardPage() {
                                       backgroundColor: '#FFFFFF',
                                       color: '#D97706',
                                       border: '1px solid #FCD34D',
-                                      cursor: 'pointer',
+                                      cursor: isPhaseLive ? 'pointer' : 'not-allowed',
+                                      opacity: isPhaseLive ? 1 : 0.6,
                                     }}
                                   >
                                     Mark Present
@@ -3309,6 +3397,7 @@ export default function FacultyDashboardPage() {
                                   <input
                                     type="text"
                                     className="input-field"
+                                    disabled={!isPhaseLive}
                                     style={{
                                       fontSize: '12px',
                                       height: '36px',
@@ -3320,6 +3409,7 @@ export default function FacultyDashboardPage() {
                                     }}
                                     value={current.remarks || ''}
                                     onChange={(e) => {
+                                      if (!isPhaseLive) return;
                                       setStudentScores({
                                         ...studentScores,
                                         [student.id]: { ...current, remarks: e.target.value },
@@ -3349,7 +3439,9 @@ export default function FacultyDashboardPage() {
                                   </div>
                                   <button
                                     type="button"
+                                    disabled={!isPhaseLive}
                                     onClick={() => {
+                                      if (!isPhaseLive) return;
                                       setStudentScores({
                                         ...studentScores,
                                         [student.id]: { ...current, isAbsent: false, attendanceStatus: 'present' },
@@ -3363,7 +3455,8 @@ export default function FacultyDashboardPage() {
                                       backgroundColor: '#FFFFFF',
                                       color: '#DC2626',
                                       border: '1px solid #FCA5A5',
-                                      cursor: 'pointer',
+                                      cursor: isPhaseLive ? 'pointer' : 'not-allowed',
+                                      opacity: isPhaseLive ? 1 : 0.6,
                                     }}
                                   >
                                     Undo Absent
@@ -3373,6 +3466,7 @@ export default function FacultyDashboardPage() {
                                   <input
                                     type="text"
                                     className="input-field"
+                                    disabled={!isPhaseLive}
                                     style={{
                                       fontSize: '12px',
                                       height: '36px',
@@ -3384,6 +3478,7 @@ export default function FacultyDashboardPage() {
                                     }}
                                     value={current.remarks || ''}
                                     onChange={(e) => {
+                                      if (!isPhaseLive) return;
                                       setStudentScores({
                                         ...studentScores,
                                         [student.id]: { ...current, remarks: e.target.value },
@@ -3422,39 +3517,62 @@ export default function FacultyDashboardPage() {
                       <ArrowLeft size={15} /> Back to Assigned Teams
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleSubmitScores(selectedPanelPhase || 1)}
-                      className="btn btn-primary"
-                      disabled={scoringLoading || panelTeamMembers.length === 0}
-                      style={{
-                        padding: '11px 26px',
-                        fontSize: '14px',
-                        fontWeight: 700,
-                        gap: '8px',
-                        borderRadius: '10px',
-                        background: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)',
-                        boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
-                      }}
-                    >
-                      {scoringLoading ? (
-                        <>
-                          <RefreshCw size={16} className="animate-spin" /> Synchronizing Scores with Database...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 size={17} /> Save &amp; Submit Scores for Phase {selectedPanelPhase}
-                        </>
-                      )}
-                    </button>
+                    {isPhaseLive ? (
+                      <button
+                        type="button"
+                        onClick={() => handleSubmitScores(selectedPanelPhase || 1)}
+                        className="btn btn-primary"
+                        disabled={scoringLoading || panelTeamMembers.length === 0}
+                        style={{
+                          padding: '11px 26px',
+                          fontSize: '14px',
+                          fontWeight: 700,
+                          gap: '8px',
+                          borderRadius: '10px',
+                          background: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)',
+                          boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+                        }}
+                      >
+                        {scoringLoading ? (
+                          <>
+                            <RefreshCw size={16} className="animate-spin" /> Synchronizing Scores with Database...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 size={17} /> Save &amp; Submit Scores for Phase {selectedPanelPhase}
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        className="btn btn-outline"
+                        style={{
+                          padding: '11px 26px',
+                          fontSize: '13.5px',
+                          fontWeight: 700,
+                          gap: '8px',
+                          borderRadius: '10px',
+                          backgroundColor: '#FEF2F2',
+                          color: '#991B1B',
+                          border: '1.5px solid #FCA5A5',
+                          cursor: 'not-allowed',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Lock size={16} color="#DC2626" /> Phase {selectedPanelPhase} Stopped &amp; Locked by Admin
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
-            ) : (
-              /* ------------------------------------------------------------- */
-              /* VIEW B: ASSIGNED PANELS & READY TEAMS HUB (when no team open) */
-              /* ------------------------------------------------------------- */
+            );
+          })()
+        ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* VIEW B: ASSIGNED PANELS & READY TEAMS HUB (when no team open) */}
                 <div className="card-soft" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <ShieldAlert size={18} color="var(--color-ink)" />
                   <div style={{ fontSize: '13px', color: 'var(--color-ink)' }}>
