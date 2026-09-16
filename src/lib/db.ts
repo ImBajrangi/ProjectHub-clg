@@ -986,20 +986,39 @@ export const db = {
       created_at: now,
     };
 
-    store.panels.push(panel);
-    this.invalidateStore();
-    fireAndLog(supabase.from('panels').insert(panel), 'panels insert');
-
-    for (const supId of supervisorIds) {
-      const pm: PanelMember = {
-        id: crypto.randomUUID(),
-        panel_id: panelId,
-        supervisor_id: supId,
-        created_at: now,
-      };
-      store.panel_members.push(pm);
-      fireAndLog(supabase.from('panel_members').insert(pm), 'panel_members insert');
+    // 1. Await parent panels table insert first
+    const { error: panelErr } = await supabase.from('panels').insert(panel);
+    if (panelErr) {
+      logSupabaseError('panels insert', panelErr);
+      throw new Error(`Failed to create panel in database: ${panelErr.message}`);
     }
+
+    // 2. Await panel_members insert
+    const memberRecords: PanelMember[] = [];
+    if (supervisorIds && supervisorIds.length > 0) {
+      for (const supId of supervisorIds) {
+        memberRecords.push({
+          id: crypto.randomUUID(),
+          panel_id: panelId,
+          supervisor_id: supId,
+          created_at: now,
+        });
+      }
+      const { error: memErr } = await supabase.from('panel_members').insert(memberRecords);
+      if (memErr) {
+        logSupabaseError('panel_members insert', memErr);
+        // Clean up created panel if member insert fails
+        await supabase.from('panels').delete().eq('id', panelId);
+        throw new Error(`Failed to assign judges to panel: ${memErr.message}`);
+      }
+    }
+
+    // 3. Update memoryStore in-place synchronously and refresh timestamp
+    store.panels = store.panels.filter((p) => p.id !== panelId).concat(panel);
+    if (memberRecords.length > 0) {
+      store.panel_members = store.panel_members.concat(memberRecords);
+    }
+    lastStoreFetch = Date.now();
 
     return panel;
   },
@@ -1028,21 +1047,8 @@ export const db = {
       existing.team_range_start = teamRangeStart;
       existing.team_range_end = teamRangeEnd;
 
-      this.invalidateStore();
-
-      // Update panel members: remove old, insert new
-      store.panel_members = store.panel_members.filter((pm) => pm.panel_id !== existing.id);
-      for (const supId of supervisorIds) {
-        const pm: PanelMember = {
-          id: crypto.randomUUID(),
-          panel_id: existing.id,
-          supervisor_id: supId,
-          created_at: now,
-        };
-        store.panel_members.push(pm);
-      }
-
-      supabase
+      // 1. Await update on panels table
+      const { error: updateErr } = await supabase
         .from('panels')
         .update({
           panel_name: panelName,
@@ -1053,29 +1059,46 @@ export const db = {
           team_range_start: teamRangeStart,
           team_range_end: teamRangeEnd,
         })
-        .eq('id', existing.id)
-        .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('panels (upsert update)', writeErr); });
+        .eq('id', existing.id);
 
-      supabase
+      if (updateErr) {
+        logSupabaseError('panels (upsert update)', updateErr);
+        throw new Error(`Failed to update panel: ${updateErr.message}`);
+      }
+
+      // 2. Await delete old members
+      const { error: delErr } = await supabase
         .from('panel_members')
         .delete()
-        .eq('panel_id', existing.id)
-        .then(({ error: delErr }) => {
-          if (delErr) logSupabaseError('panel_members (delete for upsert)', delErr);
-          const newMembers = supervisorIds.map((supId) => ({
-            id: crypto.randomUUID(),
-            panel_id: existing.id,
-            supervisor_id: supId,
-            created_at: now,
-          }));
-          if (newMembers.length > 0) {
-            fireAndLog(supabase.from('panel_members').insert(newMembers), 'panel_members insert (upsert)');
-          }
-        });
+        .eq('panel_id', existing.id);
+
+      if (delErr) {
+        logSupabaseError('panel_members (delete for upsert)', delErr);
+      }
+
+      // 3. Insert new members
+      const newMembers: PanelMember[] = supervisorIds.map((supId) => ({
+        id: crypto.randomUUID(),
+        panel_id: existing.id,
+        supervisor_id: supId,
+        created_at: now,
+      }));
+
+      if (newMembers.length > 0) {
+        const { error: insErr } = await supabase.from('panel_members').insert(newMembers);
+        if (insErr) {
+          logSupabaseError('panel_members (insert for upsert)', insErr);
+          throw new Error(`Failed to update panel judges: ${insErr.message}`);
+        }
+      }
+
+      // 4. Update memoryStore in-place
+      store.panel_members = store.panel_members.filter((pm) => pm.panel_id !== existing.id).concat(newMembers);
+      lastStoreFetch = Date.now();
 
       return existing;
     } else {
-      return this.createPanel(
+      return await this.createPanel(
         panelNumber,
         panelName,
         phaseNumber,
@@ -1104,9 +1127,7 @@ export const db = {
       panel.room_number = schedule.roomNumber;
     }
 
-    this.invalidateStore();
-
-    supabase
+    const { error: writeErr } = await supabase
       .from('panels')
       .update({
         date: schedule.date,
@@ -1115,21 +1136,38 @@ export const db = {
         room_number: schedule.roomNumber,
       })
       .eq('panel_number', panelNumber)
-      .eq('phase_number', phaseNumber)
-      .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('panels (schedule update)', writeErr); });
+      .eq('phase_number', phaseNumber);
 
+    if (writeErr) {
+      logSupabaseError('panels (schedule update)', writeErr);
+      throw new Error(`Failed to update panel schedule: ${writeErr.message}`);
+    }
+
+    lastStoreFetch = Date.now();
     return panel || null;
   },
 
   async deletePanel(panelId: string): Promise<boolean> {
     const store = await this.getStore();
+
+    // 1. Delete panel members first
+    const { error: memErr } = await supabase.from('panel_members').delete().eq('panel_id', panelId);
+    if (memErr) {
+      logSupabaseError('panel_members delete', memErr);
+    }
+
+    // 2. Delete panel
+    const { error: panelErr } = await supabase.from('panels').delete().eq('id', panelId);
+    if (panelErr) {
+      logSupabaseError('panels delete', panelErr);
+      throw new Error(`Failed to delete panel: ${panelErr.message}`);
+    }
+
+    // 3. Update memoryStore in-place
     store.panels = store.panels.filter((p) => p.id !== panelId);
     store.panel_members = store.panel_members.filter((pm) => pm.panel_id !== panelId);
+    lastStoreFetch = Date.now();
 
-    this.invalidateStore();
-
-    fireAndLog(supabase.from('panels').delete().eq('id', panelId), 'panels delete');
-    fireAndLog(supabase.from('panel_members').delete().eq('panel_id', panelId), 'panel_members delete');
     return true;
   },
 

@@ -717,7 +717,8 @@ export default function AdminDashboardPage() {
         setPanelsMessage({ type: 'error', text: data.error || 'Failed to assign panels' });
       } else {
         setPanelsMessage({ type: 'success', text: data.message });
-        loadAdminData();
+        clientCache.invalidate(clientCache.keys.ADMIN_DATA);
+        await loadAdminData();
       }
     } catch (err: any) {
       setPanelsMessage({ type: 'error', text: err.message || 'Error occurred' });
@@ -780,7 +781,8 @@ export default function AdminDashboardPage() {
         setPanelFormName('');
         setPanelFormNumber('');
         setPanelFormSelectedJudges([]);
-        loadAdminData();
+        clientCache.invalidate(clientCache.keys.ADMIN_DATA);
+        await loadAdminData();
       }
     } catch (err: any) {
       setPanelFormError(err.message || 'Error creating panel.');
@@ -812,6 +814,7 @@ export default function AdminDashboardPage() {
           if (res.ok) {
             setConfirmDialog(null);
             setToastMessage({ type: 'success', text: `Successfully removed ${panelName}.` });
+            clientCache.invalidate(clientCache.keys.ADMIN_DATA);
             await loadAdminData();
           } else {
             const data = await res.json();
