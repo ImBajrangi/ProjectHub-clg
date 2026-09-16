@@ -174,13 +174,13 @@ export function exportFacultyDirectory(supervisors: any[], panels: any[], format
   }
 }
 
-// 4. Export Absent & Next Shift Segregation Roster
+// 4. Export Absent & Early Joining Segregation Roster
 export function exportAbsentAndShiftData(entries: any[], format: 'xlsx' | 'csv' = 'xlsx') {
   const rows = (entries || []).map((e, index) => {
     return {
       'S.No': index + 1,
       'Phase': `Phase ${e.phaseNumber || 1}`,
-      'Status': e.status === 'next_shift' ? 'Next Shift (Shifted)' : 'Absent (Defaulter)',
+      'Status': (e.status === 'early_joining' || e.status === 'next_shift') ? 'Early Joining (Shifted)' : 'Absent (Defaulter)',
       'Team Code': e.teamCode || `Team #${e.teamNumber}`,
       'Student Name': e.studentName || 'Student',
       'Roll Number': e.rollNo || '-',
@@ -192,11 +192,11 @@ export function exportAbsentAndShiftData(entries: any[], format: 'xlsx' | 'csv' 
     };
   });
 
-  const ws = XLSX.utils.json_to_sheet(rows.length > 0 ? rows : [{ 'Status': 'No Absent or Shifted Students Logged' }]);
+  const ws = XLSX.utils.json_to_sheet(rows.length > 0 ? rows : [{ 'Status': 'No Absent or Early Joining Students Logged' }]);
   ws['!cols'] = [
     { wch: 6 },  // S.No
     { wch: 10 }, // Phase
-    { wch: 22 }, // Status
+    { wch: 24 }, // Status
     { wch: 14 }, // Team Code
     { wch: 26 }, // Student Name
     { wch: 18 }, // Roll Number
@@ -208,15 +208,15 @@ export function exportAbsentAndShiftData(entries: any[], format: 'xlsx' | 'csv' 
   ];
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Absent & Next Shift');
+  XLSX.utils.book_append_sheet(wb, ws, 'Absent & Early Joining');
 
   const timestamp = new Date().toISOString().split('T')[0];
   if (format === 'csv') {
     const csvData = XLSX.utils.sheet_to_csv(ws);
     const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-    downloadBlob(blob, `CodeShastra_Absent_NextShift_Roster_${timestamp}.csv`);
+    downloadBlob(blob, `CodeShastra_Absent_EarlyJoining_Roster_${timestamp}.csv`);
   } else {
-    XLSX.writeFile(wb, `CodeShastra_Absent_NextShift_Roster_${timestamp}.xlsx`);
+    XLSX.writeFile(wb, `CodeShastra_Absent_EarlyJoining_Roster_${timestamp}.xlsx`);
   }
 }
 
@@ -334,11 +334,11 @@ export function exportMasterWorkbook(data: {
   const wsFaculty = XLSX.utils.json_to_sheet(facultyRows);
   XLSX.utils.book_append_sheet(wb, wsFaculty, 'Faculty Mentors');
 
-  // 4. Absent & Next Shift Sheet
+  // 4. Absent & Early Joining Sheet
   const absentRows = (data.absentEntries || []).map((e, idx) => ({
     'S.No': idx + 1,
     'Phase': `Phase ${e.phaseNumber || 1}`,
-    'Status': e.status === 'next_shift' ? 'Next Shift' : 'Absent',
+    'Status': (e.status === 'early_joining' || e.status === 'next_shift') ? 'Early Joining' : 'Absent',
     'Team Code': e.teamCode,
     'Student Name': e.studentName,
     'Roll No': e.rollNo,
@@ -346,8 +346,8 @@ export function exportMasterWorkbook(data: {
     'Shift': e.shiftTime,
     'Remark': e.remark,
   }));
-  const wsAbsent = XLSX.utils.json_to_sheet(absentRows.length > 0 ? absentRows : [{ Status: 'No Absent or Shifted Students' }]);
-  XLSX.utils.book_append_sheet(wb, wsAbsent, 'Absent & Next Shift');
+  const wsAbsent = XLSX.utils.json_to_sheet(absentRows.length > 0 ? absentRows : [{ Status: 'No Absent or Early Joining Students' }]);
+  XLSX.utils.book_append_sheet(wb, wsAbsent, 'Absent & Early Joining');
 
   // 5. Defaulting Teams Sheet
   const defRows = (data.defaultingTeams || []).map((t, idx) => ({

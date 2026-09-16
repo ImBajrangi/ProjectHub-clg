@@ -124,7 +124,8 @@ export default function FacultyDashboardPage() {
   const [selectedPanelTeam, setSelectedPanelTeam] = useState<any>(null);
   const [selectedPanelPhase, setSelectedPanelPhase] = useState<number>(1);
   const [panelTeamMembers, setPanelTeamMembers] = useState<any[]>([]);
-  const [studentScores, setStudentScores] = useState<Record<string, { score: string; isAbsent: boolean; attendanceStatus?: 'present' | 'absent' | 'next_shift'; remarks: string }>>({});
+  const [studentScores, setStudentScores] = useState<Record<string, { score: string; isAbsent: boolean; attendanceStatus?: 'present' | 'absent' | 'early_joining' | 'next_shift'; remarks: string }>>({});
+  const [teamFeedback, setTeamFeedback] = useState<string>('');
   const [scoringLoading, setScoringLoading] = useState(false);
   const [savingStudentId, setSavingStudentId] = useState<string | null>(null);
   const [evaluationPhases, setEvaluationPhases] = useState<any[]>([]);
@@ -645,12 +646,17 @@ export default function FacultyDashboardPage() {
       const initialScores: Record<string, any> = {};
       const initialSubmitted = new Set<string>();
       const initialEditing = new Set<string>();
+      let foundFeedback = '';
 
       students.forEach((s: any) => {
         const existing = evals.find((e: any) => e.student_id === s.id);
         const hasScore = existing?.score !== null && existing?.score !== undefined && String(existing?.score) !== '';
-        const status: 'present' | 'absent' | 'next_shift' = existing?.attendance_status || (existing?.is_absent ? (existing?.remarks?.toLowerCase().includes('next shift') ? 'next_shift' : 'absent') : 'present');
+        const rawStatus = existing?.attendance_status || (existing?.is_absent ? (existing?.remarks?.toLowerCase().includes('early joining') || existing?.remarks?.toLowerCase().includes('next shift') ? 'early_joining' : 'absent') : 'present');
+        const status: 'present' | 'absent' | 'early_joining' = rawStatus === 'next_shift' ? 'early_joining' : rawStatus;
         const isAbsent = status !== 'present';
+        if (existing?.remarks && !foundFeedback) {
+          foundFeedback = existing.remarks;
+        }
         initialScores[s.id] = {
           score: hasScore ? String(existing.score) : '',
           isAbsent,
@@ -663,6 +669,7 @@ export default function FacultyDashboardPage() {
           initialEditing.add(s.id);
         }
       });
+      setTeamFeedback(foundFeedback);
       setStudentScores(initialScores);
       setSubmittedStudentIds(initialSubmitted);
       setEditingStudentIds(initialEditing);
@@ -692,7 +699,7 @@ export default function FacultyDashboardPage() {
       score: item.isAbsent ? null : item.score !== '' ? parseFloat(item.score) : null,
       isAbsent: item.isAbsent,
       attendanceStatus: item.attendanceStatus || (item.isAbsent ? 'absent' : 'present'),
-      remarks: item.remarks,
+      remarks: teamFeedback || item.remarks || '',
     }));
 
     try {
@@ -711,7 +718,7 @@ export default function FacultyDashboardPage() {
       if (!res.ok) {
         setScoreMessage(`Error: ${data.error}`);
       } else {
-        setScoreMessage('Scores successfully recorded and synchronized to academic ledger.');
+        setScoreMessage('Scores and team feedback successfully recorded and synchronized to academic ledger.');
         
         // Immediately mask all candidates with dots and close active editing
         const allSubmitted = new Set<string>();
@@ -769,7 +776,7 @@ export default function FacultyDashboardPage() {
               score: parsedScore,
               isAbsent: current.isAbsent,
               attendanceStatus: current.attendanceStatus || (current.isAbsent ? 'absent' : 'present'),
-              remarks: current.remarks,
+              remarks: teamFeedback || current.remarks || '',
             },
           ],
         }),
@@ -2762,17 +2769,9 @@ export default function FacultyDashboardPage() {
                             : { label: 'Average (Below 70%)', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' }
                           : null;
 
-                        const feedbackPresets = [
-                          '🌟 Excellent demonstration & confident viva',
-                          '💡 Good conceptual clarity & code walkthrough',
-                          '🔧 Functional implementation, needs better error handling',
-                          '📊 Strong architecture & clean system design',
-                          '⚠️ Needs deeper understanding of backend workflow',
-                        ];
-
-                        const isNextShift = current.attendanceStatus === 'next_shift';
-                        const isAbsentOnly = current.attendanceStatus === 'absent' || (current.isAbsent && !isNextShift);
-                        const isPresent = !current.isAbsent && !isNextShift && !isAbsentOnly;
+                        const isEarlyJoining = current.attendanceStatus === 'early_joining' || current.attendanceStatus === 'next_shift';
+                        const isAbsentOnly = current.attendanceStatus === 'absent' || (current.isAbsent && !isEarlyJoining);
+                        const isPresent = !current.isAbsent && !isEarlyJoining && !isAbsentOnly;
 
                         return (
                           <div
@@ -2780,7 +2779,7 @@ export default function FacultyDashboardPage() {
                             style={{
                               padding: '20px 24px',
                               borderRadius: '16px',
-                              border: isNextShift
+                              border: isEarlyJoining
                                 ? '1.5px solid #FCD34D'
                                 : isAbsentOnly
                                 ? '1.5px solid #FCA5A5'
@@ -2789,7 +2788,7 @@ export default function FacultyDashboardPage() {
                                   ? '1.5px solid #CBD5E1'
                                   : '1.5px solid #93C5FD'
                                 : '1px solid #E2E8F0',
-                              backgroundColor: isNextShift
+                              backgroundColor: isEarlyJoining
                                 ? '#FFFDF5'
                                 : isAbsentOnly
                                 ? '#FFF5F5'
@@ -2818,7 +2817,7 @@ export default function FacultyDashboardPage() {
                                 width: '5px',
                                 borderTopLeftRadius: '16px',
                                 borderBottomLeftRadius: '16px',
-                                backgroundColor: isNextShift
+                                backgroundColor: isEarlyJoining
                                   ? '#F59E0B'
                                   : isAbsentOnly
                                   ? '#EF4444'
@@ -2839,7 +2838,7 @@ export default function FacultyDashboardPage() {
                                     width: '42px',
                                     height: '42px',
                                     borderRadius: '12px',
-                                    background: isNextShift
+                                    background: isEarlyJoining
                                       ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
                                       : isAbsentOnly
                                       ? 'linear-gradient(135deg, #EF4444 0%, #B91C1C 100%)'
@@ -2868,7 +2867,7 @@ export default function FacultyDashboardPage() {
                                       style={{
                                         fontSize: '15.5px',
                                         fontWeight: 800,
-                                        color: isNextShift ? '#92400E' : isAbsentOnly ? '#991B1B' : 'var(--color-ink)',
+                                        color: isEarlyJoining ? '#92400E' : isAbsentOnly ? '#991B1B' : 'var(--color-ink)',
                                         letterSpacing: '-0.01em',
                                         textDecoration: isAbsentOnly ? 'line-through' : 'none',
                                       }}
@@ -2924,7 +2923,7 @@ export default function FacultyDashboardPage() {
 
                               {/* Status Badges & Attendance Segmented Control */}
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                                {isNextShift ? (
+                                {isEarlyJoining ? (
                                   <span
                                     style={{
                                       display: 'inline-flex',
@@ -2939,7 +2938,7 @@ export default function FacultyDashboardPage() {
                                       border: '1px solid #FCD34D',
                                     }}
                                   >
-                                    <Clock size={13} /> Moved to Next Shift
+                                    <Clock size={13} /> Early Joining
                                   </span>
                                 ) : isAbsentOnly ? (
                                   <span
@@ -3137,9 +3136,9 @@ export default function FacultyDashboardPage() {
                                         [student.id]: {
                                           ...current,
                                           isAbsent: true,
-                                          attendanceStatus: 'next_shift',
+                                          attendanceStatus: 'early_joining',
                                           score: '',
-                                          remarks: current.remarks || 'Scheduled for next shift',
+                                          remarks: current.remarks || 'Scheduled for early joining',
                                         },
                                       });
                                     }}
@@ -3150,17 +3149,17 @@ export default function FacultyDashboardPage() {
                                       padding: '4px 9px',
                                       borderRadius: '7px',
                                       fontSize: '11.5px',
-                                      fontWeight: isNextShift ? 700 : 500,
+                                      fontWeight: isEarlyJoining ? 700 : 500,
                                       cursor: isPhaseLive ? 'pointer' : 'not-allowed',
                                       border: 'none',
-                                      backgroundColor: isNextShift ? '#F59E0B' : 'transparent',
-                                      color: isNextShift ? '#FFFFFF' : '#64748B',
+                                      backgroundColor: isEarlyJoining ? '#F59E0B' : 'transparent',
+                                      color: isEarlyJoining ? '#FFFFFF' : '#64748B',
                                       transition: 'all 0.15s ease',
                                       opacity: isPhaseLive ? 1 : 0.7,
                                     }}
-                                    title={isPhaseLive ? "Unable to attend current shift; shift to next shift" : "Phase stopped by administrator"}
+                                    title={isPhaseLive ? "Unable to attend current shift; shift to early joining" : "Phase stopped by administrator"}
                                   >
-                                    <Clock size={12} /> Next Shift
+                                    <Clock size={12} /> Early Joining
                                   </button>
 
                                   <button
@@ -3201,25 +3200,23 @@ export default function FacultyDashboardPage() {
                               </div>
                             </div>
 
-                            {/* Scoring Controls & Feedback Section */}
+                            {/* Scoring Controls Section */}
                             {!current.isAbsent ? (
                               <div
                                 style={{
-                                  display: 'grid',
-                                  gridTemplateColumns: 'minmax(280px, 350px) 1fr',
-                                  gap: '20px',
-                                  alignItems: 'start',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '12px',
                                   paddingTop: '12px',
                                   borderTop: '1px solid #F1F5F9',
                                   paddingLeft: '6px',
                                 }}
                               >
-                                {/* Column 1: Direct Score Input & Quick Preset Buttons */}
                                 <div>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                                     <label
                                       style={{
-                                        fontSize: '12px',
+                                        fontSize: '12.5px',
                                         fontWeight: 800,
                                         color: 'var(--color-ink)',
                                         display: 'flex',
@@ -3228,7 +3225,7 @@ export default function FacultyDashboardPage() {
                                         margin: 0,
                                       }}
                                     >
-                                      <Target size={14} color="#2563EB" /> Viva Score (0 – {maxMarks})
+                                      <Target size={14} color="#2563EB" /> Candidate Viva Score (0 – {maxMarks})
                                     </label>
 
                                     {/* Individual Score Mask/Reveal / Edit Mode Indicator */}
@@ -3291,179 +3288,176 @@ export default function FacultyDashboardPage() {
                                     )}
                                   </div>
 
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                      {/* Numeric Score Box with suffix and privacy dot masking */}
-                                      <div style={{ position: 'relative', width: '130px' }}>
-                                        <input
-                                          type={isMasked ? 'password' : 'text'}
-                                          inputMode="decimal"
-                                          disabled={!isPhaseLive}
-                                          readOnly={isMasked || !isPhaseLive}
-                                          style={{
-                                            width: '100%',
-                                            height: '42px',
-                                            padding: '8px 44px 8px 14px',
-                                            fontSize: isMasked ? '20px' : '16px',
-                                            fontWeight: 800,
-                                            borderRadius: '10px',
-                                            border: hasScore
-                                              ? isMasked
-                                                ? '1.5px solid #CBD5E1'
-                                                : '2px solid #2563EB'
-                                              : '1.5px solid #CBD5E1',
-                                            backgroundColor: isMasked && hasScore ? '#F8FAFC' : !isPhaseLive ? '#F1F5F9' : '#FFFFFF',
-                                            color: !isPhaseLive ? '#64748B' : 'var(--color-ink)',
-                                            letterSpacing: isMasked ? '3px' : 'normal',
-                                            outline: 'none',
-                                            boxShadow: hasScore && !isMasked && isPhaseLive ? '0 0 0 3px rgba(37, 99, 235, 0.12)' : 'none',
-                                            transition: 'all 0.15s ease',
-                                            cursor: !isPhaseLive ? 'not-allowed' : isMasked ? 'pointer' : 'text',
-                                          }}
-                                          value={isMasked && hasScore ? '••••' : current.score}
-                                          onClick={() => {
-                                            if (isMasked && isPhaseLive) {
-                                              setEditingStudentIds((prev) => new Set(prev).add(student.id));
-                                              setRevealedStudentIds((prev) => new Set(prev).add(student.id));
-                                            }
-                                          }}
-                                          onChange={(e) => {
-                                            if (!isPhaseLive) return;
-                                            const rawVal = e.target.value;
-                                            // Strictly allow numbers and at most 1 decimal point
-                                            const clean = rawVal.replace(/[^0-9.]/g, '');
-                                            const parts = clean.split('.');
-                                            let sanitized = parts[0];
-                                            if (parts.length > 1) {
-                                              sanitized += '.' + parts.slice(1).join('').slice(0, 1);
-                                            }
-                                            const num = parseFloat(sanitized);
-                                            if (!isNaN(num) && num > maxMarks) {
-                                              sanitized = String(maxMarks);
-                                            }
-                                            setEditingStudentIds((prev) => new Set(prev).add(student.id));
-                                            setStudentScores({
-                                              ...studentScores,
-                                              [student.id]: { ...current, score: sanitized },
-                                            });
-                                          }}
-                                          placeholder={isMasked ? '••••' : '0.0'}
-                                        />
-                                        <span
-                                          style={{
-                                            position: 'absolute',
-                                            right: '12px',
-                                            top: '50%',
-                                            transform: 'translateY(-50%)',
-                                            fontSize: '11.5px',
-                                            fontWeight: 700,
-                                            color: '#64748B',
-                                            pointerEvents: 'none',
-                                          }}
-                                        >
-                                          / {maxMarks}
-                                        </span>
-                                      </div>
-
-                                      {/* Individual Confirm Score Button */}
-                                      {!isMasked && isPhaseLive && (
-                                        <button
-                                          type="button"
-                                          disabled={!hasScore || savingStudentId === student.id}
-                                          onClick={() => handleConfirmSingleScore(student.id)}
-                                          style={{
-                                            height: '42px',
-                                            padding: '0 15px',
-                                            borderRadius: '10px',
-                                            background: hasScore ? 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)' : '#F1F5F9',
-                                            color: hasScore ? '#FFFFFF' : '#94A3B8',
-                                            border: hasScore ? '1px solid #1E40AF' : '1px solid #CBD5E1',
-                                            fontSize: '12px',
-                                            fontWeight: 700,
-                                            cursor: hasScore ? 'pointer' : 'not-allowed',
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: '5px',
-                                            boxShadow: hasScore ? '0 2px 6px rgba(37, 99, 235, 0.22)' : 'none',
-                                            transition: 'all 0.15s ease',
-                                          }}
-                                          title="Save and safely lock this score so it won't be lost"
-                                        >
-                                          {savingStudentId === student.id ? (
-                                            <>
-                                              <RefreshCw size={13} className="animate-spin" /> Saving...
-                                            </>
-                                          ) : (
-                                            <>
-                                              <Check size={14} /> Confirm
-                                            </>
-                                          )}
-                                        </button>
-                                      )}
-
-                                      {/* Edit button when masked */}
-                                      {isMasked && hasScore && isPhaseLive && (
-                                        <button
-                                          type="button"
-                                          onClick={() => {
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                    {/* Numeric Score Box with suffix and privacy dot masking */}
+                                    <div style={{ position: 'relative', width: '135px' }}>
+                                      <input
+                                        type={isMasked ? 'password' : 'text'}
+                                        inputMode="decimal"
+                                        disabled={!isPhaseLive}
+                                        readOnly={isMasked || !isPhaseLive}
+                                        style={{
+                                          width: '100%',
+                                          height: '42px',
+                                          padding: '8px 44px 8px 14px',
+                                          fontSize: isMasked ? '20px' : '16px',
+                                          fontWeight: 800,
+                                          borderRadius: '10px',
+                                          border: hasScore
+                                            ? isMasked
+                                              ? '1.5px solid #CBD5E1'
+                                              : '2px solid #2563EB'
+                                            : '1.5px solid #CBD5E1',
+                                          backgroundColor: isMasked && hasScore ? '#F8FAFC' : !isPhaseLive ? '#F1F5F9' : '#FFFFFF',
+                                          color: !isPhaseLive ? '#64748B' : 'var(--color-ink)',
+                                          letterSpacing: isMasked ? '3px' : 'normal',
+                                          outline: 'none',
+                                          boxShadow: hasScore && !isMasked && isPhaseLive ? '0 0 0 3px rgba(37, 99, 235, 0.12)' : 'none',
+                                          transition: 'all 0.15s ease',
+                                          cursor: !isPhaseLive ? 'not-allowed' : isMasked ? 'pointer' : 'text',
+                                        }}
+                                        value={isMasked && hasScore ? '••••' : current.score}
+                                        onClick={() => {
+                                          if (isMasked && isPhaseLive) {
                                             setEditingStudentIds((prev) => new Set(prev).add(student.id));
                                             setRevealedStudentIds((prev) => new Set(prev).add(student.id));
-                                          }}
-                                          style={{
-                                            height: '42px',
-                                            padding: '0 14px',
-                                            borderRadius: '10px',
-                                            backgroundColor: '#EFF6FF',
-                                            color: '#1D4ED8',
-                                            border: '1px solid #BFDBFE',
-                                            fontSize: '12px',
-                                            fontWeight: 700,
-                                            cursor: 'pointer',
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: '5px',
-                                            transition: 'all 0.15s ease',
-                                          }}
-                                          title="Click to edit and view candidate marks"
-                                        >
-                                          <Edit3 size={13} /> Edit
-                                        </button>
-                                      )}
-
-                                      {/* Clear Score Button if present and editing */}
-                                      {hasScore && !isMasked && isPhaseLive && (
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setStudentScores({
-                                              ...studentScores,
-                                              [student.id]: { ...current, score: '' },
-                                            });
-                                          }}
-                                          style={{
-                                            height: '42px',
-                                            background: '#F8FAFC',
-                                            border: '1px solid #CBD5E1',
-                                            borderRadius: '10px',
-                                            padding: '0 12px',
-                                            fontSize: '11.5px',
-                                            color: '#64748B',
-                                            cursor: 'pointer',
-                                            fontWeight: 600,
-                                            transition: 'all 0.15s ease',
-                                          }}
-                                          title="Reset candidate score"
-                                        >
-                                          Reset
-                                        </button>
-                                      )}
+                                          }
+                                        }}
+                                        onChange={(e) => {
+                                          if (!isPhaseLive) return;
+                                          const rawVal = e.target.value;
+                                          // Strictly allow numbers and at most 1 decimal point
+                                          const clean = rawVal.replace(/[^0-9.]/g, '');
+                                          const parts = clean.split('.');
+                                          let sanitized = parts[0];
+                                          if (parts.length > 1) {
+                                            sanitized += '.' + parts.slice(1).join('').slice(0, 1);
+                                          }
+                                          const num = parseFloat(sanitized);
+                                          if (!isNaN(num) && num > maxMarks) {
+                                            sanitized = String(maxMarks);
+                                          }
+                                          setEditingStudentIds((prev) => new Set(prev).add(student.id));
+                                          setStudentScores({
+                                            ...studentScores,
+                                            [student.id]: { ...current, score: sanitized },
+                                          });
+                                        }}
+                                        placeholder={isMasked ? '••••' : '0.0'}
+                                      />
+                                      <span
+                                        style={{
+                                          position: 'absolute',
+                                          right: '12px',
+                                          top: '50%',
+                                          transform: 'translateY(-50%)',
+                                          fontSize: '11.5px',
+                                          fontWeight: 700,
+                                          color: '#64748B',
+                                          pointerEvents: 'none',
+                                        }}
+                                      >
+                                        / {maxMarks}
+                                      </span>
                                     </div>
 
-                                    {/* Quick 1-Tap Preset Pills: ONLY highlight and show when in active live mode */}
+                                    {/* Individual Confirm Score Button */}
+                                    {!isMasked && isPhaseLive && (
+                                      <button
+                                        type="button"
+                                        disabled={!hasScore || savingStudentId === student.id}
+                                        onClick={() => handleConfirmSingleScore(student.id)}
+                                        style={{
+                                          height: '42px',
+                                          padding: '0 15px',
+                                          borderRadius: '10px',
+                                          background: hasScore ? 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)' : '#F1F5F9',
+                                          color: hasScore ? '#FFFFFF' : '#94A3B8',
+                                          border: hasScore ? '1px solid #1E40AF' : '1px solid #CBD5E1',
+                                          fontSize: '12px',
+                                          fontWeight: 700,
+                                          cursor: hasScore ? 'pointer' : 'not-allowed',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '5px',
+                                          boxShadow: hasScore ? '0 2px 6px rgba(37, 99, 235, 0.22)' : 'none',
+                                          transition: 'all 0.15s ease',
+                                        }}
+                                        title="Save and safely lock this score so it won't be lost"
+                                      >
+                                        {savingStudentId === student.id ? (
+                                          <>
+                                            <RefreshCw size={13} className="animate-spin" /> Saving...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Check size={14} /> Confirm
+                                          </>
+                                        )}
+                                      </button>
+                                    )}
+
+                                    {/* Edit button when masked */}
+                                    {isMasked && hasScore && isPhaseLive && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingStudentIds((prev) => new Set(prev).add(student.id));
+                                          setRevealedStudentIds((prev) => new Set(prev).add(student.id));
+                                        }}
+                                        style={{
+                                          height: '42px',
+                                          padding: '0 14px',
+                                          borderRadius: '10px',
+                                          backgroundColor: '#EFF6FF',
+                                          color: '#1D4ED8',
+                                          border: '1px solid #BFDBFE',
+                                          fontSize: '12px',
+                                          fontWeight: 700,
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '5px',
+                                          transition: 'all 0.15s ease',
+                                        }}
+                                        title="Click to edit and view candidate marks"
+                                      >
+                                        <Edit3 size={13} /> Edit
+                                      </button>
+                                    )}
+
+                                    {/* Clear Score Button if present and editing */}
+                                    {hasScore && !isMasked && isPhaseLive && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setStudentScores({
+                                            ...studentScores,
+                                            [student.id]: { ...current, score: '' },
+                                          });
+                                        }}
+                                        style={{
+                                          height: '42px',
+                                          background: '#F8FAFC',
+                                          border: '1px solid #CBD5E1',
+                                          borderRadius: '10px',
+                                          padding: '0 12px',
+                                          fontSize: '11.5px',
+                                          color: '#64748B',
+                                          cursor: 'pointer',
+                                          fontWeight: 600,
+                                          transition: 'all 0.15s ease',
+                                        }}
+                                        title="Reset candidate score"
+                                      >
+                                        Reset
+                                      </button>
+                                    )}
+
+                                    {/* Quick 1-Tap Preset Pills */}
                                     {isPhaseLive && (
-                                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '3px' }}>
+                                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                                         {dynamicPresets.map((val) => {
-                                          // CRITICAL: NEVER highlight the preset button when masked/submitted to avoid leaking marks!
                                           const isSelected = !isMasked && isEditing && (current.score === val || current.score === parseFloat(val).toString());
                                           return (
                                             <button
@@ -3499,87 +3493,9 @@ export default function FacultyDashboardPage() {
                                     )}
                                   </div>
                                 </div>
-
-                                {/* Column 2: Individual Remarks & Quick Feedback Suggestions */}
-                                <div>
-                                  <label
-                                    style={{
-                                      fontSize: '12px',
-                                      fontWeight: 800,
-                                      color: 'var(--color-ink)',
-                                      marginBottom: '8px',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '6px',
-                                    }}
-                                  >
-                                    <MessageSquare size={14} color="#2563EB" /> Viva Remarks &amp; Feedback
-                                  </label>
-
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    <input
-                                      type="text"
-                                      className="input-field"
-                                      disabled={!isPhaseLive}
-                                      style={{
-                                        fontSize: '13px',
-                                        height: '42px',
-                                        padding: '8px 14px',
-                                        borderRadius: '10px',
-                                        backgroundColor: !isPhaseLive ? '#F1F5F9' : '#FFFFFF',
-                                        border: '1px solid #CBD5E1',
-                                        color: !isPhaseLive ? '#64748B' : 'var(--color-ink)',
-                                        cursor: !isPhaseLive ? 'not-allowed' : 'text',
-                                      }}
-                                      value={current.remarks || ''}
-                                      onChange={(e) => {
-                                        if (!isPhaseLive) return;
-                                        setStudentScores({
-                                          ...studentScores,
-                                          [student.id]: { ...current, remarks: e.target.value },
-                                        });
-                                      }}
-                                      placeholder={isPhaseLive ? "e.g. Good conceptual clarity, clear presentation on system architecture" : "Phase stopped — remarks locked"}
-                                    />
-
-                                    {/* Preset Feedback Pills */}
-                                    {isPhaseLive && (
-                                      <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                                        {feedbackPresets.map((preset, pIdx) => {
-                                          const isApplied = current.remarks === preset;
-                                          return (
-                                            <button
-                                              key={pIdx}
-                                              type="button"
-                                              onClick={() => {
-                                                setStudentScores({
-                                                  ...studentScores,
-                                                  [student.id]: { ...current, remarks: preset },
-                                                });
-                                              }}
-                                              style={{
-                                                padding: '4px 9px',
-                                                fontSize: '10.5px',
-                                                fontWeight: isApplied ? 700 : 500,
-                                                borderRadius: '6px',
-                                                border: isApplied ? '1px solid #93C5FD' : '1px solid #E2E8F0',
-                                                backgroundColor: isApplied ? '#EFF6FF' : '#F8FAFC',
-                                                color: isApplied ? '#1D4ED8' : '#475569',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.15s ease',
-                                              }}
-                                            >
-                                              {preset}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
                               </div>
-                            ) : isNextShift ? (
-                              /* Moved to Next Shift Banner inside Card */
+                            ) : isEarlyJoining ? (
+                              /* Moved to Early Joining Banner inside Card */
                               <div
                                 style={{
                                   padding: '14px 18px',
@@ -3594,7 +3510,7 @@ export default function FacultyDashboardPage() {
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', color: '#92400E', fontWeight: 600 }}>
                                     <Clock size={16} color="#D97706" />
-                                    <span>Candidate shifted to <strong>Next Shift / Batch</strong>. Score marked pending for next shift evaluation.</span>
+                                    <span>Candidate shifted to <strong>Early Joining / Rescheduled Viva</strong>. Score marked pending for early joining evaluation.</span>
                                   </div>
                                   <button
                                     type="button"
@@ -3620,31 +3536,6 @@ export default function FacultyDashboardPage() {
                                   >
                                     Mark Present
                                   </button>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <input
-                                    type="text"
-                                    className="input-field"
-                                    disabled={!isPhaseLive}
-                                    style={{
-                                      fontSize: '12px',
-                                      height: '36px',
-                                      padding: '6px 12px',
-                                      borderRadius: '8px',
-                                      backgroundColor: '#FFFFFF',
-                                      border: '1px solid #FDE68A',
-                                      flex: 1,
-                                    }}
-                                    value={current.remarks || ''}
-                                    onChange={(e) => {
-                                      if (!isPhaseLive) return;
-                                      setStudentScores({
-                                        ...studentScores,
-                                        [student.id]: { ...current, remarks: e.target.value },
-                                      });
-                                    }}
-                                    placeholder="Note/Reason for next shift (e.g. Attending afternoon batch due to morning exam collision)"
-                                  />
                                 </div>
                               </div>
                             ) : (
@@ -3690,31 +3581,6 @@ export default function FacultyDashboardPage() {
                                     Undo Absent
                                   </button>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <input
-                                    type="text"
-                                    className="input-field"
-                                    disabled={!isPhaseLive}
-                                    style={{
-                                      fontSize: '12px',
-                                      height: '36px',
-                                      padding: '6px 12px',
-                                      borderRadius: '8px',
-                                      backgroundColor: '#FFFFFF',
-                                      border: '1px solid #FECACA',
-                                      flex: 1,
-                                    }}
-                                    value={current.remarks || ''}
-                                    onChange={(e) => {
-                                      if (!isPhaseLive) return;
-                                      setStudentScores({
-                                        ...studentScores,
-                                        [student.id]: { ...current, remarks: e.target.value },
-                                      });
-                                    }}
-                                    placeholder="Optional note / reason for absence"
-                                  />
-                                </div>
                               </div>
                             )}
                           </div>
@@ -3722,6 +3588,159 @@ export default function FacultyDashboardPage() {
                       })}
                     </div>
                   )}
+
+                  {/* UNIFIED TEAM VIVA & DEFENSE FEEDBACK CARD */}
+                  <div
+                    className="card"
+                    style={{
+                      marginTop: '22px',
+                      padding: '22px 24px',
+                      borderRadius: '16px',
+                      border: '1.5px solid #E0E7FF',
+                      backgroundColor: '#F8FAFC',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '14px',
+                      boxShadow: '0 2px 10px rgba(79, 70, 229, 0.05)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div
+                          style={{
+                            width: '38px',
+                            height: '38px',
+                            borderRadius: '10px',
+                            backgroundColor: '#EEF2FF',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#4F46E5',
+                          }}
+                        >
+                          <MessageSquare size={19} />
+                        </div>
+                        <div>
+                          <h4 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            Team Viva Defense &amp; Project Feedback
+                            <span className="badge" style={{ fontSize: '11px', fontWeight: 700, backgroundColor: '#EEF2FF', color: '#4F46E5', border: '1px solid #C7D2FE' }}>
+                              Unified Team Feedback
+                            </span>
+                          </h4>
+                          <p style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', margin: '2px 0 0 0' }}>
+                            Feedback entered here evaluates <strong>{selectedPanelTeam.team_code}: {selectedPanelTeam.team_name}</strong> as a collective team across Phase {selectedPanelPhase}.
+                          </p>
+                        </div>
+                      </div>
+
+                      {teamFeedback && isPhaseLive && (
+                        <button
+                          type="button"
+                          onClick={() => setTeamFeedback('')}
+                          style={{
+                            fontSize: '11.5px',
+                            fontWeight: 600,
+                            color: '#64748B',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            textDecoration: 'underline',
+                          }}
+                        >
+                          Clear Feedback
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Quick 1-Click Feedback Preset Pills */}
+                    {isPhaseLive && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#4F46E5', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          ⚡ One-Click Feedback Presets:
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          {[
+                            '🌟 Excellent demonstration, robust system design & confident viva defense',
+                            '💡 Good conceptual clarity, well-structured codebase & clean API workflows',
+                            '🔧 Functional implementation; recommended improving edge-case validation & error handling',
+                            '📊 Strong database schema & architecture; defense answers were clear and precise',
+                            '⚠️ Needs deeper understanding of backend workflow and system architecture',
+                            '🚀 Exceptional UI/UX execution with impressive real-time performance',
+                            '📝 Documentation and test coverage require additional refinement before final sign-off',
+                          ].map((preset, pIdx) => {
+                            const isApplied = teamFeedback === preset;
+                            return (
+                              <button
+                                key={pIdx}
+                                type="button"
+                                onClick={() => {
+                                  setTeamFeedback(preset);
+                                }}
+                                style={{
+                                  padding: '5px 11px',
+                                  fontSize: '11px',
+                                  fontWeight: isApplied ? 700 : 500,
+                                  borderRadius: '8px',
+                                  border: isApplied ? '1px solid #818CF8' : '1px solid #E2E8F0',
+                                  backgroundColor: isApplied ? '#EEF2FF' : '#FFFFFF',
+                                  color: isApplied ? '#4338CA' : '#334155',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                {preset}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Textarea Input */}
+                    <div style={{ position: 'relative' }}>
+                      <textarea
+                        className="input-field"
+                        rows={3}
+                        disabled={!isPhaseLive}
+                        style={{
+                          width: '100%',
+                          fontSize: '13px',
+                          padding: '12px 14px',
+                          borderRadius: '12px',
+                          backgroundColor: !isPhaseLive ? '#F1F5F9' : '#FFFFFF',
+                          border: '1.5px solid #CBD5E1',
+                          color: !isPhaseLive ? '#64748B' : 'var(--color-ink)',
+                          cursor: !isPhaseLive ? 'not-allowed' : 'text',
+                          resize: 'vertical',
+                          minHeight: '85px',
+                          lineHeight: '1.5',
+                        }}
+                        value={teamFeedback}
+                        onChange={(e) => {
+                          if (!isPhaseLive) return;
+                          setTeamFeedback(e.target.value);
+                        }}
+                        placeholder={
+                          isPhaseLive
+                            ? "Enter overall defense remarks, project strengths, architectural critique, and constructive evaluation for this team..."
+                            : "Phase evaluation is stopped — remarks locked."
+                        }
+                      />
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginTop: '6px',
+                          fontSize: '11.5px',
+                          color: 'var(--color-text-muted)',
+                        }}
+                      >
+                        <span>Team feedback is synchronized with all member grades upon submission.</span>
+                        <span>{teamFeedback.length} characters</span>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Bottom Action Deck */}
                   <div

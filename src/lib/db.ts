@@ -1298,7 +1298,7 @@ export const db = {
     score: number | null,
     isAbsent: boolean,
     remarks?: string,
-    attendanceStatus?: 'present' | 'absent' | 'next_shift'
+    attendanceStatus?: 'present' | 'absent' | 'early_joining' | 'next_shift'
   ): Promise<Evaluation> {
     const store = await this.getStore();
     const now = new Date().toISOString();
@@ -1310,7 +1310,8 @@ export const db = {
         e.panel_member_id === panelMemberId
     );
 
-    const resolvedStatus: 'present' | 'absent' | 'next_shift' = attendanceStatus || (isAbsent ? 'absent' : 'present');
+    const rawStatus = attendanceStatus || (isAbsent ? 'absent' : 'present');
+    const resolvedStatus: 'present' | 'absent' | 'early_joining' = rawStatus === 'next_shift' ? 'early_joining' : rawStatus;
     const finalIsAbsent = resolvedStatus !== 'present';
 
     const payload: Evaluation = {
@@ -1332,9 +1333,21 @@ export const db = {
       store.evaluations.push(payload);
     }
 
+    const supabasePayload = {
+      id: payload.id,
+      phase_number: payload.phase_number,
+      team_id: payload.team_id,
+      student_id: payload.student_id,
+      panel_member_id: payload.panel_member_id,
+      score: payload.score,
+      is_absent: payload.is_absent,
+      remarks: payload.remarks,
+      submitted_at: payload.submitted_at,
+    };
+
     supabase
       .from('evaluations')
-      .upsert(payload, { onConflict: 'phase_number,student_id,panel_member_id' })
+      .upsert(supabasePayload, { onConflict: 'phase_number,student_id,panel_member_id' })
       .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('evaluations (upsert)', writeErr); });
 
     return payload;

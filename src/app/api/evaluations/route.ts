@@ -64,8 +64,9 @@ export async function POST(req: NextRequest) {
 
       const savedEvaluations = [];
       for (const item of scores) {
-        const attendanceStatus = item.attendanceStatus as ('present' | 'absent' | 'next_shift' | undefined);
-        const isAbsent = Boolean(item.isAbsent) || attendanceStatus === 'absent' || attendanceStatus === 'next_shift';
+        const rawAttendance = item.attendanceStatus as ('present' | 'absent' | 'early_joining' | 'next_shift' | undefined);
+        const attendanceStatus = rawAttendance === 'next_shift' ? 'early_joining' : rawAttendance;
+        const isAbsent = Boolean(item.isAbsent) || attendanceStatus === 'absent' || attendanceStatus === 'early_joining';
         const parsedScore = !isAbsent && item.score !== undefined && item.score !== null && item.score !== '' && !isNaN(Number(item.score))
           ? Number(item.score)
           : null;
@@ -112,18 +113,20 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 3. Admin Direct Attendance Segregation (Shift to Next Shift / Mark Absent)
+    // 3. Admin Direct Attendance Segregation (Shift to Early Joining / Mark Absent)
     if (action === 'segregate_attendance') {
       if (sessionUser.role !== 'admin') {
         return NextResponse.json({ error: 'Institutional Admin privilege required.' }, { status: 403 });
       }
 
-      const { phaseNumber, teamId, studentId, attendanceStatus, remarks } = body;
-      if (!phaseNumber || !teamId || !studentId || !attendanceStatus) {
+      const { phaseNumber, teamId, studentId, attendanceStatus: rawStatus, remarks } = body;
+      if (!phaseNumber || !teamId || !studentId || !rawStatus) {
         return NextResponse.json({ error: 'Missing phaseNumber, teamId, studentId, or attendanceStatus.' }, { status: 400 });
       }
 
-      if (attendanceStatus !== 'next_shift' && attendanceStatus !== 'absent' && attendanceStatus !== 'present') {
+      const attendanceStatus = rawStatus === 'next_shift' ? 'early_joining' : rawStatus;
+
+      if (attendanceStatus !== 'early_joining' && attendanceStatus !== 'absent' && attendanceStatus !== 'present') {
         return NextResponse.json({ error: 'Invalid attendance status.' }, { status: 400 });
       }
 
@@ -134,13 +137,13 @@ export async function POST(req: NextRequest) {
         sessionUser.id,
         null,
         attendanceStatus !== 'present',
-        remarks || (attendanceStatus === 'next_shift' ? 'Moved to Next Shift' : 'Marked Absent'),
+        remarks || (attendanceStatus === 'early_joining' ? 'Moved to Early Joining' : 'Marked Absent'),
         attendanceStatus
       );
 
       return NextResponse.json({
         success: true,
-        message: `Student attendance segregated to ${attendanceStatus === 'next_shift' ? 'Next Shift' : 'Absent'} successfully.`,
+        message: `Student attendance segregated to ${attendanceStatus === 'early_joining' ? 'Early Joining' : 'Absent'} successfully.`,
         evaluation: ev,
       });
     }

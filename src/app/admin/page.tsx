@@ -80,7 +80,7 @@ export default function AdminDashboardPage() {
 
   // Attendance & Shift Segregation State
   const [attendancePhaseFilter, setAttendancePhaseFilter] = useState<'all' | 1 | 2 | 3>('all');
-  const [attendanceStatusFilter, setAttendanceStatusFilter] = useState<'all' | 'next_shift' | 'absent'>('all');
+  const [attendanceStatusFilter, setAttendanceStatusFilter] = useState<'all' | 'early_joining' | 'absent'>('all');
   const [attendanceSearch, setAttendanceSearch] = useState('');
   const [segregationModalItem, setSegregationModalItem] = useState<any>(null);
   const [segregationLoading, setSegregationLoading] = useState(false);
@@ -585,7 +585,7 @@ export default function AdminDashboardPage() {
     phaseNumber: number,
     teamId: string,
     studentId: string,
-    newStatus: 'next_shift' | 'absent',
+    newStatus: 'early_joining' | 'absent',
     customRemark?: string
   ) => {
     setSegregationLoading(true);
@@ -599,7 +599,7 @@ export default function AdminDashboardPage() {
           teamId,
           studentId,
           attendanceStatus: newStatus,
-          remarks: customRemark || (newStatus === 'next_shift' ? 'Admin moved to Next Shift' : 'Admin marked as Absent'),
+          remarks: customRemark || (newStatus === 'early_joining' ? 'Admin moved to Early Joining' : 'Admin marked as Absent'),
         }),
       });
       const data = await res.json();
@@ -1029,7 +1029,7 @@ export default function AdminDashboardPage() {
   const phases = adminData?.phases || [];
   const panels = adminData?.panels || [];
 
-  // Computed Absent & Next Shift Students list across all phases
+  // Computed Absent & Early Joining Students list across all phases
   const absentAndShiftEntries = useMemo(() => {
     const entries: any[] = [];
     (teams || []).forEach((t: any) => {
@@ -1037,7 +1037,7 @@ export default function AdminDashboardPage() {
         [1, 2, 3].forEach((phaseNum) => {
           const phaseEval = phaseNum === 1 ? st.phase1 : phaseNum === 2 ? st.phase2 : st.phase3;
           if (phaseEval && phaseEval.isAbsent) {
-            const status: 'next_shift' | 'absent' = phaseEval.attendanceStatus === 'next_shift' ? 'next_shift' : 'absent';
+            const status: 'early_joining' | 'absent' = (phaseEval.attendanceStatus === 'early_joining' || phaseEval.attendanceStatus === 'next_shift') ? 'early_joining' : 'absent';
             const panel = (panels || []).find((p: any) => p.phase_number === phaseNum && (p.assigned_team_ids || []).includes(t.id));
             entries.push({
               studentId: st.id,
@@ -1067,10 +1067,10 @@ export default function AdminDashboardPage() {
     return entries;
   }, [teams, panels]);
 
-  const nextShiftCount = useMemo(() => absentAndShiftEntries.filter((e) => e.attendanceStatus === 'next_shift').length, [absentAndShiftEntries]);
+  const earlyJoiningCount = useMemo(() => absentAndShiftEntries.filter((e) => e.attendanceStatus === 'early_joining').length, [absentAndShiftEntries]);
   const absentCount = useMemo(() => absentAndShiftEntries.filter((e) => e.attendanceStatus === 'absent').length, [absentAndShiftEntries]);
 
-  // Filtered entries for Tab 6: Absent & Next Shift
+  // Filtered entries for Tab 6: Absent & Early Joining
   const filteredAbsentAndShiftEntries = useMemo(() => {
     return absentAndShiftEntries.filter((item) => {
       if (attendancePhaseFilter !== 'all' && item.phaseNumber !== attendancePhaseFilter) return false;
@@ -1678,7 +1678,7 @@ Output ONLY the raw valid JSON array.`;
                 gap: '6px',
               }}
             >
-              <span>Absent & Next Shift</span>
+              <span>Absent & Early Joining</span>
               <span
                 style={{
                   fontSize: '11px',
@@ -3284,11 +3284,11 @@ Output ONLY the raw valid JSON array.`;
                       <Clock size={18} color="#D97706" />
                     </div>
                     <h2 style={{ fontSize: '18px', fontWeight: 800, margin: 0, color: 'var(--color-ink)' }}>
-                      Absent &amp; Next Shift Student Directory
+                      Absent &amp; Early Joining Student Directory
                     </h2>
                   </div>
                   <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '6px', margin: 0 }}>
-                    Segregate students who could not attend their scheduled defense slot. Reassign students to the <strong>Next Shift</strong> or confirm their <strong>Absence</strong> without modifying examination marks.
+                    Segregate students who could not attend their scheduled defense slot. Reassign students to <strong>Early Joining</strong> or confirm their <strong>Absence</strong> without modifying examination marks.
                   </p>
                 </div>
 
@@ -3298,11 +3298,11 @@ Output ONLY the raw valid JSON array.`;
                       type="button"
                       onClick={() => {
                         exportAbsentAndShiftData(filteredAbsentAndShiftEntries, 'xlsx');
-                        setToastMessage({ type: 'success', text: 'Absent & Next Shift Excel roster downloaded.' });
+                        setToastMessage({ type: 'success', text: 'Absent & Early Joining Excel roster downloaded.' });
                       }}
                       className="btn btn-outline"
                       style={{ padding: '7px 12px', fontSize: '12px', gap: '5px', borderRadius: '7px' }}
-                      title="Export Absent & Shift Roster as Excel (.xlsx)"
+                      title="Export Absent & Early Joining Roster as Excel (.xlsx)"
                     >
                       <Download size={13} /> Excel
                     </button>
@@ -3310,11 +3310,11 @@ Output ONLY the raw valid JSON array.`;
                       type="button"
                       onClick={() => {
                         exportAbsentAndShiftData(filteredAbsentAndShiftEntries, 'csv');
-                        setToastMessage({ type: 'success', text: 'Absent & Next Shift CSV downloaded.' });
+                        setToastMessage({ type: 'success', text: 'Absent & Early Joining CSV downloaded.' });
                       }}
                       className="btn btn-outline"
                       style={{ padding: '7px 12px', fontSize: '12px', gap: '5px', borderRadius: '7px' }}
-                      title="Export Absent & Shift Roster as CSV (.csv)"
+                      title="Export Absent & Early Joining Roster as CSV (.csv)"
                     >
                       CSV
                     </button>
@@ -3368,10 +3368,10 @@ Output ONLY the raw valid JSON array.`;
                   }}
                 >
                   <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <Clock size={13} color="#D97706" /> Moved to Next Shift
+                    <Clock size={13} color="#D97706" /> Moved to Early Joining
                   </div>
                   <div style={{ fontSize: '24px', fontWeight: 900, color: '#B45309', marginTop: '4px' }}>
-                    {nextShiftCount}
+                    {earlyJoiningCount}
                   </div>
                   <div style={{ fontSize: '11.5px', color: '#92400E', marginTop: '2px' }}>
                     Eligible for rescheduled viva slot
@@ -3415,11 +3415,11 @@ Output ONLY the raw valid JSON array.`;
                   </button>
                   <button
                     type="button"
-                    onClick={() => setAttendanceStatusFilter('next_shift')}
-                    className={`segmented-pill ${attendanceStatusFilter === 'next_shift' ? 'active' : ''}`}
+                    onClick={() => setAttendanceStatusFilter('early_joining')}
+                    className={`segmented-pill ${attendanceStatusFilter === 'early_joining' ? 'active' : ''}`}
                     style={{ fontSize: '11.5px', padding: '4px 12px' }}
                   >
-                    🕒 Next Shift ({nextShiftCount})
+                    🕒 Early Joining ({earlyJoiningCount})
                   </button>
                   <button
                     type="button"
@@ -3535,7 +3535,7 @@ Output ONLY the raw valid JSON array.`;
                     </thead>
                     <tbody>
                       {filteredAbsentAndShiftEntries.map((item, idx) => {
-                        const isNext = item.attendanceStatus === 'next_shift';
+                        const isEarly = item.attendanceStatus === 'early_joining' || item.attendanceStatus === 'next_shift';
                         return (
                           <tr key={`${item.studentId}-${item.phaseNumber}-${idx}`}>
                             {/* Student Details */}
@@ -3593,7 +3593,7 @@ Output ONLY the raw valid JSON array.`;
 
                             {/* Attendance Status */}
                             <td style={{ textAlign: 'center' }}>
-                              {isNext ? (
+                              {isEarly ? (
                                 <span
                                   className="badge"
                                   style={{
@@ -3606,9 +3606,9 @@ Output ONLY the raw valid JSON array.`;
                                     alignItems: 'center',
                                     gap: '4px',
                                   }}
-                                  title={item.remarks || 'Moved to Next Shift'}
+                                  title={item.remarks || 'Moved to Early Joining'}
                                 >
-                                  <Clock size={11} /> Next Shift
+                                  <Clock size={11} /> Early Joining
                                 </span>
                               ) : (
                                 <span
@@ -3646,7 +3646,7 @@ Output ONLY the raw valid JSON array.`;
 
                             {/* Segregation Action */}
                             <td style={{ textAlign: 'center' }}>
-                              {isNext ? (
+                              {isEarly ? (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -3681,9 +3681,9 @@ Output ONLY the raw valid JSON array.`;
                                   onClick={() => {
                                     setSegregationModalItem({
                                       item,
-                                      targetStatus: 'next_shift',
+                                      targetStatus: 'early_joining',
                                     });
-                                    setSegregationCustomRemark('Shifted to next slot for rescheduled viva');
+                                    setSegregationCustomRemark('Shifted for early joining rescheduled viva');
                                   }}
                                   className="btn"
                                   style={{
@@ -3700,9 +3700,9 @@ Output ONLY the raw valid JSON array.`;
                                     gap: '4px',
                                     transition: 'all 0.15s ease',
                                   }}
-                                  title="Shift candidate to Next Shift batch"
+                                  title="Shift candidate to Early Joining"
                                 >
-                                  <Clock size={12} /> Shift to Next
+                                  <Clock size={12} /> Early Joining
                                 </button>
                               )}
                             </td>
@@ -5283,9 +5283,9 @@ Output ONLY the raw valid JSON array.`;
                           <td style={{ color: 'var(--color-text-muted)', fontSize: '12px', fontFamily: 'monospace' }}>{s.roll_no}</td>
                           <td style={{ textAlign: 'center' }}>
                             {s.phase1 ? (
-                              s.phase1.attendanceStatus === 'next_shift' ? (
-                                <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase1.remarks || 'Moved to Next Shift'}>
-                                  🕒 Next Shift
+                              s.phase1.attendanceStatus === 'early_joining' || s.phase1.attendanceStatus === 'next_shift' ? (
+                                <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase1.remarks || 'Moved to Early Joining'}>
+                                  🕒 Early Joining
                                 </span>
                               ) : s.phase1.isAbsent ? (
                                 <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase1.remarks || 'Marked Absent'}>
@@ -5300,9 +5300,9 @@ Output ONLY the raw valid JSON array.`;
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             {s.phase2 ? (
-                              s.phase2.attendanceStatus === 'next_shift' ? (
-                                <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase2.remarks || 'Moved to Next Shift'}>
-                                  🕒 Next Shift
+                              s.phase2.attendanceStatus === 'early_joining' || s.phase2.attendanceStatus === 'next_shift' ? (
+                                <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase2.remarks || 'Moved to Early Joining'}>
+                                  🕒 Early Joining
                                 </span>
                               ) : s.phase2.isAbsent ? (
                                 <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase2.remarks || 'Marked Absent'}>
@@ -5317,9 +5317,9 @@ Output ONLY the raw valid JSON array.`;
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             {s.phase3 ? (
-                              s.phase3.attendanceStatus === 'next_shift' ? (
-                                <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase3.remarks || 'Moved to Next Shift'}>
-                                  🕒 Next Shift
+                              s.phase3.attendanceStatus === 'early_joining' || s.phase3.attendanceStatus === 'next_shift' ? (
+                                <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase3.remarks || 'Moved to Early Joining'}>
+                                  🕒 Early Joining
                                 </span>
                               ) : s.phase3.isAbsent ? (
                                 <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase3.remarks || 'Marked Absent'}>
@@ -6425,7 +6425,7 @@ Output ONLY the raw valid JSON array.`;
               style={{
                 padding: '20px 24px',
                 borderBottom: '1px solid var(--color-border)',
-                backgroundColor: segregationModalItem.targetStatus === 'next_shift' ? '#FFFBEB' : '#FEF2F2',
+                backgroundColor: segregationModalItem.targetStatus === 'early_joining' ? '#FFFBEB' : '#FEF2F2',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -6437,13 +6437,13 @@ Output ONLY the raw valid JSON array.`;
                     width: '36px',
                     height: '36px',
                     borderRadius: '10px',
-                    backgroundColor: segregationModalItem.targetStatus === 'next_shift' ? '#FEF3C7' : '#FEE2E2',
+                    backgroundColor: segregationModalItem.targetStatus === 'early_joining' ? '#FEF3C7' : '#FEE2E2',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  {segregationModalItem.targetStatus === 'next_shift' ? (
+                  {segregationModalItem.targetStatus === 'early_joining' ? (
                     <Clock size={18} color="#D97706" />
                   ) : (
                     <UserX size={18} color="#DC2626" />
@@ -6451,7 +6451,7 @@ Output ONLY the raw valid JSON array.`;
                 </div>
                 <div>
                   <h3 style={{ fontSize: '16px', fontWeight: 800, margin: 0, color: 'var(--color-ink)' }}>
-                    {segregationModalItem.targetStatus === 'next_shift' ? 'Move Candidate to Next Shift' : 'Mark Candidate as Absent'}
+                    {segregationModalItem.targetStatus === 'early_joining' ? 'Move Candidate to Early Joining' : 'Mark Candidate as Absent'}
                   </h3>
                   <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
                     Phase {segregationModalItem.item.phaseNumber} Viva Attendance Segregation
@@ -6507,8 +6507,8 @@ Output ONLY the raw valid JSON array.`;
 
               {/* Status Change Description */}
               <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.5 }}>
-                {segregationModalItem.targetStatus === 'next_shift'
-                  ? 'Moving this candidate to the Next Shift preserves their eligibility to be evaluated during the upcoming batch slot without penalizing their defense records.'
+                {segregationModalItem.targetStatus === 'early_joining'
+                  ? 'Moving this candidate to Early Joining preserves their eligibility to be evaluated during the rescheduled batch slot without penalizing their defense records.'
                   : 'Marking this candidate as Confirmed Absent records their non-attendance for this defense phase.'}
               </p>
 
@@ -6529,8 +6529,8 @@ Output ONLY the raw valid JSON array.`;
                   value={segregationCustomRemark}
                   onChange={(e) => setSegregationCustomRemark(e.target.value)}
                   placeholder={
-                    segregationModalItem.targetStatus === 'next_shift'
-                      ? 'e.g. Rescheduled to Afternoon Shift due to morning exam collision'
+                    segregationModalItem.targetStatus === 'early_joining'
+                      ? 'e.g. Rescheduled for early joining session due to morning exam collision'
                       : 'e.g. Candidate did not report for defense'
                   }
                 />
@@ -6574,7 +6574,7 @@ Output ONLY the raw valid JSON array.`;
                   padding: '8px 20px',
                   fontSize: '13px',
                   fontWeight: 700,
-                  backgroundColor: segregationModalItem.targetStatus === 'next_shift' ? '#F59E0B' : '#DC2626',
+                  backgroundColor: segregationModalItem.targetStatus === 'early_joining' ? '#F59E0B' : '#DC2626',
                   color: '#FFFFFF',
                   border: 'none',
                   borderRadius: '8px',
@@ -6586,9 +6586,9 @@ Output ONLY the raw valid JSON array.`;
               >
                 {segregationLoading ? (
                   'Updating...'
-                ) : segregationModalItem.targetStatus === 'next_shift' ? (
+                ) : segregationModalItem.targetStatus === 'early_joining' ? (
                   <>
-                    <Clock size={14} /> Confirm Next Shift
+                    <Clock size={14} /> Confirm Early Joining
                   </>
                 ) : (
                   <>

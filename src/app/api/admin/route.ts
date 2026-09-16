@@ -74,7 +74,8 @@ export async function GET(req: NextRequest) {
 
         const formatEval = (ev: any) => {
           if (!ev) return null;
-          const status = ev.attendance_status || (ev.is_absent ? (ev.remarks?.toLowerCase().includes('next shift') ? 'next_shift' : 'absent') : 'present');
+          const rawStatus = ev.attendance_status || (ev.is_absent ? (ev.remarks?.toLowerCase().includes('early joining') || ev.remarks?.toLowerCase().includes('next shift') ? 'early_joining' : 'absent') : 'present');
+          const status = rawStatus === 'next_shift' ? 'early_joining' : rawStatus;
           return {
             score: ev.score,
             isAbsent: ev.is_absent,
