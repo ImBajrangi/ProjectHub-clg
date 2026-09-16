@@ -1159,40 +1159,67 @@ export default function AdminDashboardPage() {
   const bcaTeams = useMemo(() => (teams || []).filter((t: any) => t.program === 'BCA' || t.team_code?.startsWith('BCA')), [teams]);
   const dsTeams = useMemo(() => (teams || []).filter((t: any) => t.program?.includes('DS') || t.team_code?.startsWith('DS')), [teams]);
 
-  // Dynamic Batch Presets (e.g. 10 teams per batch)
+  // Helper to extract clean Section from a Team (from student record or fallback)
+  const getTeamSection = (t: any): string => {
+    const sSec = t.students?.find((s: any) => s.section)?.section || t.section;
+    if (sSec) return String(sSec).trim().toUpperCase();
+    return '';
+  };
+
+  // Dynamic Section Distribution Presets (Academic Sections e.g. Sec A, Sec B...)
   const bcaPresets = useMemo(() => {
     if (!bcaTeams || bcaTeams.length === 0) return [];
-    const presets: { label: string; startNum: number; endNum: number; count: number }[] = [];
-    const batchSize = 10;
-    for (let i = 0; i < bcaTeams.length; i += batchSize) {
-      const slice = bcaTeams.slice(i, i + batchSize);
-      const first = slice[0];
-      const last = slice[slice.length - 1];
+    const secMap = new Map<string, any[]>();
+    bcaTeams.forEach((t: any) => {
+      const sec = getTeamSection(t) || 'A';
+      if (!secMap.has(sec)) secMap.set(sec, []);
+      secMap.get(sec)!.push(t);
+    });
+
+    const presets: { label: string; shortLabel: string; sectionName: string; program: string; startNum: number; endNum: number; count: number }[] = [];
+    Array.from(secMap.keys()).sort().forEach((sec) => {
+      const group = secMap.get(sec)!;
+      group.sort((a: any, b: any) => (a.team_number || 0) - (b.team_number || 0));
+      const first = group[0];
+      const last = group[group.length - 1];
       presets.push({
-        label: `${first.team_code} → ${last.team_code}`,
+        label: `BCA Sec ${sec} (${first.team_code} → ${last.team_code})`,
+        shortLabel: `BCA Sec ${sec}`,
+        sectionName: `Sec ${sec}`,
+        program: 'BCA',
         startNum: first.team_number,
         endNum: last.team_number,
-        count: slice.length,
+        count: group.length,
       });
-    }
+    });
     return presets;
   }, [bcaTeams]);
 
   const dsPresets = useMemo(() => {
     if (!dsTeams || dsTeams.length === 0) return [];
-    const presets: { label: string; startNum: number; endNum: number; count: number }[] = [];
-    const batchSize = 10;
-    for (let i = 0; i < dsTeams.length; i += batchSize) {
-      const slice = dsTeams.slice(i, i + batchSize);
-      const first = slice[0];
-      const last = slice[slice.length - 1];
+    const secMap = new Map<string, any[]>();
+    dsTeams.forEach((t: any) => {
+      const sec = getTeamSection(t) || 'A';
+      if (!secMap.has(sec)) secMap.set(sec, []);
+      secMap.get(sec)!.push(t);
+    });
+
+    const presets: { label: string; shortLabel: string; sectionName: string; program: string; startNum: number; endNum: number; count: number }[] = [];
+    Array.from(secMap.keys()).sort().forEach((sec) => {
+      const group = secMap.get(sec)!;
+      group.sort((a: any, b: any) => (a.team_number || 0) - (b.team_number || 0));
+      const first = group[0];
+      const last = group[group.length - 1];
       presets.push({
-        label: `${first.team_code} → ${last.team_code}`,
+        label: `DS Sec ${sec} (${first.team_code} → ${last.team_code})`,
+        shortLabel: `DS Sec ${sec}`,
+        sectionName: `DS Sec ${sec}`,
+        program: 'BCA - DS',
         startNum: first.team_number,
         endNum: last.team_number,
-        count: slice.length,
+        count: group.length,
       });
-    }
+    });
     return presets;
   }, [dsTeams]);
 
@@ -3991,12 +4018,17 @@ Output ONLY the raw valid JSON array.`;
                         </button>
                       </div>
 
-                      {/* Quick Preset Batch Chips */}
+                      {/* Section Distribution Batch Presets */}
                       <div>
-                        <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: '6px' }}>
-                          ⚡ Quick Batch Presets (10 Teams / Batch):
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: '#334155' }}>
+                            ⚡ Section Distribution Batches:
+                          </div>
+                          <span style={{ fontSize: '9.5px', color: 'var(--color-text-muted)' }}>
+                            Click a section to auto-fill range
+                          </span>
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', maxHeight: '90px', overflowY: 'auto', paddingRight: '2px' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', maxHeight: '115px', overflowY: 'auto', paddingRight: '2px' }}>
                           {(panelFormProgram === 'BCA - DS' ? dsPresets : panelFormProgram === 'BCA' ? bcaPresets : [...bcaPresets, ...dsPresets]).map((preset, idx) => {
                             const isSelected = panelFormRangeStart === preset.startNum && panelFormRangeEnd === preset.endNum;
                             return (
@@ -4006,27 +4038,40 @@ Output ONLY the raw valid JSON array.`;
                                 onClick={() => {
                                   setPanelFormRangeStart(preset.startNum);
                                   setPanelFormRangeEnd(preset.endNum);
+                                  if (preset.program) {
+                                    setPanelFormProgram(preset.program as any);
+                                  }
                                   if (!panelFormName || panelFormName.startsWith('Panel ')) {
-                                    setPanelFormName(`Panel (${preset.label})`);
+                                    setPanelFormName(`Panel ${panelFormNumber || nextSequentialPanelNumber} (${preset.shortLabel || preset.sectionName})`);
                                   }
                                 }}
                                 style={{
-                                  padding: '4px 8px',
+                                  padding: '5px 9px',
                                   fontSize: '10.5px',
                                   fontWeight: isSelected ? 700 : 500,
                                   backgroundColor: isSelected ? '#2563EB' : '#FFFFFF',
                                   color: isSelected ? '#FFFFFF' : '#1E293B',
-                                  border: isSelected ? '1px solid #2563EB' : '1px solid #CBD5E1',
-                                  borderRadius: '6px',
+                                  border: isSelected ? '1.5px solid #2563EB' : '1px solid #CBD5E1',
+                                  borderRadius: '7px',
                                   cursor: 'pointer',
                                   display: 'inline-flex',
                                   alignItems: 'center',
-                                  gap: '4px',
+                                  gap: '5px',
+                                  boxShadow: isSelected ? '0 2px 4px rgba(37,99,235,0.2)' : 'none',
                                   transition: 'all 0.15s ease',
                                 }}
                               >
                                 <span>{preset.label}</span>
-                                <span style={{ fontSize: '9.5px', opacity: isSelected ? 0.9 : 0.6 }}>({preset.count})</span>
+                                <span style={{
+                                  fontSize: '9px',
+                                  fontWeight: 700,
+                                  padding: '1px 5px',
+                                  borderRadius: '4px',
+                                  backgroundColor: isSelected ? 'rgba(255,255,255,0.25)' : '#F1F5F9',
+                                  color: isSelected ? '#FFFFFF' : '#64748B'
+                                }}>
+                                  {preset.count} teams
+                                </span>
                               </button>
                             );
                           })}
