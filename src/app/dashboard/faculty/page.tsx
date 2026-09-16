@@ -195,7 +195,7 @@ export default function FacultyDashboardPage() {
       const [authRes, teamsRes, panelRes, phasesRes] = await Promise.all([
         currentUser ? Promise.resolve(null) : fetch('/api/auth/me'),
         fetch('/api/team', { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } }),
-        fetch('/api/panels'),
+        fetch('/api/panels', { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } }),
         fetch('/api/phases', { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } }),
       ]);
 
@@ -999,7 +999,157 @@ export default function FacultyDashboardPage() {
         {/* SUPERVISOR VIEW */}
         {/* =================================================================== */}
         {mode === 'supervisor' && (
-          <div className="faculty-split-layout">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Live Panel Assignments & Duty Dashboard Widget for Faculty */}
+            {panelData && panelData.length > 0 && (
+              <div
+                className="card"
+                style={{
+                  padding: '18px 22px',
+                  borderRadius: '14px',
+                  border: '1.5px solid #93C5FD',
+                  background: 'linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 100%)',
+                  boxShadow: '0 2px 10px rgba(37, 99, 235, 0.05)',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '10px',
+                        backgroundColor: '#1E40AF',
+                        color: '#FFFFFF',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        boxShadow: '0 2px 6px rgba(30, 64, 175, 0.25)',
+                      }}
+                    >
+                      <Award size={20} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>
+                        Assigned Panel Duty &amp; Live Evaluation Dashboard
+                      </div>
+                      <div style={{ fontSize: '12.5px', color: '#475569' }}>
+                        You are appointed as judge across <strong>{panelData.length} Panel{panelData.length > 1 ? 's' : ''}</strong> for presentation evaluations.
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('panel');
+                      setSelectedPanelTeam(null);
+                    }}
+                    className="btn btn-primary"
+                    style={{
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      padding: '8px 18px',
+                      borderRadius: '8px',
+                      background: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <span>Open Live Panel Scoring Console</span>
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
+
+                {/* Panel Quick Cards Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+                  {panelData.map((p) => {
+                    const evaluableCount = (p.evaluableTeams || []).length;
+                    return (
+                      <div
+                        key={p.id}
+                        style={{
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '10px',
+                          border: '1px solid #DBEAFE',
+                          padding: '14px 16px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          gap: '10px',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 800, backgroundColor: '#EFF6FF', color: '#1D4ED8', padding: '2px 8px', borderRadius: '4px' }}>
+                              Phase {p.phase_number}
+                            </span>
+                            {p.isPhaseLive ? (
+                              <span style={{ fontSize: '11px', fontWeight: 700, color: '#059669', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#059669', display: 'inline-block' }} />
+                                Live Mode
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#DC2626', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <Lock size={10} /> Locked
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '14.5px', fontWeight: 800, color: 'var(--color-ink)' }}>
+                            {p.panel_name}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <MapPin size={12} color="#2563EB" />
+                              <span>{p.room_number || 'Room 402'} ({p.academic_block || 'AB10'})</span>
+                            </div>
+                            {p.time_window && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <Clock size={12} color="#2563EB" />
+                                <span>{p.time_window}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#64748B' }}>
+                            {evaluableCount} Teams to Evaluate
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedPanelPhase(p.phase_number as 1 | 2 | 3);
+                              setMode('panel');
+                              setSelectedPanelTeam(null);
+                            }}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#2563EB',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: 0,
+                            }}
+                          >
+                            Score Teams →
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="faculty-split-layout">
             {/* Left Column: Team Selector List */}
             <div className={`faculty-list-col ${mobileView === 'detail' && selectedTeam ? 'mobile-hidden' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -2025,6 +2175,7 @@ export default function FacultyDashboardPage() {
                 <p style={{ color: 'var(--color-text-muted)' }}>Select an assigned team from the left column.</p>
               </div>
             )}
+            </div>
           </div>
         )}
 

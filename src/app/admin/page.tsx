@@ -558,7 +558,10 @@ export default function AdminDashboardPage() {
       // Concurrently load admin data and dynamic rooms/shifts
       loadRoomsAndShifts();
 
-      const res = await fetch('/api/admin');
+      const res = await fetch('/api/admin', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
       if (res.ok) {
         const data = await res.json();
         setAdminData(data);
@@ -1392,7 +1395,7 @@ export default function AdminDashboardPage() {
 
   // Filtered panels for Tab 4
   const filteredPanels = panels.filter((p: any) => {
-    const matchesPhase = p.phase_number === panelPhaseFilter;
+    const matchesPhase = Number(p.phase_number) === Number(panelPhaseFilter);
     const q = panelSearch.toLowerCase().trim();
     const matchesQuery =
       !q ||

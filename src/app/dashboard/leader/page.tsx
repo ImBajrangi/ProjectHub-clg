@@ -504,7 +504,7 @@ export default function LeaderDashboardPage() {
   const members = teamData?.members || teamData?.students || [];
   const problemStatement = teamData?.problemStatement;
   const meetings = teamData?.meetings || [];
-  const schedules = teamData?.schedules || [];
+  const schedules = teamData?.schedules || teamData?.panels || [];
   const isLocked = problemStatement?.locked || problemStatement?.status === 'approved';
 
   return (
@@ -551,6 +551,85 @@ export default function LeaderDashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* Presentation Venue & Shift Announcement Card for Team Leaders */}
+        {schedules && schedules.length > 0 && (
+          <div
+            className="card"
+            style={{
+              padding: '18px 22px',
+              borderRadius: '14px',
+              border: '1.5px solid #93C5FD',
+              background: 'linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 100%)',
+              marginBottom: '22px',
+              boxShadow: '0 3px 12px rgba(37, 99, 235, 0.07)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div
+                  style={{
+                    width: '46px',
+                    height: '46px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
+                  }}
+                >
+                  <MapPin size={24} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#1E40AF', backgroundColor: '#DBEAFE', padding: '2px 8px', borderRadius: '6px' }}>
+                      Presentation Venue Allotted
+                    </span>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#1E293B' }}>
+                      {schedules[0].panel_name || `Panel ${schedules[0].panel_number}`} (Phase {schedules[0].phase_number || 1})
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '17px', fontWeight: 800, color: '#0F172A', marginTop: '3px' }}>
+                    {schedules[0].room_number || 'Room 402'} • {schedules[0].academic_block || 'Academic Block AB10'}
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#475569', marginTop: '3px', display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <Clock size={13} color="#2563EB" /> Shift: <strong>{schedules[0].time_window || 'Shift 1: Morning (08:00 AM - 10:00 AM)'}</strong>
+                    </span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <Calendar size={13} color="#2563EB" /> Date: <strong>{schedules[0].date || '19-Sep'}</strong>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('schedule')}
+                className="btn btn-outline"
+                style={{
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  color: '#1E40AF',
+                  borderColor: '#93C5FD',
+                  backgroundColor: '#FFFFFF',
+                  padding: '9px 18px',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                }}
+              >
+                <Award size={15} /> View Full Panel &amp; Judges Details →
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Mobbin Segmented Pill Navigation */}
         <div style={{ marginBottom: '24px' }}>

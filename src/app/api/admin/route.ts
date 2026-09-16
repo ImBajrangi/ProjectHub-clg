@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 403 });
     }
 
-    const store = await db.getStore();
+    const store = await db.getStore(true);
     const teams = store.teams || [];
     const students = store.students || [];
     // Include all faculty members and administrators in supervisors directory
@@ -30,8 +30,36 @@ export async function GET(req: NextRequest) {
 
     // Enriched teams with full monitoring stats and per-student evaluations
     const auditTeams = teams.map((t) => {
-      const sup = supervisors.find((s) => s.id === t.supervisor_id);
-      const leader = t.leader_id ? (store.users || []).find((u) => u.id === t.leader_id) : null;
+      // 1. Match supervisor by user ID or email directly
+      let supUser = (store.users || []).find(
+        (u) =>
+          u &&
+          t.supervisor_id &&
+          (String(u.id).toLowerCase().trim() === String(t.supervisor_id).toLowerCase().trim() ||
+           String(u.email || '').toLowerCase().trim() === String(t.supervisor_id).toLowerCase().trim())
+      );
+
+      // 2. Fallback: match supervisor by profile ID or employee_id
+      if (!supUser && t.supervisor_id) {
+        const spProfile = (store.supervisors || []).find(
+          (sp) =>
+            sp &&
+            (String(sp.id).toLowerCase().trim() === String(t.supervisor_id).toLowerCase().trim() ||
+             String(sp.employee_id || '').toLowerCase().trim() === String(t.supervisor_id).toLowerCase().trim())
+        );
+        if (spProfile) {
+          supUser = (store.users || []).find((u) => u && String(u.id).toLowerCase().trim() === String(spProfile.id).toLowerCase().trim());
+        }
+      }
+
+      const leader = t.leader_id
+        ? (store.users || []).find(
+            (u) =>
+              u &&
+              (String(u.id).toLowerCase().trim() === String(t.leader_id).toLowerCase().trim() ||
+               String(u.email || '').toLowerCase().trim() === String(t.leader_id).toLowerCase().trim())
+          )
+        : null;
       const teamStudents = students.filter((s) => s.team_id === t.id);
       const ps = problemStatements.find((p) => p.team_id === t.id);
       const teamMeetings = meetings.filter((m) => m.team_id === t.id);
@@ -81,7 +109,15 @@ export async function GET(req: NextRequest) {
         team_name: t.team_name,
         team_number: t.team_number,
         program: t.program,
-        supervisor: sup ? { id: sup.id, name: sup.full_name, email: sup.email, phone: sup.phone } : null,
+        supervisor_id: t.supervisor_id,
+        supervisor: supUser
+          ? {
+              id: supUser.id,
+              name: supUser.full_name || (supUser as any).name || 'Faculty Guide',
+              email: supUser.email || '',
+              phone: supUser.phone || '',
+            }
+          : null,
         leader: leader ? { id: leader.id, name: leader.full_name, email: leader.email, phone: leader.phone } : null,
         studentCount: teamStudents.length,
         students: studentsWithEvals,
@@ -102,7 +138,11 @@ export async function GET(req: NextRequest) {
     // Enriched supervisors directory
     const enrichedSupervisors = supervisors.map((s) => {
       const profile = supervisorProfiles.find((sp) => sp.id === s.id);
-      const assigned = auditTeams.filter((t) => t.supervisor?.id === s.id);
+      const assigned = auditTeams.filter(
+        (t) =>
+          t.supervisor?.id === s.id ||
+          (t.supervisor_id && String(t.supervisor_id).toLowerCase().trim() === String(s.id).toLowerCase().trim())
+      );
       const panelAssigned = panelMembers
         .filter((pm) => pm.supervisor_id === s.id)
         .map((pm) => panels.find((p) => p.id === pm.panel_id))
@@ -179,30 +219,37 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return NextResponse.json({
-      currentUser: {
-        id: sessionUser.id,
-        email: sessionUser.email,
-        fullName: sessionUser.full_name,
-        role: sessionUser.role,
+    return NextResponse.json(
+      {
+        currentUser: {
+          id: sessionUser.id,
+          email: sessionUser.email,
+          fullName: sessionUser.full_name,
+          role: sessionUser.role,
+        },
+        summary: {
+          totalTeams: teams.length,
+          totalStudents: students.length,
+          totalSupervisors: supervisors.length,
+          totalAdmins: (store.users || []).filter((u) => u.role === 'admin').length,
+          claimedLeaders: teams.filter((t) => t.leader_id).length,
+          unclaimedLeaders: teams.filter((t) => !t.leader_id).length,
+          approvedProblemStatements: problemStatements.filter((p) => p.status === 'approved').length,
+          totalMeetings: meetings.length,
+          totalEvaluations: evaluations.length,
+          defaultingCount: auditTeams.filter((t) => t.isDefaulting).length,
+        },
+        teams: auditTeams,
+        supervisors: enrichedSupervisors,
+        phases,
+        panels: enrichedPanels,
       },
-      summary: {
-        totalTeams: teams.length,
-        totalStudents: students.length,
-        totalSupervisors: supervisors.length,
-        totalAdmins: (store.users || []).filter((u) => u.role === 'admin').length,
-        claimedLeaders: teams.filter((t) => t.leader_id).length,
-        unclaimedLeaders: teams.filter((t) => !t.leader_id).length,
-        approvedProblemStatements: problemStatements.filter((p) => p.status === 'approved').length,
-        totalMeetings: meetings.length,
-        totalEvaluations: evaluations.length,
-        defaultingCount: auditTeams.filter((t) => t.isDefaulting).length,
-      },
-      teams: auditTeams,
-      supervisors: enrichedSupervisors,
-      phases,
-      panels: enrichedPanels,
-    });
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      }
+    );
   } catch (error) {
     console.error('Admin API error:', error);
     return NextResponse.json({ error: 'Failed to fetch admin data' }, { status: 500 });

@@ -940,13 +940,13 @@ export const db = {
   },
 
   // Panels & Evaluation
-  async getPanels(phaseNumber?: 1 | 2 | 3): Promise<Panel[]> {
-    const store = await this.getStore();
+  async getPanels(phaseNumber?: 1 | 2 | 3, forceFresh = false): Promise<Panel[]> {
+    const store = await this.getStore(forceFresh);
     let panels = store.panels;
     if (phaseNumber) {
-      panels = panels.filter((p) => p.phase_number === phaseNumber);
+      panels = panels.filter((p) => Number(p.phase_number) === Number(phaseNumber));
     }
-    return panels.sort((a, b) => (a.panel_number || 0) - (b.panel_number || 0));
+    return panels.sort((a, b) => (Number(a.panel_number) || 0) - (Number(b.panel_number) || 0));
   },
 
   async getPanelById(id: string): Promise<Panel | null> {

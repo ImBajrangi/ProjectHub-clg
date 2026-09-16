@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const teamIdParam = searchParams.get('teamId');
-    const store = await db.getStore();
+    const store = await db.getStore(true);
 
     // If Leader: return their assigned team
     if (sessionUser.role === 'leader') {
@@ -134,9 +134,14 @@ export async function GET(req: NextRequest) {
           return {
             id: p.id,
             panel_number: p.panel_number,
-            name: (p as any).panel_name || (p as any).name || 'Evaluation Panel',
-            panel_name: p.panel_name,
-            venue: p.venue,
+            phase_number: p.phase_number,
+            name: p.panel_name || `Panel ${p.panel_number}`,
+            panel_name: p.panel_name || `Panel ${p.panel_number}`,
+            date: p.date || (Number(p.phase_number) === 1 ? '19-Sep' : Number(p.phase_number) === 2 ? '17-Oct' : 'Final Defense'),
+            time_window: p.time_window || 'Batch 1: Morning (08:00 AM - 10:00 AM)',
+            academic_block: p.academic_block || 'Academic Block AB10',
+            room_number: p.room_number || 'Room 402',
+            venue: `${p.room_number || 'Room 402'}, ${p.academic_block || 'Academic Block AB10'}`,
             judges: judgeUsers,
           };
         });
@@ -162,6 +167,7 @@ export async function GET(req: NextRequest) {
           meetings,
           phases,
           panels: relevantPanels,
+          schedules: relevantPanels,
         },
         {
           headers: {

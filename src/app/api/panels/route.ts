@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const token = req.cookies.get('codeshastra_token')?.value || req.headers.get('authorization')?.replace('Bearer ', '');
@@ -13,10 +16,10 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const phaseNumber = searchParams.get('phaseNumber') ? parseInt(searchParams.get('phaseNumber')!) as 1 | 2 | 3 : undefined;
 
-    const store = await db.getStore();
+    const store = await db.getStore(true);
     let panels = store.panels;
     if (phaseNumber) {
-      panels = panels.filter((p) => p.phase_number === phaseNumber);
+      panels = panels.filter((p) => Number(p.phase_number) === Number(phaseNumber));
     }
     const allSupervisors = store.users.filter((u) => u.role === 'supervisor' || u.role === 'admin');
     const allTeams = store.teams;
@@ -71,7 +74,7 @@ export async function GET(req: NextRequest) {
       // In each panel, filter teams:
       // STRICT CONFLICT-OF-INTEREST SAFEGUARD: Never evaluate teams they supervise!
       const panelEvaluations = myPanels.map((p) => {
-        const phaseInfo = phases.find((ph) => ph.phase_number === p.phase_number);
+        const phaseInfo = phases.find((ph) => Number(ph.phase_number) === Number(p.phase_number));
         const isPhaseLive = phaseInfo ? phaseInfo.is_live : false;
 
         const evaluableTeams = p.teams.map((t) => ({
@@ -88,11 +91,17 @@ export async function GET(req: NextRequest) {
       });
 
       if (sessionUser.role === 'supervisor') {
-        return NextResponse.json({ panels: panelEvaluations });
+        return NextResponse.json(
+          { panels: panelEvaluations, allPanels: enrichedPanels },
+          { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+        );
       }
     }
 
-    return NextResponse.json({ panels: enrichedPanels });
+    return NextResponse.json(
+      { panels: enrichedPanels },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    );
   } catch (error) {
     console.error('Panels API error:', error);
     return NextResponse.json({ error: 'Failed to fetch panels' }, { status: 500 });
