@@ -140,6 +140,14 @@ export interface PanelMember {
   created_at: string;
 }
 
+export interface EvaluationCriteriaScores {
+  presentation?: number | null;
+  code?: number | null;
+  query_handling?: number | null;
+  report?: number | null;
+  [key: string]: any;
+}
+
 export interface Evaluation {
   id: string;
   phase_number: 1 | 2 | 3;
@@ -149,7 +157,7 @@ export interface Evaluation {
   supervisor_id?: string;
   score?: number | null;
   max_marks?: number;
-  criteria_scores?: any;
+  criteria_scores?: EvaluationCriteriaScores | null;
   locked?: boolean;
   is_absent: boolean;
   attendance_status?: 'present' | 'absent' | 'early_joining' | 'next_shift';

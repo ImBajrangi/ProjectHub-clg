@@ -89,7 +89,10 @@ export default function AdminDashboardPage() {
   // Teams & Students Directory State
   const [searchQuery, setSearchQuery] = useState('');
   const [programFilter, setProgramFilter] = useState<'all' | 'BCA' | 'BCA - DS'>('all');
-  const [phaseClearanceFilter, setPhaseClearanceFilter] = useState<'all' | 'p1' | 'p2' | 'p3'>('all');
+  const [phaseClearanceFilter, setPhaseClearanceFilter] = useState<
+    'all' | 'p1_approved' | 'p1_pending' | 'p2_synopsis_submitted' | 'p2_synopsis_pending' | 'p3_report_submitted' | 'p3_report_pending' | 'p1' | 'p2' | 'p3'
+  >('all');
+  const [adminMilestoneSaving, setAdminMilestoneSaving] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTeamModal, setSelectedTeamModal] = useState<any>(null);
   const PAGE_SIZE = 10;
@@ -150,6 +153,7 @@ export default function AdminDashboardPage() {
   const [panelFormCustomShift, setPanelFormCustomShift] = useState('');
   const [panelFormRoom, setPanelFormRoom] = useState('Room 402');
   const [panelFormCustomRoom, setPanelFormCustomRoom] = useState('');
+  const [panelFormVenue, setPanelFormVenue] = useState('Academic Block AB10');
   const [panelFormDate, setPanelFormDate] = useState('2026-09-15');
   const [panelFormLoading, setPanelFormLoading] = useState(false);
   const [panelFormError, setPanelFormError] = useState<string | null>(null);
@@ -632,6 +636,54 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleToggleAdminMilestone = async (teamId: string, phaseNum: 1 | 2 | 3, currentValue: boolean) => {
+    setAdminMilestoneSaving(true);
+    try {
+      const res = await fetch('/api/evaluations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'panel_milestone_action',
+          teamId,
+          phaseNumber: phaseNum,
+          approved: !currentValue,
+          type: phaseNum === 3 ? 'report_clearance' : undefined,
+        }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        setToastMessage({ type: 'success', text: `Phase ${phaseNum} milestone updated successfully.` });
+        setAdminData((prev: any) => {
+          if (!prev) return prev;
+          const updatedTeams = (prev.teams || []).map((t: any) => {
+            if (t.id !== teamId) return t;
+            if (phaseNum === 1) return { ...t, phase1_approved: !currentValue };
+            if (phaseNum === 2) return { ...t, phase2_approved: !currentValue };
+            return { ...t, phase3_report_clearance: !currentValue, phase3_approved: !currentValue };
+          });
+          const updated = { ...prev, teams: updatedTeams };
+          clientCache.set(clientCache.keys.ADMIN_DATA, updated);
+          return updated;
+        });
+        if (selectedTeamModal && selectedTeamModal.id === teamId) {
+          setSelectedTeamModal((prev: any) => {
+            if (!prev) return null;
+            if (phaseNum === 1) return { ...prev, phase1_approved: !currentValue };
+            if (phaseNum === 2) return { ...prev, phase2_approved: !currentValue };
+            return { ...prev, phase3_report_clearance: !currentValue, phase3_approved: !currentValue };
+          });
+        }
+      } else {
+        setToastMessage({ type: 'error', text: result.error || 'Failed to update milestone.' });
+      }
+    } catch (err) {
+      console.error('Failed to toggle milestone:', err);
+      setToastMessage({ type: 'error', text: 'Network error updating milestone.' });
+    } finally {
+      setAdminMilestoneSaving(false);
+    }
+  };
+
   useEffect(() => {
     const cachedUser = clientCache.get<any>(clientCache.keys.USER_ME);
     if (cachedUser && cachedUser.role === 'admin') {
@@ -791,6 +843,7 @@ export default function AdminDashboardPage() {
     setPanelFormSelectedJudges((p.judges || []).map((j: any) => j.id));
     setPanelFormShift(p.time_window || 'Batch 1: Morning (08:00 AM - 10:00 AM)');
     setPanelFormDate(p.date || '2026-09-17');
+    setPanelFormVenue(p.academic_block || 'Academic Block AB10');
     setPanelFormRoom(p.room_number || 'Room 402');
     setPanelFormError(null);
     setCreatePanelModalOpen(true);
@@ -817,6 +870,7 @@ export default function AdminDashboardPage() {
     const isEditing = Boolean(editingPanel);
     const finalShift = panelFormShift?.trim() || 'Batch 1: Morning (08:00 AM - 10:00 AM)';
     const finalRoom = panelFormRoom === 'Custom' ? panelFormCustomRoom : panelFormRoom;
+    const finalVenue = panelFormVenue?.trim() || 'Academic Block AB10';
     const finalPanelNumber = Number(panelFormNumber) || (editingPanel ? editingPanel.panel_number : nextSequentialPanelNumber);
     const finalPanelName = panelFormName.trim() || `Panel ${finalPanelNumber} (${getFormattedTeamRange(panelFormRangeStart, panelFormRangeEnd)})`;
 
@@ -835,7 +889,7 @@ export default function AdminDashboardPage() {
           schedule: {
             date: panelFormDate,
             timeWindow: finalShift,
-            academicBlock: 'Academic Block AB10',
+            academicBlock: finalVenue,
             roomNumber:
               finalRoom.startsWith('Room') || finalRoom.startsWith('Lab') || finalRoom.startsWith('Seminar') || finalRoom.startsWith('Hall') || isNaN(Number(finalRoom.trim()))
                 ? finalRoom.trim()
@@ -1431,8 +1485,14 @@ export default function AdminDashboardPage() {
     const matchesClearance =
       phaseClearanceFilter === 'all' ||
       (phaseClearanceFilter === 'p1' && t.phase1_approved) ||
+      (phaseClearanceFilter === 'p1_approved' && t.phase1_approved) ||
+      (phaseClearanceFilter === 'p1_pending' && !t.phase1_approved) ||
       (phaseClearanceFilter === 'p2' && t.phase2_approved) ||
-      (phaseClearanceFilter === 'p3' && t.phase3_approved);
+      (phaseClearanceFilter === 'p2_synopsis_submitted' && t.phase2_approved) ||
+      (phaseClearanceFilter === 'p2_synopsis_pending' && !t.phase2_approved) ||
+      (phaseClearanceFilter === 'p3' && (t.phase3_report_clearance || t.phase3_approved)) ||
+      (phaseClearanceFilter === 'p3_report_submitted' && (t.phase3_report_clearance || t.phase3_approved)) ||
+      (phaseClearanceFilter === 'p3_report_pending' && !(t.phase3_report_clearance || t.phase3_approved));
 
     return matchesSearch && matchesProgram && matchesClearance;
   });
@@ -2199,9 +2259,128 @@ Output ONLY the raw valid JSON array.`;
                   </button>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                {/* Phase Milestones Clearance Filter Strip */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', width: '100%', paddingTop: '6px', borderTop: '1px dashed #E2E8F0' }}>
+                  <span style={{ fontSize: '11.5px', fontWeight: 800, color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: '4px' }}>
+                    Phase Milestones:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setPhaseClearanceFilter('all'); setCurrentPage(1); }}
+                    style={{
+                      padding: '3px 9px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: phaseClearanceFilter === 'all' ? 800 : 600,
+                      backgroundColor: phaseClearanceFilter === 'all' ? '#1E293B' : '#F1F5F9',
+                      color: phaseClearanceFilter === 'all' ? '#FFFFFF' : '#475569',
+                      border: '1px solid #CBD5E1',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    All Teams
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setPhaseClearanceFilter('p1_approved'); setCurrentPage(1); }}
+                    style={{
+                      padding: '3px 9px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: phaseClearanceFilter === 'p1_approved' ? 800 : 600,
+                      backgroundColor: phaseClearanceFilter === 'p1_approved' ? '#059669' : '#ECFDF5',
+                      color: phaseClearanceFilter === 'p1_approved' ? '#FFFFFF' : '#047857',
+                      border: '1px solid #A7F3D0',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ✓ P1 Approved ({teams.filter((t: any) => t.phase1_approved).length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setPhaseClearanceFilter('p1_pending'); setCurrentPage(1); }}
+                    style={{
+                      padding: '3px 9px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: phaseClearanceFilter === 'p1_pending' ? 800 : 600,
+                      backgroundColor: phaseClearanceFilter === 'p1_pending' ? '#64748B' : '#F8FAFC',
+                      color: phaseClearanceFilter === 'p1_pending' ? '#FFFFFF' : '#64748B',
+                      border: '1px solid #E2E8F0',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ⏳ P1 Pending ({teams.filter((t: any) => !t.phase1_approved).length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setPhaseClearanceFilter('p2_synopsis_submitted'); setCurrentPage(1); }}
+                    style={{
+                      padding: '3px 9px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: phaseClearanceFilter === 'p2_synopsis_submitted' ? 800 : 600,
+                      backgroundColor: phaseClearanceFilter === 'p2_synopsis_submitted' ? '#2563EB' : '#EFF6FF',
+                      color: phaseClearanceFilter === 'p2_synopsis_submitted' ? '#FFFFFF' : '#1D4ED8',
+                      border: '1px solid #BFDBFE',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ✓ Synopsis Done ({teams.filter((t: any) => t.phase2_approved).length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setPhaseClearanceFilter('p2_synopsis_pending'); setCurrentPage(1); }}
+                    style={{
+                      padding: '3px 9px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: phaseClearanceFilter === 'p2_synopsis_pending' ? 800 : 600,
+                      backgroundColor: phaseClearanceFilter === 'p2_synopsis_pending' ? '#D97706' : '#FFFBEB',
+                      color: phaseClearanceFilter === 'p2_synopsis_pending' ? '#FFFFFF' : '#B45309',
+                      border: '1px solid #FDE68A',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ⏳ Synopsis Due ({teams.filter((t: any) => !t.phase2_approved).length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setPhaseClearanceFilter('p3_report_submitted'); setCurrentPage(1); }}
+                    style={{
+                      padding: '3px 9px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: phaseClearanceFilter === 'p3_report_submitted' ? 800 : 600,
+                      backgroundColor: phaseClearanceFilter === 'p3_report_submitted' ? '#7C3AED' : '#F5F3FF',
+                      color: phaseClearanceFilter === 'p3_report_submitted' ? '#FFFFFF' : '#6D28D9',
+                      border: '1px solid #DDD6FE',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ✓ Report &amp; Cert Done ({teams.filter((t: any) => t.phase3_report_clearance || t.phase3_approved).length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setPhaseClearanceFilter('p3_report_pending'); setCurrentPage(1); }}
+                    style={{
+                      padding: '3px 9px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: phaseClearanceFilter === 'p3_report_pending' ? 800 : 600,
+                      backgroundColor: phaseClearanceFilter === 'p3_report_pending' ? '#9333EA' : '#FAF5FF',
+                      color: phaseClearanceFilter === 'p3_report_pending' ? '#FFFFFF' : '#7E22CE',
+                      border: '1px solid #E9D5FF',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ⏳ Report Due ({teams.filter((t: any) => !(t.phase3_report_clearance || t.phase3_approved)).length})
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', width: '100%', justifyContent: 'space-between', paddingTop: '4px' }}>
                   <div style={{ fontSize: '12.5px', color: 'var(--color-text-muted)' }}>
-                    Found <strong>{filteredTeams.length}</strong> teams
+                    Found <strong>{filteredTeams.length}</strong> teams matching filters
                   </div>
 
                   <div style={{ display: 'flex', gap: '4px' }}>
@@ -2242,6 +2421,7 @@ Output ONLY the raw valid JSON array.`;
                     <th>Team</th>
                     <th>Supervisor</th>
                     <th>Leader</th>
+                    <th>Phase Milestones</th>
                     <th>Students & Marks</th>
                     <th>Actions</th>
                   </tr>
@@ -2249,7 +2429,7 @@ Output ONLY the raw valid JSON array.`;
                 <tbody>
                   {paginatedTeams.length === 0 ? (
                     <tr>
-                      <td colSpan={5} style={{ padding: '24px 12px' }}>
+                      <td colSpan={6} style={{ padding: '24px 12px' }}>
                         <EmptyStateGraphic
                           type="search"
                           title="No Teams Match Your Criteria"
@@ -2290,6 +2470,30 @@ Output ONLY the raw valid JSON array.`;
                               Not Selected
                             </span>
                           )}
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                              <span
+                                className={`badge ${t.phase1_approved ? 'badge-success' : 'badge-neutral'}`}
+                                style={{ fontSize: '10px', padding: '1px 6px', fontWeight: 700 }}
+                              >
+                                {t.phase1_approved ? '✓ P1 Approved' : '⏳ P1 Pending'}
+                              </span>
+                              <span
+                                className={`badge ${t.phase2_approved ? 'badge-success' : 'badge-warning'}`}
+                                style={{ fontSize: '10px', padding: '1px 6px', fontWeight: 700 }}
+                              >
+                                {t.phase2_approved ? '✓ Synopsis Done' : '⏳ Synopsis Due'}
+                              </span>
+                            </div>
+                            <span
+                              className={`badge ${(t.phase3_report_clearance || t.phase3_approved) ? 'badge-success' : 'badge-neutral'}`}
+                              style={{ fontSize: '10px', padding: '1px 6px', fontWeight: 700, width: 'fit-content' }}
+                            >
+                              {(t.phase3_report_clearance || t.phase3_approved) ? '✓ Report & Cert Done' : '⏳ Report & Cert Due'}
+                            </span>
+                          </div>
                         </td>
                         <td>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
@@ -2355,6 +2559,28 @@ Output ONLY the raw valid JSON array.`;
                           {t.program} • {t.studentCount || (t.students?.length || 0)} Members
                         </div>
                       </div>
+                    </div>
+
+                    {/* Phase Milestones Bar */}
+                    <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                      <span
+                        className={`badge ${t.phase1_approved ? 'badge-success' : 'badge-neutral'}`}
+                        style={{ fontSize: '10px', padding: '2px 6px', fontWeight: 700 }}
+                      >
+                        {t.phase1_approved ? '✓ P1 Approved' : '⏳ P1 Pending'}
+                      </span>
+                      <span
+                        className={`badge ${t.phase2_approved ? 'badge-success' : 'badge-warning'}`}
+                        style={{ fontSize: '10px', padding: '2px 6px', fontWeight: 700 }}
+                      >
+                        {t.phase2_approved ? '✓ Synopsis' : '⏳ Synopsis Due'}
+                      </span>
+                      <span
+                        className={`badge ${(t.phase3_report_clearance || t.phase3_approved) ? 'badge-success' : 'badge-neutral'}`}
+                        style={{ fontSize: '10px', padding: '2px 6px', fontWeight: 700 }}
+                      >
+                        {(t.phase3_report_clearance || t.phase3_approved) ? '✓ Report & Cert' : '⏳ Report Due'}
+                      </span>
                     </div>
 
                     {/* Supervisor & Leader Section */}
@@ -4696,16 +4922,34 @@ Output ONLY the raw valid JSON array.`;
                         </div>
                       </div>
 
-                      {/* Date Picker Input */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', padding: '4px 10px', height: '34px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>Date:</span>
-                        <input
-                          type="date"
-                          style={{ border: 'none', background: 'transparent', fontSize: '11.5px', fontWeight: 600, color: '#0F172A', outline: 'none', cursor: 'pointer', width: '100%' }}
-                          value={panelFormDate}
-                          onChange={(e) => setPanelFormDate(e.target.value)}
-                          required
-                        />
+                      {/* Venue & Date Pickers Row */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', padding: '4px 10px', height: '34px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Building size={12} color="#64748B" /> Venue:
+                          </span>
+                          <input
+                            type="text"
+                            placeholder="e.g. Academic Block AB10"
+                            style={{ border: 'none', background: 'transparent', fontSize: '11.5px', fontWeight: 600, color: '#0F172A', outline: 'none', width: '100%' }}
+                            value={panelFormVenue}
+                            onChange={(e) => setPanelFormVenue(e.target.value)}
+                            required
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', padding: '4px 10px', height: '34px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748B', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Calendar size={12} color="#64748B" /> Date:
+                          </span>
+                          <input
+                            type="date"
+                            style={{ border: 'none', background: 'transparent', fontSize: '11.5px', fontWeight: 600, color: '#0F172A', outline: 'none', cursor: 'pointer', width: '100%' }}
+                            value={panelFormDate}
+                            onChange={(e) => setPanelFormDate(e.target.value)}
+                            required
+                          />
+                        </div>
                       </div>
 
                       {/* Room Selector Grid */}
@@ -5598,33 +5842,205 @@ Output ONLY the raw valid JSON array.`;
                 ) : null}
               </div>
 
+              {/* 3-Phase Milestone Clearance Status & Admin Override Deck */}
+              <div
+                style={{
+                  backgroundColor: '#F8FAFC',
+                  borderRadius: '12px',
+                  padding: '16px 18px',
+                  marginBottom: '20px',
+                  border: '1.5px solid #E2E8F0',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CheckCircle2 size={16} color="#4F46E5" />
+                    <span style={{ fontSize: '13.5px', fontWeight: 800, color: 'var(--color-ink)' }}>
+                      Team Phase Progression Milestones &amp; Clearances
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                    Direct Administrator Verification &amp; Override
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+                  {/* Phase 1: Approved to Go Forward */}
+                  <div
+                    style={{
+                      padding: '12px',
+                      borderRadius: '10px',
+                      border: selectedTeamModal.phase1_approved ? '1.5px solid #86EFAC' : '1.5px solid #E2E8F0',
+                      backgroundColor: selectedTeamModal.phase1_approved ? '#F0FDF4' : '#FFFFFF',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#166534', textTransform: 'uppercase' }}>
+                          Phase 1 Milestone
+                        </span>
+                        <span
+                          className={`badge ${selectedTeamModal.phase1_approved ? 'badge-success' : 'badge-neutral'}`}
+                          style={{ fontSize: '10px', fontWeight: 700 }}
+                        >
+                          {selectedTeamModal.phase1_approved ? 'Approved' : 'Pending'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--color-ink)', marginTop: '4px' }}>
+                        Approved to Go Forward
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={adminMilestoneSaving}
+                      onClick={() => handleToggleAdminMilestone(selectedTeamModal.id, 1, Boolean(selectedTeamModal.phase1_approved))}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        cursor: adminMilestoneSaving ? 'not-allowed' : 'pointer',
+                        border: selectedTeamModal.phase1_approved ? '1px solid #BBF7D0' : '1px solid #CBD5E1',
+                        backgroundColor: selectedTeamModal.phase1_approved ? '#DCFCE7' : '#F1F5F9',
+                        color: selectedTeamModal.phase1_approved ? '#15803D' : '#475569',
+                      }}
+                    >
+                      {selectedTeamModal.phase1_approved ? '✓ Approved (Click to Revoke)' : 'Approve to Go Forward'}
+                    </button>
+                  </div>
+
+                  {/* Phase 2: Synopsis Submitted */}
+                  <div
+                    style={{
+                      padding: '12px',
+                      borderRadius: '10px',
+                      border: selectedTeamModal.phase2_approved ? '1.5px solid #86EFAC' : '1.5px solid #E2E8F0',
+                      backgroundColor: selectedTeamModal.phase2_approved ? '#F0FDF4' : '#FFFFFF',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#166534', textTransform: 'uppercase' }}>
+                          Phase 2 Milestone
+                        </span>
+                        <span
+                          className={`badge ${selectedTeamModal.phase2_approved ? 'badge-success' : 'badge-warning'}`}
+                          style={{ fontSize: '10px', fontWeight: 700 }}
+                        >
+                          {selectedTeamModal.phase2_approved ? 'Submitted' : 'Pending'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--color-ink)', marginTop: '4px' }}>
+                        Synopsis Submitted
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={adminMilestoneSaving}
+                      onClick={() => handleToggleAdminMilestone(selectedTeamModal.id, 2, Boolean(selectedTeamModal.phase2_approved))}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        cursor: adminMilestoneSaving ? 'not-allowed' : 'pointer',
+                        border: selectedTeamModal.phase2_approved ? '1px solid #BBF7D0' : '1px solid #CBD5E1',
+                        backgroundColor: selectedTeamModal.phase2_approved ? '#DCFCE7' : '#F1F5F9',
+                        color: selectedTeamModal.phase2_approved ? '#15803D' : '#475569',
+                      }}
+                    >
+                      {selectedTeamModal.phase2_approved ? '✓ Synopsis Verified' : 'Mark Synopsis Submitted'}
+                    </button>
+                  </div>
+
+                  {/* Phase 3: Final Report & Certificate Submitted */}
+                  <div
+                    style={{
+                      padding: '12px',
+                      borderRadius: '10px',
+                      border: (selectedTeamModal.phase3_report_clearance || selectedTeamModal.phase3_approved) ? '1.5px solid #86EFAC' : '1.5px solid #E2E8F0',
+                      backgroundColor: (selectedTeamModal.phase3_report_clearance || selectedTeamModal.phase3_approved) ? '#F0FDF4' : '#FFFFFF',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: '8px',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#166534', textTransform: 'uppercase' }}>
+                          Phase 3 Milestone
+                        </span>
+                        <span
+                          className={`badge ${(selectedTeamModal.phase3_report_clearance || selectedTeamModal.phase3_approved) ? 'badge-success' : 'badge-neutral'}`}
+                          style={{ fontSize: '10px', fontWeight: 700 }}
+                        >
+                          {(selectedTeamModal.phase3_report_clearance || selectedTeamModal.phase3_approved) ? 'Submitted' : 'Pending'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--color-ink)', marginTop: '4px' }}>
+                        Report &amp; Certificate Submitted
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={adminMilestoneSaving}
+                      onClick={() => handleToggleAdminMilestone(selectedTeamModal.id, 3, Boolean(selectedTeamModal.phase3_report_clearance || selectedTeamModal.phase3_approved))}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        cursor: adminMilestoneSaving ? 'not-allowed' : 'pointer',
+                        border: (selectedTeamModal.phase3_report_clearance || selectedTeamModal.phase3_approved) ? '1px solid #BBF7D0' : '1px solid #CBD5E1',
+                        backgroundColor: (selectedTeamModal.phase3_report_clearance || selectedTeamModal.phase3_approved) ? '#DCFCE7' : '#F1F5F9',
+                        color: (selectedTeamModal.phase3_report_clearance || selectedTeamModal.phase3_approved) ? '#15803D' : '#475569',
+                      }}
+                    >
+                      {(selectedTeamModal.phase3_report_clearance || selectedTeamModal.phase3_approved) ? '✓ Report Cleared' : 'Mark Report Submitted'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* Students Scorecard & Marks Roster */}
               <div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <h4 style={{ fontSize: '15px', fontWeight: 800, margin: 0, color: 'var(--color-ink)' }}>
-                        Student Scorecard & Evaluation Marks
+                        Student Scorecard &amp; Rubrics Breakdown
                       </h4>
                       <span className="badge badge-neutral" style={{ fontSize: '11px', padding: '2px 8px' }}>
                         {selectedTeamModal.students?.length || 0} Students
                       </span>
                     </div>
                     <span style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                      Evaluated &amp; recorded by examination panels
+                      P1/P2: 3 Rubric Categories • P3: 4 Rubric Categories
                     </span>
                   </div>
                 </div>
 
                 <div className="data-table-container" style={{ border: '1px solid var(--color-border)', borderRadius: '10px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%' }}>
-                  <table className="data-table" style={{ width: '100%', minWidth: '550px', borderCollapse: 'collapse' }}>
+                  <table className="data-table" style={{ width: '100%', minWidth: '650px', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr>
-                        <th style={{ width: '32%', minWidth: '160px' }}>Student</th>
-                        <th style={{ width: '20%', minWidth: '110px' }}>Roll No</th>
-                        <th style={{ width: '16%', minWidth: '95px', textAlign: 'center' }}>Phase 1 ({getPhaseMaxMarks(1)}M)</th>
-                        <th style={{ width: '16%', minWidth: '95px', textAlign: 'center' }}>Phase 2 ({getPhaseMaxMarks(2)}M)</th>
-                        <th style={{ width: '16%', minWidth: '95px', textAlign: 'center' }}>Phase 3 ({getPhaseMaxMarks(3)}M)</th>
+                        <th style={{ width: '28%', minWidth: '150px' }}>Student</th>
+                        <th style={{ width: '16%', minWidth: '100px' }}>Roll No</th>
+                        <th style={{ width: '18%', minWidth: '130px', textAlign: 'center' }}>Phase 1 ({getPhaseMaxMarks(1)}M)</th>
+                        <th style={{ width: '18%', minWidth: '130px', textAlign: 'center' }}>Phase 2 ({getPhaseMaxMarks(2)}M)</th>
+                        <th style={{ width: '20%', minWidth: '140px', textAlign: 'center' }}>Phase 3 ({getPhaseMaxMarks(3)}M)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -5661,7 +6077,16 @@ Output ONLY the raw valid JSON array.`;
                                   Absent
                                 </span>
                               ) : (
-                                <span style={{ fontWeight: 700, color: '#059669', fontSize: '12.5px' }}>{s.phase1.score} / {getPhaseMaxMarks(1)}</span>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                  <span style={{ fontWeight: 700, color: '#059669', fontSize: '12.5px' }}>{s.phase1.score} / {getPhaseMaxMarks(1)}</span>
+                                  {s.phase1.criteria_scores && (
+                                    <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                      <span style={{ fontSize: '9px', background: '#EFF6FF', color: '#1D4ED8', padding: '1px 4px', borderRadius: '4px', border: '1px solid #DBEAFE' }} title="Presentation">📊 {s.phase1.criteria_scores.presentation ?? '-'}</span>
+                                      <span style={{ fontSize: '9px', background: '#F5F3FF', color: '#6D28D9', padding: '1px 4px', borderRadius: '4px', border: '1px solid #EDE9FE' }} title="Code">💻 {s.phase1.criteria_scores.code ?? '-'}</span>
+                                      <span style={{ fontSize: '9px', background: '#ECFDF5', color: '#047857', padding: '1px 4px', borderRadius: '4px', border: '1px solid #D1FAE5' }} title="Query Handling">💬 {s.phase1.criteria_scores.query_handling ?? '-'}</span>
+                                    </div>
+                                  )}
+                                </div>
                               )
                             ) : (
                               <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
@@ -5678,7 +6103,16 @@ Output ONLY the raw valid JSON array.`;
                                   Absent
                                 </span>
                               ) : (
-                                <span style={{ fontWeight: 700, color: '#2563EB', fontSize: '12.5px' }}>{s.phase2.score} / {getPhaseMaxMarks(2)}</span>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                  <span style={{ fontWeight: 700, color: '#2563EB', fontSize: '12.5px' }}>{s.phase2.score} / {getPhaseMaxMarks(2)}</span>
+                                  {s.phase2.criteria_scores && (
+                                    <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                      <span style={{ fontSize: '9px', background: '#EFF6FF', color: '#1D4ED8', padding: '1px 4px', borderRadius: '4px', border: '1px solid #DBEAFE' }} title="Presentation">📊 {s.phase2.criteria_scores.presentation ?? '-'}</span>
+                                      <span style={{ fontSize: '9px', background: '#F5F3FF', color: '#6D28D9', padding: '1px 4px', borderRadius: '4px', border: '1px solid #EDE9FE' }} title="Code">💻 {s.phase2.criteria_scores.code ?? '-'}</span>
+                                      <span style={{ fontSize: '9px', background: '#ECFDF5', color: '#047857', padding: '1px 4px', borderRadius: '4px', border: '1px solid #D1FAE5' }} title="Query Handling">💬 {s.phase2.criteria_scores.query_handling ?? '-'}</span>
+                                    </div>
+                                  )}
+                                </div>
                               )
                             ) : (
                               <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
@@ -5695,7 +6129,17 @@ Output ONLY the raw valid JSON array.`;
                                   Absent
                                 </span>
                               ) : (
-                                <span style={{ fontWeight: 700, color: '#7C3AED', fontSize: '12.5px' }}>{s.phase3.score} / {getPhaseMaxMarks(3)}</span>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                  <span style={{ fontWeight: 700, color: '#7C3AED', fontSize: '12.5px' }}>{s.phase3.score} / {getPhaseMaxMarks(3)}</span>
+                                  {s.phase3.criteria_scores && (
+                                    <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                      <span style={{ fontSize: '9px', background: '#EFF6FF', color: '#1D4ED8', padding: '1px 4px', borderRadius: '4px', border: '1px solid #DBEAFE' }} title="Presentation">📊 {s.phase3.criteria_scores.presentation ?? '-'}</span>
+                                      <span style={{ fontSize: '9px', background: '#F5F3FF', color: '#6D28D9', padding: '1px 4px', borderRadius: '4px', border: '1px solid #EDE9FE' }} title="Code">💻 {s.phase3.criteria_scores.code ?? '-'}</span>
+                                      <span style={{ fontSize: '9px', background: '#ECFDF5', color: '#047857', padding: '1px 4px', borderRadius: '4px', border: '1px solid #D1FAE5' }} title="Query Handling">💬 {s.phase3.criteria_scores.query_handling ?? '-'}</span>
+                                      <span style={{ fontSize: '9px', background: '#FFFBEB', color: '#B45309', padding: '1px 4px', borderRadius: '4px', border: '1px solid #FDE68A' }} title="Report & Certificate">📑 {s.phase3.criteria_scores.report ?? '-'}</span>
+                                    </div>
+                                  )}
+                                </div>
                               )
                             ) : (
                               <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>

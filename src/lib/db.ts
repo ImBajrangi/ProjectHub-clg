@@ -13,6 +13,7 @@ import {
   Panel,
   PanelMember,
   Evaluation,
+  EvaluationCriteriaScores,
   NotificationItem,
   PushSubscriptionItem,
 } from './types';
@@ -92,7 +93,7 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
   ] = await Promise.all([
     supabase.from('users').select('id, email, password_hash, role, full_name, phone, is_leader, active_session_token, active_session_device, active_session_at, reset_token, reset_token_expires_at, created_at, updated_at'),
     supabase.from('supervisors').select('id, employee_id, designation, department, created_at'),
-    supabase.from('teams').select('id, team_code, team_number, program, supervisor_id, leader_id, phase1_approved, phase2_approved, phase3_approved, phase3_report_clearance, report_url, paper_url, report_uploaded_at, created_at, updated_at').order('team_number', { ascending: true }),
+    supabase.from('teams').select('id, team_code, team_number, program, supervisor_id, leader_id, phase1_approved, phase2_approved, phase3_approved, phase3_report_clearance, synopsis_submitted, report_submitted, report_url, paper_url, report_uploaded_at, created_at, updated_at').order('team_number', { ascending: true }),
     supabase.from('students').select('id, roll_no, full_name, email, mobile, cpi, course, section, team_id, user_id, is_leader, created_at').order('roll_no', { ascending: true }),
     supabase.from('problem_statements').select('id, team_id, title, description, status, supervisor_remarks, locked, approved_at, created_at, updated_at'),
     supabase.from('meetings').select('id, team_id, supervisor_id, meeting_index, status, requested_at, scheduled_date, time_slot, venue, summary_notes, action_directives, completed_at, created_at'),
@@ -100,7 +101,7 @@ async function fetchFreshStore(): Promise<DatabaseStore> {
     supabase.from('evaluation_phases').select('id, phase_number, phase_name, description, is_live, updated_at').order('phase_number', { ascending: true }),
     supabase.from('panels').select('id, panel_number, phase_number, panel_name, date, time_window, academic_block, room_number, team_range_start, team_range_end, created_at'),
     supabase.from('panel_members').select('id, panel_id, supervisor_id, created_at'),
-    supabase.from('evaluations').select('id, team_id, student_id, panel_member_id, phase_number, score, remarks, is_absent, submitted_at'),
+    supabase.from('evaluations').select('id, team_id, student_id, panel_member_id, phase_number, score, criteria_scores, attendance_status, remarks, is_absent, submitted_at'),
     supabase.from('notifications').select('id, user_id, category, subject, body, salutation, signoff, is_read, created_at').order('created_at', { ascending: false }).limit(200),
     supabase.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth, created_at'),
   ]);
@@ -432,9 +433,15 @@ export const db = {
   },
 
   async getAvailableTeamsForLeader(): Promise<{ id: string; team_code: string; team_name: string; program: string }[]> {
-    const store = await this.getStore();
+    const store = await this.getStore(true);
     return store.teams
-      .filter((t) => !t.leader_id)
+      .filter((t) => {
+        if (!t.leader_id) return true;
+        // Self-healing check: If leader_id is set in teams table, but no student in students table has is_leader === true,
+        // it means the leader was reset/nullified in the database. Treat team as available!
+        const hasActiveStudentLeader = store.students.some((s) => s.team_id === t.id && s.is_leader);
+        return !hasActiveStudentLeader;
+      })
       .map((t) => ({
         id: t.id,
         team_code: t.team_code,
@@ -444,14 +451,18 @@ export const db = {
   },
 
   async claimTeamLeader(teamId: string, studentEmail: string): Promise<{ success: boolean; error?: string; user?: User }> {
-    const store = await this.getStore();
+    const store = await this.getStore(true);
     const team = store.teams.find((t) => t.id === teamId);
 
     if (!team) {
       return { success: false, error: 'Team not found' };
     }
     if (team.leader_id) {
-      return { success: false, error: 'A leader has already been registered for this team' };
+      // Check if there is really an active student leader in the students table
+      const hasActiveStudentLeader = store.students.some((s) => s.team_id === teamId && s.is_leader);
+      if (hasActiveStudentLeader) {
+        return { success: false, error: 'A leader has already been registered for this team' };
+      }
     }
 
     const cleanEmail = studentEmail.toLowerCase().trim();
@@ -937,7 +948,8 @@ export const db = {
   async setTeamPhaseApproval(
     teamId: string,
     phaseNumber: 1 | 2 | 3,
-    approved: boolean
+    approved: boolean,
+    isReportClearance?: boolean
   ): Promise<Team | null> {
     const store = await this.getStore();
     const team = store.teams.find((t) => t.id === teamId);
@@ -946,16 +958,33 @@ export const db = {
     if (team) {
       if (phaseNumber === 1) team.phase1_approved = approved;
       if (phaseNumber === 2) team.phase2_approved = approved;
-      if (phaseNumber === 3) team.phase3_approved = approved;
+      if (phaseNumber === 3) {
+        if (isReportClearance) {
+          team.phase3_report_clearance = approved;
+        } else {
+          team.phase3_approved = approved;
+        }
+      }
       team.updated_at = now;
     }
 
     const updates: any = { updated_at: now };
     if (phaseNumber === 1) updates.phase1_approved = approved;
     if (phaseNumber === 2) updates.phase2_approved = approved;
-    if (phaseNumber === 3) updates.phase3_approved = approved;
+    if (phaseNumber === 3) {
+      if (isReportClearance) {
+        updates.phase3_report_clearance = approved;
+      } else {
+        updates.phase3_approved = approved;
+      }
+    }
 
-    fireAndLog(supabase.from('teams').update(updates).eq('id', teamId), 'teams update (phase approval)');
+    try {
+      const { error } = await supabase.from('teams').update(updates).eq('id', teamId);
+      if (error) logSupabaseError('teams update (phase approval)', error);
+    } catch (e) {
+      console.error('[Supabase WRITE EXCEPTION] teams update phase approval:', e);
+    }
 
     return team || null;
   },
@@ -1299,7 +1328,8 @@ export const db = {
     score: number | null,
     isAbsent: boolean,
     remarks?: string,
-    attendanceStatus?: 'present' | 'absent' | 'early_joining' | 'next_shift'
+    attendanceStatus?: 'present' | 'absent' | 'early_joining' | 'next_shift',
+    criteriaScores?: EvaluationCriteriaScores | null
   ): Promise<Evaluation> {
     const store = await this.getStore();
     const now = new Date().toISOString();
@@ -1322,6 +1352,7 @@ export const db = {
       student_id: studentId,
       panel_member_id: panelMemberId,
       score: finalIsAbsent ? null : score,
+      criteria_scores: finalIsAbsent ? null : (criteriaScores !== undefined ? criteriaScores : (existingIdx !== -1 ? store.evaluations[existingIdx].criteria_scores : null)),
       is_absent: finalIsAbsent,
       attendance_status: resolvedStatus,
       remarks: remarks || null,
@@ -1346,10 +1377,14 @@ export const db = {
       submitted_at: payload.submitted_at,
     };
 
-    supabase
-      .from('evaluations')
-      .upsert(supabasePayload, { onConflict: 'phase_number,student_id,panel_member_id' })
-      .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('evaluations (upsert)', writeErr); });
+    try {
+      const { error: writeErr } = await supabase
+        .from('evaluations')
+        .upsert(supabasePayload, { onConflict: 'phase_number,student_id,panel_member_id' });
+      if (writeErr) logSupabaseError('evaluations (upsert)', writeErr);
+    } catch (err) {
+      console.error('[Supabase WRITE EXCEPTION] evaluations upsert:', err);
+    }
 
     return payload;
   },

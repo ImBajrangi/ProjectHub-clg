@@ -552,84 +552,7 @@ export default function LeaderDashboardPage() {
           </div>
         </div>
 
-        {/* Presentation Venue & Shift Announcement Card for Team Leaders */}
-        {schedules && schedules.length > 0 && (
-          <div
-            className="card"
-            style={{
-              padding: '18px 22px',
-              borderRadius: '14px',
-              border: '1.5px solid #93C5FD',
-              background: 'linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 100%)',
-              marginBottom: '22px',
-              boxShadow: '0 3px 12px rgba(37, 99, 235, 0.07)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                <div
-                  style={{
-                    width: '46px',
-                    height: '46px',
-                    borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)',
-                    color: '#FFFFFF',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
-                  }}
-                >
-                  <MapPin size={24} />
-                </div>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#1E40AF', backgroundColor: '#DBEAFE', padding: '2px 8px', borderRadius: '6px' }}>
-                      Presentation Venue Allotted
-                    </span>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#1E293B' }}>
-                      {schedules[0].panel_name || `Panel ${schedules[0].panel_number}`} (Phase {schedules[0].phase_number || 1})
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '17px', fontWeight: 800, color: '#0F172A', marginTop: '3px' }}>
-                    {schedules[0].room_number || 'Room 402'} • {schedules[0].academic_block || 'Academic Block AB10'}
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#475569', marginTop: '3px', display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                      <Clock size={13} color="#2563EB" /> Shift: <strong>{schedules[0].time_window || 'Shift 1: Morning (08:00 AM - 10:00 AM)'}</strong>
-                    </span>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                      <Calendar size={13} color="#2563EB" /> Date: <strong>{schedules[0].date || '19-Sep'}</strong>
-                    </span>
-                  </div>
-                </div>
-              </div>
 
-              <button
-                type="button"
-                onClick={() => setActiveTab('schedule')}
-                className="btn btn-outline"
-                style={{
-                  fontSize: '12.5px',
-                  fontWeight: 700,
-                  color: '#1E40AF',
-                  borderColor: '#93C5FD',
-                  backgroundColor: '#FFFFFF',
-                  padding: '9px 18px',
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                }}
-              >
-                <Award size={15} /> View Full Panel &amp; Judges Details →
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Mobbin Segmented Pill Navigation */}
         <div style={{ marginBottom: '24px' }}>
@@ -1723,107 +1646,84 @@ export default function LeaderDashboardPage() {
           </div>
         )}
 
-        {/* TAB 4: EVALUATION SCHEDULE (DETAILED BULLET POINTS & FULL PANEL JUDGE CONTACTS) */}
+        {/* TAB 4: EVALUATION SCHEDULE (STRICTLY DATE / TIME / VENUE / ROOM) */}
         {activeTab === 'schedule' && (
           <div className="card">
             <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 700 }}>Published Presentation Logistics</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: 700 }}>Published Presentation Schedule</h3>
               <p style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                Official venue and faculty evaluation panel assigned to your team.
+                Official date, time window, venue, and room number allocated for your team presentation.
               </p>
             </div>
 
             {schedules.length === 0 ? (
               <EmptyStateGraphic
                 type="panels"
-                title="No Evaluation Panel Assigned Yet"
-                description="The Project Incharge has not yet allocated an evaluation panel for your team in this phase. Once published, complete schedule, shift time, room number in AB10, and faculty judge details will appear here."
+                title="No Presentation Schedule Assigned Yet"
+                description="The Project Incharge has not yet allocated a presentation schedule for your team in this phase. Once published, your presentation date, shift time, venue, and room number will appear here."
               />
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {schedules.map((sc: any) => (
                   <div
                     key={sc.id}
                     style={{
                       backgroundColor: 'var(--color-canvas-soft)',
                       borderRadius: 'var(--rounded-md)',
-                      padding: '24px',
+                      padding: '20px 24px',
                       border: '1px solid var(--color-hairline)',
                     }}
                   >
                     {/* Header */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', borderBottom: '1px solid var(--color-hairline)', paddingBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--color-hairline)', paddingBottom: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <Award size={20} color="var(--color-accent)" />
-                        <h4 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-ink)' }}>
-                          {sc.panel_name}
+                        <Calendar size={18} color="var(--color-accent)" />
+                        <h4 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-ink)' }}>
+                          Phase {sc.phase_number} Presentation
                         </h4>
                       </div>
                       <span className="badge badge-ink" style={{ fontSize: '12px', padding: '4px 12px' }}>
-                        Phase {sc.phase_number} Evaluation
+                        {sc.date || 'TBA'}
                       </span>
                     </div>
 
-                    {/* Clean Bullet Points for Logistics */}
-                    <div style={{ marginBottom: '20px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' }}>
-                        Schedule & Location Logistics
-                      </div>
-                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>• Venue:</span>
-                          <span>{sc.academic_block || 'Academic Block AB10'}</span>
-                        </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>• Room Number:</span>
-                          <span>{sc.room_number || 'Room TBA'}</span>
-                        </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>• Date:</span>
-                          <span>{sc.date || 'To Be Announced'}</span>
-                        </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ color: 'var(--color-ink)', fontWeight: 700 }}>• Time Window / Shift:</span>
-                          <span>{sc.time_window || 'Shift 1: Morning (09:00 AM - 01:00 PM)'}</span>
-                        </li>
-                      </ul>
-                    </div>
-
-                    {/* Assigned Faculty Panel Judges with Name, Email, Phone */}
-                    <div style={{ borderTop: '1px solid var(--color-hairline)', paddingTop: '16px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' }}>
-                        Assigned Faculty Panel Judges
-                      </div>
-
-                      {sc.judges && sc.judges.length > 0 ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
-                          {sc.judges.map((j: any) => (
-                            <div
-                              key={j.id || j.email}
-                              style={{
-                                backgroundColor: '#FFFFFF',
-                                borderRadius: 'var(--rounded-sm)',
-                                border: '1px solid var(--color-hairline)',
-                                padding: '14px 16px',
-                              }}
-                            >
-                              <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-ink)', marginBottom: '4px' }}>
-                                • {j.name}
-                              </div>
-                              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
-                                <Mail size={12} /> {j.email}
-                              </div>
-                              <div style={{ fontSize: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <Phone size={12} /> {j.phone || 'N/A'}
-                              </div>
-                            </div>
-                          ))}
+                    {/* Strict 4-Item Grid: Date / Time / Venue / Room */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                      <div style={{ backgroundColor: '#FFFFFF', padding: '12px 14px', borderRadius: 'var(--rounded-sm)', border: '1px solid var(--color-hairline)' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-faint)', textTransform: 'uppercase', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Calendar size={13} color="var(--color-accent)" /> Date
                         </div>
-                      ) : (
-                        <p style={{ fontSize: '12px', color: 'var(--color-text-faint)' }}>
-                          Faculty judge assignments are being finalized by Project Incharge.
-                        </p>
-                      )}
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)' }}>
+                          {sc.date || 'To Be Announced'}
+                        </div>
+                      </div>
+
+                      <div style={{ backgroundColor: '#FFFFFF', padding: '12px 14px', borderRadius: 'var(--rounded-sm)', border: '1px solid var(--color-hairline)' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-faint)', textTransform: 'uppercase', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Clock size={13} color="var(--color-accent)" /> Time / Shift
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)' }}>
+                          {sc.time_window || 'Morning Shift'}
+                        </div>
+                      </div>
+
+                      <div style={{ backgroundColor: '#FFFFFF', padding: '12px 14px', borderRadius: 'var(--rounded-sm)', border: '1px solid var(--color-hairline)' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-faint)', textTransform: 'uppercase', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <MapPin size={13} color="var(--color-accent)" /> Venue
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)' }}>
+                          {sc.academic_block || 'Academic Block AB10'}
+                        </div>
+                      </div>
+
+                      <div style={{ backgroundColor: '#FFFFFF', padding: '12px 14px', borderRadius: 'var(--rounded-sm)', border: '1px solid var(--color-hairline)' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-text-faint)', textTransform: 'uppercase', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Building size={13} color="var(--color-accent)" /> Room Number
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)' }}>
+                          {sc.room_number || 'Room TBA'}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}

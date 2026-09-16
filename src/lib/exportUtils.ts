@@ -67,6 +67,22 @@ export function exportTeamsAndStudents(teams: any[], format: 'xlsx' | 'csv' = 'x
   (teams || []).forEach((t) => {
     const students = t.students && t.students.length > 0 ? t.students : [null];
     students.forEach((s: any) => {
+      const p1Score = s?.phase1?.score ?? (s?.phase1?.isAbsent ? 'Absent' : '-');
+      const p1Pres = s?.phase1?.criteria_scores?.presentation ?? '-';
+      const p1Code = s?.phase1?.criteria_scores?.code ?? '-';
+      const p1Query = s?.phase1?.criteria_scores?.query_handling ?? '-';
+
+      const p2Score = s?.phase2?.score ?? (s?.phase2?.isAbsent ? 'Absent' : '-');
+      const p2Pres = s?.phase2?.criteria_scores?.presentation ?? '-';
+      const p2Code = s?.phase2?.criteria_scores?.code ?? '-';
+      const p2Query = s?.phase2?.criteria_scores?.query_handling ?? '-';
+
+      const p3Score = s?.phase3?.score ?? (s?.phase3?.isAbsent ? 'Absent' : '-');
+      const p3Pres = s?.phase3?.criteria_scores?.presentation ?? '-';
+      const p3Code = s?.phase3?.criteria_scores?.code ?? '-';
+      const p3Query = s?.phase3?.criteria_scores?.query_handling ?? '-';
+      const p3Report = s?.phase3?.criteria_scores?.report ?? '-';
+
       rows.push({
         'Student S.No': s ? studentCounter++ : '-',
         'Team Code': t.team_code || `Team #${t.team_number}`,
@@ -81,10 +97,22 @@ export function exportTeamsAndStudents(teams: any[], format: 'xlsx' | 'csv' = 'x
         'Student Mobile': s ? (s.mobile || s.phone || '-') : '-',
         'Student Email': s ? (s.email || '-') : '-',
         'Problem Statement Title': t.problemStatement?.title || (t.phase1_approved ? 'Approved' : 'Pending Submission'),
-        'Phase 1 Clearance': t.phase1_approved ? 'Approved' : 'Pending',
-        'Phase 2 Clearance': t.phase2_approved ? 'Approved' : 'Pending',
-        'Phase 3 Clearance': t.phase3_approved ? 'Approved' : 'Pending',
-        'Phase 3 Report Clearance': t.phase3_report_clearance ? 'Cleared' : 'Pending',
+        'Phase 1 Clearance (Approved to Go Forward)': t.phase1_approved ? 'Approved' : 'Pending',
+        'Phase 2 Clearance (Synopsis Submitted)': t.phase2_approved ? 'Submitted' : 'Pending',
+        'Phase 3 Report Clearance (Report / Certificate Submitted)': (t.phase3_report_clearance || t.phase3_approved) ? 'Submitted' : 'Pending',
+        'Phase 1 Total': p1Score,
+        'P1 Presentation': p1Pres,
+        'P1 Code': p1Code,
+        'P1 Query Handling': p1Query,
+        'Phase 2 Total': p2Score,
+        'P2 Presentation': p2Pres,
+        'P2 Code': p2Code,
+        'P2 Query Handling': p2Query,
+        'Phase 3 Total': p3Score,
+        'P3 Presentation': p3Pres,
+        'P3 Code': p3Code,
+        'P3 Query Handling': p3Query,
+        'P3 Report': p3Report,
       });
     });
   });
@@ -104,10 +132,22 @@ export function exportTeamsAndStudents(teams: any[], format: 'xlsx' | 'csv' = 'x
     { wch: 16 }, // Student Mobile
     { wch: 28 }, // Student Email
     { wch: 40 }, // Problem Statement
-    { wch: 16 }, // P1
-    { wch: 16 }, // P2
-    { wch: 16 }, // P3
-    { wch: 24 }, // Report
+    { wch: 28 }, // P1 Clearance
+    { wch: 28 }, // P2 Synopsis
+    { wch: 34 }, // P3 Report
+    { wch: 14 }, // P1 Total
+    { wch: 15 }, // P1 Pres
+    { wch: 15 }, // P1 Code
+    { wch: 18 }, // P1 Query
+    { wch: 14 }, // P2 Total
+    { wch: 15 }, // P2 Pres
+    { wch: 15 }, // P2 Code
+    { wch: 18 }, // P2 Query
+    { wch: 14 }, // P3 Total
+    { wch: 15 }, // P3 Pres
+    { wch: 15 }, // P3 Code
+    { wch: 18 }, // P3 Query
+    { wch: 15 }, // P3 Report
   ];
 
   const wb = XLSX.utils.book_new();
@@ -311,9 +351,12 @@ export function exportMasterWorkbook(data: {
         'Roll No': s ? s.roll_no : '-',
         'Mobile': s ? (s.mobile || s.phone || '-') : '-',
         'Email': s ? s.email : '-',
-        'P1 Approved': t.phase1_approved ? 'Yes' : 'No',
-        'P2 Approved': t.phase2_approved ? 'Yes' : 'No',
-        'P3 Approved': t.phase3_approved ? 'Yes' : 'No',
+        'Phase 1 Clearance (Approved to Go Forward)': t.phase1_approved ? 'Approved' : 'Pending',
+        'Phase 2 Clearance (Synopsis Submitted)': t.phase2_approved ? 'Submitted' : 'Pending',
+        'Phase 3 Report Clearance (Report / Certificate Submitted)': (t.phase3_report_clearance || t.phase3_approved) ? 'Submitted' : 'Pending',
+        'P1 Total': s?.phase1?.score ?? (s?.phase1?.isAbsent ? 'Absent' : '-'),
+        'P2 Total': s?.phase2?.score ?? (s?.phase2?.isAbsent ? 'Absent' : '-'),
+        'P3 Total': s?.phase3?.score ?? (s?.phase3?.isAbsent ? 'Absent' : '-'),
       });
     });
   });

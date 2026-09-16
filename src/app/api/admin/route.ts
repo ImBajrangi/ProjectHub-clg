@@ -95,6 +95,7 @@ export async function GET(req: NextRequest) {
           const status = rawStatus === 'next_shift' ? 'early_joining' : rawStatus;
           return {
             score: ev.score,
+            criteria_scores: ev.criteria_scores || null,
             isAbsent: ev.is_absent,
             attendanceStatus: status,
             remarks: ev.remarks,
@@ -256,6 +257,10 @@ export async function GET(req: NextRequest) {
           totalMeetings: meetings.length,
           totalEvaluations: evaluations.length,
           defaultingCount: auditTeams.filter((t) => t.isDefaulting).length,
+          phase1ApprovedCount: auditTeams.filter((t) => t.phase1_approved).length,
+          phase2ApprovedCount: auditTeams.filter((t) => t.phase2_approved).length,
+          phase3ReportClearanceCount: auditTeams.filter((t) => t.phase3_report_clearance).length,
+          phase3ApprovedCount: auditTeams.filter((t) => t.phase3_approved).length,
         },
         teams: auditTeams,
         supervisors: enrichedSupervisors,

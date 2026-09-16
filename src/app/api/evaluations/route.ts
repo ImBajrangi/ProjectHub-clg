@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
     // 1. Submit Individual Member Scores
     if (action === 'submit_scores') {
-      const { phaseNumber, teamId, scores } = body; // scores: array of { studentId, score, isAbsent, remarks }
+      const { phaseNumber, teamId, scores, phase1Approved, phase2Approved, phase3ReportClearance, phase3Approved } = body;
       if (!phaseNumber || !teamId || !Array.isArray(scores)) {
         return NextResponse.json({ error: 'Invalid scores payload' }, { status: 400 });
       }
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
       // Conflict Check: judge cannot evaluate their own supervised team
       const team = await db.getTeamById(teamId);
-      if (team && team.supervisor_id === sessionUser.id) {
+      if (team && team.supervisor_id === sessionUser.id && sessionUser.role !== 'admin') {
         return NextResponse.json(
           { error: 'Strict Conflict Safeguard: You cannot evaluate a team you supervise.' },
           { status: 403 }
@@ -75,6 +75,8 @@ export async function POST(req: NextRequest) {
           ? Number(item.score)
           : null;
 
+        const criteriaScores = item.criteriaScores || item.criteria_scores || null;
+
         const ev = await db.saveEvaluation(
           phaseNumber,
           teamId,
@@ -83,37 +85,59 @@ export async function POST(req: NextRequest) {
           parsedScore,
           isAbsent,
           item.remarks,
-          attendanceStatus
+          attendanceStatus,
+          criteriaScores
         );
         savedEvaluations.push(ev);
       }
 
+      // Automatically sync milestone approval if passed along with submission
+      if (phase1Approved !== undefined) {
+        await db.setTeamPhaseApproval(teamId, 1, Boolean(phase1Approved));
+      }
+      if (phase2Approved !== undefined) {
+        await db.setTeamPhaseApproval(teamId, 2, Boolean(phase2Approved));
+      }
+      if (phase3ReportClearance !== undefined) {
+        await db.setTeamPhaseApproval(teamId, 3, Boolean(phase3ReportClearance), true);
+      }
+      if (phase3Approved !== undefined) {
+        await db.setTeamPhaseApproval(teamId, 3, Boolean(phase3Approved));
+      }
+
       return NextResponse.json({
         success: true,
-        message: 'Evaluation marks recorded successfully.',
+        message: 'Evaluation marks & phase milestone status recorded successfully.',
         evaluations: savedEvaluations,
       });
     }
 
-    // 2. Phase 3: Submit Report Clearance
-    if (action === 'report_clearance') {
-      const { teamId, cleared } = body;
+    // 2. Panel Phase Milestone Action (Phase 1 Approved, Phase 2 Synopsis, Phase 3 Report/Certificate)
+    if (action === 'panel_milestone_action' || action === 'report_clearance') {
+      const { teamId, phaseNumber, approved, cleared, type } = body;
+      const phaseNum = Number(phaseNumber || 3) as 1 | 2 | 3;
+
       const phases = await db.getPhases();
-      const phase3Config = phases.find((p: any) => p.phase_number === 3);
-      if (phase3Config && !phase3Config.is_live && sessionUser.role !== 'admin') {
+      const targetPhaseConfig = phases.find((p: any) => p.phase_number === phaseNum);
+      if (targetPhaseConfig && !targetPhaseConfig.is_live && sessionUser.role !== 'admin') {
         return NextResponse.json(
-          { error: 'Phase 3 evaluation has been stopped and locked by the Project Incharge Administrator. Report clearance cannot be modified.' },
+          { error: `Phase ${phaseNum} evaluation has been stopped and locked. Milestone status cannot be modified.` },
           { status: 403 }
         );
       }
+
       const team = await db.getTeamById(teamId);
       if (!team) return NextResponse.json({ error: 'Team not found' }, { status: 404 });
 
-      await db.updateTeam(teamId, { phase3_report_clearance: Boolean(cleared) });
+      const isApproved = approved !== undefined ? Boolean(approved) : cleared !== undefined ? Boolean(cleared) : true;
+      const isReport = type === 'report_clearance' || action === 'report_clearance' || phaseNum === 3;
+
+      const updatedTeam = await db.setTeamPhaseApproval(teamId, phaseNum, isApproved, isReport);
 
       return NextResponse.json({
         success: true,
-        message: 'Phase 3 Report Clearance submitted successfully.',
+        message: `Phase ${phaseNum} milestone status successfully updated.`,
+        team: updatedTeam,
       });
     }
 

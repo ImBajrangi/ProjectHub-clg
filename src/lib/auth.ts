@@ -152,15 +152,34 @@ export const auth = {
     const session = this.verifyToken(token);
     if (!session) return null;
 
-    const user = await db.getUserById(session.userId);
-    if (!user) return null;
+    // Direct DB query ensures cross-instance serverless consistency with 0ms split-brain lag
+    try {
+      const { data: dbUser, error } = await db.supabase
+        .from('users')
+        .select('id, email, password_hash, role, full_name, phone, is_leader, active_session_token, active_session_device, active_session_at, reset_token, reset_token_expires_at, created_at, updated_at')
+        .eq('id', session.userId)
+        .maybeSingle();
+
+      if (!error && dbUser) {
+        const user = dbUser as User;
+        if (user.role === 'leader' && user.active_session_token && user.active_session_token !== session.sessionToken) {
+          return null;
+        }
+        return user;
+      }
+    } catch (e) {
+      console.warn('Direct auth session check failed, falling back to local store:', e);
+    }
+
+    const fallbackUser = await db.getUserById(session.userId);
+    if (!fallbackUser) return null;
 
     // For leaders, verify sessionToken matches active_session_token
-    if (user.role === 'leader' && user.active_session_token !== session.sessionToken) {
+    if (fallbackUser.role === 'leader' && fallbackUser.active_session_token && fallbackUser.active_session_token !== session.sessionToken) {
       return null;
     }
 
-    return user;
+    return fallbackUser;
   },
 
   // In-portal password update with MANDATORY SECURITY FLUSH

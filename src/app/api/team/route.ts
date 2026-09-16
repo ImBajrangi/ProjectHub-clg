@@ -119,32 +119,18 @@ export async function GET(req: NextRequest) {
             team.team_number >= (p.team_range_start || 0) &&
             team.team_number <= (p.team_range_end || 999)
         )
-        .map((p) => {
-          const members = (store.panel_members || []).filter((pm) => pm && String(pm.panel_id) === String(p.id));
-          const judgeUsers = members
-            .map((m) => (store.users || []).find((u) => u && String(u.id) === String(m.supervisor_id)))
-            .filter(Boolean)
-            .map((j) => ({
-              id: j!.id,
-              name: j!.full_name,
-              email: j!.email,
-              phone: j!.phone,
-            }));
-
-          return {
-            id: p.id,
-            panel_number: p.panel_number,
-            phase_number: p.phase_number,
-            name: p.panel_name || `Panel ${p.panel_number}`,
-            panel_name: p.panel_name || `Panel ${p.panel_number}`,
-            date: p.date || (Number(p.phase_number) === 1 ? '19-Sep' : Number(p.phase_number) === 2 ? '17-Oct' : 'Final Defense'),
-            time_window: p.time_window || 'Batch 1: Morning (08:00 AM - 10:00 AM)',
-            academic_block: p.academic_block || 'Academic Block AB10',
-            room_number: p.room_number || 'Room 402',
-            venue: `${p.room_number || 'Room 402'}, ${p.academic_block || 'Academic Block AB10'}`,
-            judges: judgeUsers,
-          };
-        });
+        .map((p) => ({
+          id: p.id,
+          panel_number: p.panel_number,
+          phase_number: p.phase_number,
+          name: p.panel_name || `Phase ${p.phase_number} Presentation`,
+          panel_name: p.panel_name || `Phase ${p.phase_number} Presentation`,
+          date: p.date || (Number(p.phase_number) === 1 ? '19-Sep' : Number(p.phase_number) === 2 ? '17-Oct' : 'Final Defense'),
+          time_window: p.time_window || 'Morning Shift',
+          academic_block: p.academic_block || 'Academic Block AB10',
+          room_number: p.room_number || 'Room TBA',
+          venue: `${p.academic_block || 'Academic Block AB10'} - ${p.room_number || 'Room TBA'}`,
+        }));
 
       return NextResponse.json(
         {

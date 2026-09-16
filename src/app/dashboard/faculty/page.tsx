@@ -44,12 +44,61 @@ import {
   Lock,
   Shield,
   Edit3,
+  Code2,
+  FileCheck,
+  HelpCircle,
+  Layers,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LoadingScreen from '@/components/LoadingScreen';
 import EmptyStateGraphic from '@/components/EmptyStateGraphic';
 import { clientCache } from '@/lib/clientCache';
+
+const getPhaseRubricConfig = (phaseNumber: number, totalMaxMarks: number) => {
+  if (phaseNumber === 1) {
+    // Phase 1: 3 categories (Presentation, Code, Query Handling)
+    const presentationMax = totalMaxMarks === 20 ? 6 : Math.max(1, Math.round(totalMaxMarks * 0.3));
+    const codeMax = totalMaxMarks === 20 ? 8 : Math.max(1, Math.round(totalMaxMarks * 0.4));
+    const queryHandlingMax = Math.max(1, totalMaxMarks - presentationMax - codeMax);
+    return {
+      categories: [
+        { key: 'presentation', label: 'Presentation & Ideation', shortLabel: 'Presentation', icon: 'presentation', max: presentationMax, desc: 'Clarity, slide deck, conceptual soundness' },
+        { key: 'code', label: 'Code & Architecture', shortLabel: 'Code', icon: 'code', max: codeMax, desc: 'Codebase structure, repo sanity, tech stack' },
+        { key: 'query_handling', label: 'Query Handling & Viva', shortLabel: 'Query Handling', icon: 'query', max: queryHandlingMax, desc: 'Viva defense, Q&A responses, individual grasp' },
+      ],
+      totalMax: totalMaxMarks,
+    };
+  } else if (phaseNumber === 2) {
+    // Phase 2: 3 categories (Presentation, Code, Query Handling)
+    const presentationMax = totalMaxMarks === 40 ? 12 : Math.max(1, Math.round(totalMaxMarks * 0.3));
+    const codeMax = totalMaxMarks === 40 ? 16 : Math.max(1, Math.round(totalMaxMarks * 0.4));
+    const queryHandlingMax = Math.max(1, totalMaxMarks - presentationMax - codeMax);
+    return {
+      categories: [
+        { key: 'presentation', label: 'Presentation & Working Demo', shortLabel: 'Presentation', icon: 'presentation', max: presentationMax, desc: 'Functional prototype demo & progress overview' },
+        { key: 'code', label: 'Code Quality & Implementation', shortLabel: 'Code', icon: 'code', max: codeMax, desc: 'API design, clean architecture, version control' },
+        { key: 'query_handling', label: 'Query Handling & Defense', shortLabel: 'Query Handling', icon: 'query', max: queryHandlingMax, desc: 'Technical troubleshooting & viva questions' },
+      ],
+      totalMax: totalMaxMarks,
+    };
+  } else {
+    // Phase 3: 4 categories (Presentation, Code, Query Handling, Report)
+    const presentationMax = totalMaxMarks === 40 ? 10 : Math.max(1, Math.round(totalMaxMarks * 0.25));
+    const codeMax = totalMaxMarks === 40 ? 12 : Math.max(1, Math.round(totalMaxMarks * 0.30));
+    const queryHandlingMax = totalMaxMarks === 40 ? 10 : Math.max(1, Math.round(totalMaxMarks * 0.25));
+    const reportMax = Math.max(1, totalMaxMarks - presentationMax - codeMax - queryHandlingMax);
+    return {
+      categories: [
+        { key: 'presentation', label: 'Presentation & Final Defense', shortLabel: 'Presentation', icon: 'presentation', max: presentationMax, desc: 'Final project defense & end-to-end presentation' },
+        { key: 'code', label: 'Code & Project Deployment', shortLabel: 'Code', icon: 'code', max: codeMax, desc: 'Complete working build, test cases, deployment' },
+        { key: 'query_handling', label: 'Query Handling & Viva Q&A', shortLabel: 'Query Handling', icon: 'query', max: queryHandlingMax, desc: 'In-depth viva answers & architectural defense' },
+        { key: 'report', label: 'Report / Certificate & Docs', shortLabel: 'Report & Cert', icon: 'report', max: reportMax, desc: 'Final documentation, certificates, paper formatting' },
+      ],
+      totalMax: totalMaxMarks,
+    };
+  }
+};
 
 export default function FacultyDashboardPage() {
   const router = useRouter();
@@ -58,6 +107,40 @@ export default function FacultyDashboardPage() {
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [panelData, setPanelData] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+
+  // Panel Mode State
+  const [panelTeamSearch, setPanelTeamSearch] = useState('');
+  const [panelTeamLoading, setPanelTeamLoading] = useState(false);
+  const [selectedPanelTeam, setSelectedPanelTeam] = useState<any>(null);
+  const [selectedPanelPhase, setSelectedPanelPhase] = useState<number>(1);
+  const [panelTeamMembers, setPanelTeamMembers] = useState<any[]>([]);
+  const [studentScores, setStudentScores] = useState<
+    Record<
+      string,
+      {
+        score: string;
+        presentation?: string;
+        code?: string;
+        query_handling?: string;
+        report?: string;
+        isAbsent: boolean;
+        attendanceStatus?: 'present' | 'absent' | 'early_joining' | 'next_shift';
+        remarks: string;
+      }
+    >
+  >({});
+  const [teamMilestoneStatus, setTeamMilestoneStatus] = useState<{
+    phase1_approved: boolean;
+    phase2_approved: boolean;
+    phase3_report_clearance: boolean;
+    phase3_approved: boolean;
+  }>({
+    phase1_approved: false,
+    phase2_approved: false,
+    phase3_report_clearance: false,
+    phase3_approved: false,
+  });
+  const [teamMilestoneSaving, setTeamMilestoneSaving] = useState(false);
   const [mode, setMode] = useState<'supervisor' | 'panel'>('supervisor');
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
 
@@ -117,14 +200,6 @@ export default function FacultyDashboardPage() {
   const [meetingSummary, setMeetingSummary] = useState('');
   const [actionDirectives, setActionDirectives] = useState('');
   const [attendanceList, setAttendanceList] = useState<{ studentId: string; name: string; roll: string; isPresent: boolean }[]>([]);
-
-  // Panel Mode State
-  const [panelTeamSearch, setPanelTeamSearch] = useState('');
-  const [panelTeamLoading, setPanelTeamLoading] = useState(false);
-  const [selectedPanelTeam, setSelectedPanelTeam] = useState<any>(null);
-  const [selectedPanelPhase, setSelectedPanelPhase] = useState<number>(1);
-  const [panelTeamMembers, setPanelTeamMembers] = useState<any[]>([]);
-  const [studentScores, setStudentScores] = useState<Record<string, { score: string; isAbsent: boolean; attendanceStatus?: 'present' | 'absent' | 'early_joining' | 'next_shift'; remarks: string }>>({});
   const [teamFeedback, setTeamFeedback] = useState<string>('');
   const [scoringLoading, setScoringLoading] = useState(false);
   const [savingStudentId, setSavingStudentId] = useState<string | null>(null);
@@ -625,6 +700,12 @@ export default function FacultyDashboardPage() {
     setSelectedPanelPhase(phaseNumber);
     setScoreMessage('');
     setPanelTeamLoading(true);
+    setTeamMilestoneStatus({
+      phase1_approved: Boolean(team.phase1_approved),
+      phase2_approved: Boolean(team.phase2_approved),
+      phase3_report_clearance: Boolean(team.phase3_report_clearance),
+      phase3_approved: Boolean(team.phase3_approved),
+    });
 
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -638,6 +719,15 @@ export default function FacultyDashboardPage() {
 
       const data = teamRes.ok ? await teamRes.json() : {};
       const students = data.members || [];
+      const freshTeam = data.team || {};
+      if (freshTeam.id) {
+        setTeamMilestoneStatus({
+          phase1_approved: Boolean(freshTeam.phase1_approved),
+          phase2_approved: Boolean(freshTeam.phase2_approved),
+          phase3_report_clearance: Boolean(freshTeam.phase3_report_clearance),
+          phase3_approved: Boolean(freshTeam.phase3_approved),
+        });
+      }
       setPanelTeamMembers(students);
 
       const evData = evRes.ok ? await evRes.json() : {};
@@ -657,8 +747,13 @@ export default function FacultyDashboardPage() {
         if (existing?.remarks && !foundFeedback) {
           foundFeedback = existing.remarks;
         }
+        const crit = existing?.criteria_scores || {};
         initialScores[s.id] = {
           score: hasScore ? String(existing.score) : '',
+          presentation: crit.presentation !== undefined && crit.presentation !== null ? String(crit.presentation) : '',
+          code: crit.code !== undefined && crit.code !== null ? String(crit.code) : '',
+          query_handling: crit.query_handling !== undefined && crit.query_handling !== null ? String(crit.query_handling) : '',
+          report: crit.report !== undefined && crit.report !== null ? String(crit.report) : '',
           isAbsent,
           attendanceStatus: status,
           remarks: existing?.remarks || '',
@@ -681,6 +776,47 @@ export default function FacultyDashboardPage() {
     }
   };
 
+  const handleToggleTeamMilestone = async (phaseNum: number, approved: boolean, isReport = false) => {
+    if (!selectedPanelTeam) return;
+    setTeamMilestoneSaving(true);
+    try {
+      const res = await fetch('/api/evaluations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'panel_milestone_action',
+          teamId: selectedPanelTeam.id,
+          phaseNumber: phaseNum,
+          approved,
+          type: isReport ? 'report_clearance' : 'progression',
+        }),
+      });
+      const resData = await res.json();
+      if (res.ok) {
+        setTeamMilestoneStatus((prev) => ({
+          ...prev,
+          ...(phaseNum === 1 ? { phase1_approved: approved } : {}),
+          ...(phaseNum === 2 ? { phase2_approved: approved } : {}),
+          ...(phaseNum === 3 ? (isReport ? { phase3_report_clearance: approved } : { phase3_approved: approved }) : {}),
+        }));
+        setSelectedPanelTeam((prev: any) => prev ? {
+          ...prev,
+          ...(phaseNum === 1 ? { phase1_approved: approved } : {}),
+          ...(phaseNum === 2 ? { phase2_approved: approved } : {}),
+          ...(phaseNum === 3 ? (isReport ? { phase3_report_clearance: approved } : { phase3_approved: approved }) : {}),
+        } : null);
+        loadFacultyData();
+      } else {
+        setScoreMessage(`Milestone error: ${resData.error}`);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setScoreMessage(`Milestone error: ${err.message}`);
+    } finally {
+      setTeamMilestoneSaving(false);
+    }
+  };
+
   const handleSubmitScores = async (phaseNumber: number) => {
     if (!selectedPanelTeam) return;
 
@@ -694,13 +830,31 @@ export default function FacultyDashboardPage() {
     setScoringLoading(true);
     setScoreMessage('');
 
-    const payloadScores = Object.entries(studentScores).map(([studentId, item]) => ({
-      studentId,
-      score: item.isAbsent ? null : item.score !== '' ? parseFloat(item.score) : null,
-      isAbsent: item.isAbsent,
-      attendanceStatus: item.attendanceStatus || (item.isAbsent ? 'absent' : 'present'),
-      remarks: teamFeedback || item.remarks || '',
-    }));
+    const payloadScores = Object.entries(studentScores).map(([studentId, item]) => {
+      const parsedPres = item.presentation !== undefined && item.presentation !== '' ? parseFloat(item.presentation) : null;
+      const parsedCode = item.code !== undefined && item.code !== '' ? parseFloat(item.code) : null;
+      const parsedQuery = item.query_handling !== undefined && item.query_handling !== '' ? parseFloat(item.query_handling) : null;
+      const parsedReport = item.report !== undefined && item.report !== '' ? parseFloat(item.report) : null;
+
+      let computedScore = item.score !== '' ? parseFloat(item.score) : null;
+      if (computedScore === null && (parsedPres !== null || parsedCode !== null || parsedQuery !== null || parsedReport !== null)) {
+        computedScore = (parsedPres || 0) + (parsedCode || 0) + (parsedQuery || 0) + (parsedReport || 0);
+      }
+
+      return {
+        studentId,
+        score: item.isAbsent ? null : computedScore,
+        criteriaScores: item.isAbsent ? null : {
+          presentation: parsedPres,
+          code: parsedCode,
+          query_handling: parsedQuery,
+          ...(phaseNumber === 3 ? { report: parsedReport } : {}),
+        },
+        isAbsent: item.isAbsent,
+        attendanceStatus: item.attendanceStatus || (item.isAbsent ? 'absent' : 'present'),
+        remarks: teamFeedback || item.remarks || '',
+      };
+    });
 
     try {
       const res = await fetch('/api/evaluations', {
@@ -711,6 +865,9 @@ export default function FacultyDashboardPage() {
           phaseNumber,
           teamId: selectedPanelTeam.id,
           scores: payloadScores,
+          ...(phaseNumber === 1 ? { phase1Approved: teamMilestoneStatus.phase1_approved } : {}),
+          ...(phaseNumber === 2 ? { phase2Approved: teamMilestoneStatus.phase2_approved } : {}),
+          ...(phaseNumber === 3 ? { phase3ReportClearance: teamMilestoneStatus.phase3_report_clearance } : {}),
         }),
       });
 
@@ -718,7 +875,7 @@ export default function FacultyDashboardPage() {
       if (!res.ok) {
         setScoreMessage(`Error: ${data.error}`);
       } else {
-        setScoreMessage('Scores and team feedback successfully recorded and synchronized to academic ledger.');
+        setScoreMessage('Scores and phase milestone status recorded and synchronized to academic ledger.');
         
         // Immediately mask all candidates with dots and close active editing
         const allSubmitted = new Set<string>();
@@ -762,7 +919,16 @@ export default function FacultyDashboardPage() {
 
     setSavingStudentId(studentId);
     try {
-      const parsedScore = current.isAbsent ? null : current.score !== '' ? parseFloat(current.score) : null;
+      const parsedPres = current.presentation !== undefined && current.presentation !== '' ? parseFloat(current.presentation) : null;
+      const parsedCode = current.code !== undefined && current.code !== '' ? parseFloat(current.code) : null;
+      const parsedQuery = current.query_handling !== undefined && current.query_handling !== '' ? parseFloat(current.query_handling) : null;
+      const parsedReport = current.report !== undefined && current.report !== '' ? parseFloat(current.report) : null;
+
+      let computedScore = current.score !== '' ? parseFloat(current.score) : null;
+      if (computedScore === null && (parsedPres !== null || parsedCode !== null || parsedQuery !== null || parsedReport !== null)) {
+        computedScore = (parsedPres || 0) + (parsedCode || 0) + (parsedQuery || 0) + (parsedReport || 0);
+      }
+
       const res = await fetch('/api/evaluations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -773,7 +939,13 @@ export default function FacultyDashboardPage() {
           scores: [
             {
               studentId,
-              score: parsedScore,
+              score: current.isAbsent ? null : computedScore,
+              criteriaScores: current.isAbsent ? null : {
+                presentation: parsedPres,
+                code: parsedCode,
+                query_handling: parsedQuery,
+                ...(selectedPanelPhase === 3 ? { report: parsedReport } : {}),
+              },
               isAbsent: current.isAbsent,
               attendanceStatus: current.attendanceStatus || (current.isAbsent ? 'absent' : 'present'),
               remarks: teamFeedback || current.remarks || '',
@@ -2576,661 +2748,768 @@ export default function FacultyDashboardPage() {
                   )}
                 </div>
 
-                {/* SECTION 2: Direct Individual Member Scoring Deck */}
-                <div
-                  className="card"
-                  style={{
-                    padding: '24px',
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '16px',
-                    border: '1px solid var(--color-hairline)',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
-                  }}
-                >
-                  {/* SECTION 2: Interactive Individual Student Scoring Cards Deck */}
+                    {/* PHASE PROGRESSION & MILESTONE VERIFICATION STRIP */}
+                  {selectedPanelPhase === 1 ? (
+                    <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1.5px solid #A7F3D0', backgroundColor: '#ECFDF5', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#047857' }}>
+                          <Compass size={22} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '14.5px', fontWeight: 800, color: '#065F46', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            Phase 1 Progression Clearance (Panel Sign-off)
+                            {teamMilestoneStatus.phase1_approved ? (
+                              <span className="badge badge-success" style={{ fontSize: '11px' }}>✅ Approved to Go Forward</span>
+                            ) : (
+                              <span className="badge badge-warning" style={{ fontSize: '11px' }}>⏳ Clearance Pending</span>
+                            )}
+                          </div>
+                          <p style={{ fontSize: '12px', color: '#047857', margin: '2px 0 0 0' }}>
+                            After conducting the Phase 1 ideation and PPT defense, confirm if this team is cleared to advance to Phase 2.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={!isPhaseLive || teamMilestoneSaving}
+                        onClick={() => handleToggleTeamMilestone(1, !teamMilestoneStatus.phase1_approved)}
+                        className={teamMilestoneStatus.phase1_approved ? "btn btn-outline" : "btn btn-primary"}
+                        style={{
+                          padding: '8px 18px',
+                          fontSize: '12.5px',
+                          fontWeight: 700,
+                          gap: '6px',
+                          borderRadius: '8px',
+                          backgroundColor: teamMilestoneStatus.phase1_approved ? '#FFFFFF' : '#059669',
+                          borderColor: '#059669',
+                          color: teamMilestoneStatus.phase1_approved ? '#059669' : '#FFFFFF',
+                          cursor: isPhaseLive ? 'pointer' : 'not-allowed',
+                        }}
+                      >
+                        {teamMilestoneSaving ? <RefreshCw size={13} className="animate-spin" /> : teamMilestoneStatus.phase1_approved ? <><CheckCircle size={14} /> Approved (Click to Revoke)</> : <><Check size={14} /> Approve to Go Forward</>}
+                      </button>
+                    </div>
+                  ) : selectedPanelPhase === 2 ? (
+                    <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1.5px solid #BFDBFE', backgroundColor: '#EFF6FF', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#DBEAFE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1D4ED8' }}>
+                          <FileCheck size={22} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '14.5px', fontWeight: 800, color: '#1E40AF', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            Phase 2 Synopsis Submission Verification
+                            {teamMilestoneStatus.phase2_approved ? (
+                              <span className="badge badge-success" style={{ fontSize: '11px' }}>📄 Synopsis Submitted</span>
+                            ) : (
+                              <span className="badge badge-warning" style={{ fontSize: '11px' }}>⏳ Synopsis Pending</span>
+                            )}
+                          </div>
+                          <p style={{ fontSize: '12px', color: '#1E3A8A', margin: '2px 0 0 0' }}>
+                            Verify that the team has submitted the required working prototype synopsis and design specifications.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={!isPhaseLive || teamMilestoneSaving}
+                        onClick={() => handleToggleTeamMilestone(2, !teamMilestoneStatus.phase2_approved)}
+                        className={teamMilestoneStatus.phase2_approved ? "btn btn-outline" : "btn btn-primary"}
+                        style={{
+                          padding: '8px 18px',
+                          fontSize: '12.5px',
+                          fontWeight: 700,
+                          gap: '6px',
+                          borderRadius: '8px',
+                          backgroundColor: teamMilestoneStatus.phase2_approved ? '#FFFFFF' : '#2563EB',
+                          borderColor: '#2563EB',
+                          color: teamMilestoneStatus.phase2_approved ? '#2563EB' : '#FFFFFF',
+                          cursor: isPhaseLive ? 'pointer' : 'not-allowed',
+                        }}
+                      >
+                        {teamMilestoneSaving ? <RefreshCw size={13} className="animate-spin" /> : teamMilestoneStatus.phase2_approved ? <><CheckCircle size={14} /> Synopsis Verified (Click to Undo)</> : <><Check size={14} /> Mark Synopsis Submitted</>}
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ padding: '16px 20px', borderRadius: '12px', border: '1.5px solid #DDD6FE', backgroundColor: '#F5F3FF', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#EDE9FE', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6D28D9' }}>
+                          <GraduationCap size={22} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '14.5px', fontWeight: 800, color: '#5B21B6', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            Phase 3 Final Report &amp; Certificate Clearance
+                            {teamMilestoneStatus.phase3_report_clearance ? (
+                              <span className="badge badge-success" style={{ fontSize: '11px' }}>🎓 Report &amp; Certificate Submitted</span>
+                            ) : (
+                              <span className="badge badge-warning" style={{ fontSize: '11px' }}>⏳ Report/Certificate Pending</span>
+                            )}
+                          </div>
+                          <p style={{ fontSize: '12px', color: '#6D28D9', margin: '2px 0 0 0' }}>
+                            Confirm final project report, research manuscript defense, and supervisor certificate submission.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={!isPhaseLive || teamMilestoneSaving}
+                        onClick={() => handleToggleTeamMilestone(3, !teamMilestoneStatus.phase3_report_clearance, true)}
+                        className={teamMilestoneStatus.phase3_report_clearance ? "btn btn-outline" : "btn btn-primary"}
+                        style={{
+                          padding: '8px 18px',
+                          fontSize: '12.5px',
+                          fontWeight: 700,
+                          gap: '6px',
+                          borderRadius: '8px',
+                          backgroundColor: teamMilestoneStatus.phase3_report_clearance ? '#FFFFFF' : '#7C3AED',
+                          borderColor: '#7C3AED',
+                          color: teamMilestoneStatus.phase3_report_clearance ? '#7C3AED' : '#FFFFFF',
+                          cursor: isPhaseLive ? 'pointer' : 'not-allowed',
+                        }}
+                      >
+                        {teamMilestoneSaving ? <RefreshCw size={13} className="animate-spin" /> : teamMilestoneStatus.phase3_report_clearance ? <><CheckCircle size={14} /> Report/Cert Submitted (Undo)</> : <><Check size={14} /> Mark Report &amp; Certificate Submitted</>}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* SECTION 2: Direct Individual Member Scoring Deck */}
                   <div
+                    className="card"
                     style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                      gap: '16px',
-                      marginBottom: '22px',
-                      paddingBottom: '18px',
-                      borderBottom: '1px solid var(--color-hairline)',
+                      padding: '24px',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '16px',
+                      border: '1px solid var(--color-hairline)',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
                     }}
                   >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <h3 style={{ fontSize: '19px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.01em', margin: 0, display: 'flex', alignItems: 'center', gap: '9px' }}>
-                          <Award size={21} className="text-indigo-600" color="#4F46E5" /> Individual Candidate Scoring Deck
-                        </h3>
-                        <span className="badge badge-brand" style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px' }}>
-                          Phase {selectedPanelPhase}
-                        </span>
+                    {/* SECTION 2: Interactive Individual Student Scoring Cards Deck */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '16px',
+                        marginBottom: '22px',
+                        paddingBottom: '18px',
+                        borderBottom: '1px solid var(--color-hairline)',
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <h3 style={{ fontSize: '19px', fontWeight: 800, color: 'var(--color-ink)', letterSpacing: '-0.01em', margin: 0, display: 'flex', alignItems: 'center', gap: '9px' }}>
+                            <Award size={21} className="text-indigo-600" color="#4F46E5" /> Individual Candidate Scoring Deck
+                          </h3>
+                          <span className="badge badge-brand" style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px' }}>
+                            Phase {selectedPanelPhase}
+                          </span>
+                        </div>
+                        <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: 0 }}>
+                          {selectedPanelPhase === 3
+                            ? 'Score candidates across 4 rubric categories: Presentation, Code, Query Handling, and Report/Certificate.'
+                            : 'Score candidates across 3 rubric categories: Presentation, Code, and Query Handling.'}
+                        </p>
                       </div>
-                      <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', marginTop: '4px', marginBottom: 0 }}>
-                        Score each candidate with instant presets, individual confirmation safeguards, and viva defense feedback.
-                      </p>
-                    </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                      {/* Metric summary badges */}
-                      {(() => {
-                        const total = panelTeamMembers.length;
-                        const scoredCount = panelTeamMembers.filter((m) => {
-                          const s = studentScores[m.id];
-                          return s && (s.isAbsent || (s.score !== '' && !isNaN(parseFloat(s.score))));
-                        }).length;
-                        const activePhaseConfig = evaluationPhases.find((p: any) => p.phase_number === (selectedPanelPhase || 1));
-                        const maxMarks = activePhaseConfig?.marks_weightage || activePhaseConfig?.max_marks || (selectedPanelPhase === 1 ? 20 : selectedPanelPhase === 2 ? 40 : 40);
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        {/* Metric summary badges */}
+                        {(() => {
+                          const total = panelTeamMembers.length;
+                          const scoredCount = panelTeamMembers.filter((m) => {
+                            const s = studentScores[m.id];
+                            return s && (s.isAbsent || (s.score !== '' && !isNaN(parseFloat(s.score))));
+                          }).length;
+                          const activePhaseConfig = evaluationPhases.find((p: any) => p.phase_number === (selectedPanelPhase || 1));
+                          const maxMarks = activePhaseConfig?.marks_weightage || activePhaseConfig?.max_marks || (selectedPanelPhase === 1 ? 20 : selectedPanelPhase === 2 ? 40 : 40);
 
-                        const validNumericScores = panelTeamMembers
-                          .map((m) => studentScores[m.id])
-                          .filter((s) => s && !s.isAbsent && s.score !== '' && !isNaN(parseFloat(s.score)))
-                          .map((s) => parseFloat(s.score));
+                          const validNumericScores = panelTeamMembers
+                            .map((m) => studentScores[m.id])
+                            .filter((s) => s && !s.isAbsent && s.score !== '' && !isNaN(parseFloat(s.score)))
+                            .map((s) => parseFloat(s.score));
 
-                        const avg = validNumericScores.length > 0
-                          ? (validNumericScores.reduce((a, b) => a + b, 0) / validNumericScores.length).toFixed(1)
-                          : '—';
+                          const avg = validNumericScores.length > 0
+                            ? (validNumericScores.reduce((a, b) => a + b, 0) / validNumericScores.length).toFixed(1)
+                            : '—';
 
-                        return (
-                          <>
-                            <div
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                padding: '6px 14px',
-                                borderRadius: '8px',
-                                backgroundColor: scoredCount === total && total > 0 ? '#ECFDF5' : '#F1F5F9',
-                                border: scoredCount === total && total > 0 ? '1px solid #A7F3D0' : '1px solid #CBD5E1',
-                                fontSize: '12.5px',
-                                color: scoredCount === total && total > 0 ? '#059669' : '#475569',
-                                fontWeight: 700,
-                              }}
-                            >
-                              <CheckCircle2 size={14} color={scoredCount === total && total > 0 ? '#059669' : '#64748B'} />
-                              <span>Progress: <strong>{scoredCount} / {total} Scored</strong></span>
-                            </div>
-
-                            <div
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                padding: '6px 14px',
-                                borderRadius: '8px',
-                                backgroundColor: '#EFF6FF',
-                                border: '1px solid #BFDBFE',
-                                fontSize: '12.5px',
-                                color: '#1E40AF',
-                                fontWeight: 600,
-                              }}
-                            >
-                              <Star size={14} color="#2563EB" fill="#2563EB" />
-                              <span>Average: <strong>{scorePrivacy ? '● ● ●' : avg} / {maxMarks}</strong></span>
-                            </div>
-                          </>
-                        );
-                      })()}
-
-                      {/* Score Privacy Toggle Button */}
-                      <button
-                        type="button"
-                        onClick={() => setScorePrivacy(!scorePrivacy)}
-                        className="btn btn-outline"
-                        style={{
-                          fontSize: '12px',
-                          padding: '6px 14px',
-                          fontWeight: 700,
-                          borderRadius: '8px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          backgroundColor: scorePrivacy ? '#EFF6FF' : '#FFFFFF',
-                          color: scorePrivacy ? '#1D4ED8' : '#475569',
-                          border: scorePrivacy ? '1.5px solid #93C5FD' : '1px solid #CBD5E1',
-                        }}
-                        title={scorePrivacy ? 'Scores are hidden with dots. Click to reveal.' : 'Scores are visible. Click to mask with dots.'}
-                      >
-                        {scorePrivacy ? (
-                          <>
-                            <Lock size={13} color="#2563EB" /> Privacy: Dots Only (Active)
-                          </>
-                        ) : (
-                          <>
-                            <Eye size={13} /> Privacy: Off (Scores Visible)
-                          </>
-                        )}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = { ...studentScores };
-                          panelTeamMembers.forEach((m) => {
-                            if (next[m.id]) {
-                              next[m.id] = { ...next[m.id], isAbsent: false };
-                            }
-                          });
-                          setStudentScores(next);
-                        }}
-                        className="btn btn-outline"
-                        style={{ fontSize: '12px', padding: '6px 14px', fontWeight: 600, borderRadius: '8px' }}
-                      >
-                        <UserCheck size={13} /> Mark All Present
-                      </button>
-                    </div>
-                  </div>
-
-                  {panelTeamLoading ? (
-                    <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                      <RefreshCw size={26} className="animate-spin" style={{ margin: '0 auto 12px', opacity: 0.6, color: '#2563EB' }} />
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)' }}>Loading candidate roster &amp; records...</div>
-                      <p style={{ fontSize: '12.5px', marginTop: '4px' }}>Fetching student profiles and prior phase marks from database.</p>
-                    </div>
-                  ) : panelTeamMembers.length === 0 ? (
-                    <EmptyStateGraphic
-                      type="roster"
-                      title="No Candidate Roster Available"
-                      description="No registered student candidates were found for this team in the system database."
-                    />
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      {panelTeamMembers.map((student, idx) => {
-                        const current = studentScores[student.id] || { score: '', isAbsent: false, remarks: '' };
-                        const isLeader = student.id === selectedPanelTeam.leader_id || student.role === 'leader';
-                        const numScore = parseFloat(current.score);
-                        const hasScore = current.score !== '' && !isNaN(numScore);
-
-                        // Dynamic max marks and live state from active phase configuration
-                        const activePhaseConfig = evaluationPhases.find((p: any) => p.phase_number === (selectedPanelPhase || 1));
-                        const isPhaseLive = activePhaseConfig ? activePhaseConfig.is_live : false;
-                        const maxMarks = activePhaseConfig?.marks_weightage || activePhaseConfig?.max_marks || (selectedPanelPhase === 1 ? 20 : selectedPanelPhase === 2 ? 40 : 40);
-                        const dynamicPresets = getPresetsForMaxMarks(maxMarks);
-
-                        // Student is actively being edited if they are in editingStudentIds or not yet submitted
-                        const isStudentSubmitted = submittedStudentIds.has(student.id);
-                        const isEditing = editingStudentIds.has(student.id) || (!isStudentSubmitted && hasScore);
-                        
-                        // Masked dots mode applies when submitted AND not actively editing, OR when scorePrivacy is ON and not revealed
-                        const isMasked = (!isEditing && isStudentSubmitted) || (scorePrivacy && !isEditing && !revealedStudentIds.has(student.id));
-
-                        // Score grade rating tier
-                        const pctScore = hasScore ? (numScore / maxMarks) * 100 : 0;
-                        const scoreRating = hasScore
-                          ? pctScore >= 90
-                            ? { label: 'Outstanding (90%+)', color: '#059669', bg: '#ECFDF5', border: '#A7F3D0' }
-                            : pctScore >= 80
-                            ? { label: 'Very Good (80%+)', color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' }
-                            : pctScore >= 70
-                            ? { label: 'Good (70%+)', color: '#2563EB', bg: '#EFF6FF', border: '#DBEAFE' }
-                            : { label: 'Average (Below 70%)', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' }
-                          : null;
-
-                        const isEarlyJoining = current.attendanceStatus === 'early_joining' || current.attendanceStatus === 'next_shift';
-                        const isAbsentOnly = current.attendanceStatus === 'absent' || (current.isAbsent && !isEarlyJoining);
-                        const isPresent = !current.isAbsent && !isEarlyJoining && !isAbsentOnly;
-
-                        return (
-                          <div
-                            key={student.id}
-                            style={{
-                              padding: '20px 24px',
-                              borderRadius: '16px',
-                              border: isEarlyJoining
-                                ? '1.5px solid #FCD34D'
-                                : isAbsentOnly
-                                ? '1.5px solid #FCA5A5'
-                                : hasScore
-                                ? isMasked
-                                  ? '1.5px solid #CBD5E1'
-                                  : '1.5px solid #93C5FD'
-                                : '1px solid #E2E8F0',
-                              backgroundColor: isEarlyJoining
-                                ? '#FFFDF5'
-                                : isAbsentOnly
-                                ? '#FFF5F5'
-                                : hasScore
-                                ? isMasked
-                                  ? '#FAFAFA'
-                                  : '#F8FAFC'
-                                : '#FFFFFF',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '16px',
-                              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                              boxShadow: hasScore && !isMasked
-                                ? '0 4px 14px rgba(37, 99, 235, 0.08)'
-                                : '0 1px 3px rgba(0,0,0,0.02)',
-                              position: 'relative',
-                            }}
-                          >
-                            {/* Left accent color strip */}
-                            <div
-                              style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                bottom: 0,
-                                width: '5px',
-                                borderTopLeftRadius: '16px',
-                                borderBottomLeftRadius: '16px',
-                                backgroundColor: isEarlyJoining
-                                  ? '#F59E0B'
-                                  : isAbsentOnly
-                                  ? '#EF4444'
-                                  : hasScore
-                                  ? isMasked
-                                    ? '#94A3B8'
-                                    : '#2563EB'
-                                  : '#CBD5E1',
-                              }}
-                            />
-
-                            {/* Candidate Header Row */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', paddingLeft: '6px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
-                                {/* Gradient Avatar with Ring */}
-                                <div
-                                  style={{
-                                    width: '42px',
-                                    height: '42px',
-                                    borderRadius: '12px',
-                                    background: isEarlyJoining
-                                      ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
-                                      : isAbsentOnly
-                                      ? 'linear-gradient(135deg, #EF4444 0%, #B91C1C 100%)'
-                                      : hasScore
-                                      ? isMasked
-                                        ? 'linear-gradient(135deg, #64748B 0%, #475569 100%)'
-                                        : 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)'
-                                      : 'linear-gradient(135deg, #64748B 0%, #475569 100%)',
-                                    color: '#FFFFFF',
-                                    fontWeight: 800,
-                                    fontSize: '14px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    flexShrink: 0,
-                                    boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
-                                    letterSpacing: '0.5px',
-                                  }}
-                                >
-                                  {student.full_name?.slice(0, 2).toUpperCase() || `S${idx + 1}`}
-                                </div>
-
-                                <div style={{ minWidth: 0 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                    <span
-                                      style={{
-                                        fontSize: '15.5px',
-                                        fontWeight: 800,
-                                        color: isEarlyJoining ? '#92400E' : isAbsentOnly ? '#991B1B' : 'var(--color-ink)',
-                                        letterSpacing: '-0.01em',
-                                        textDecoration: isAbsentOnly ? 'line-through' : 'none',
-                                      }}
-                                    >
-                                      {student.full_name}
-                                    </span>
-
-                                    {isLeader ? (
-                                      <span
-                                        style={{
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '4px',
-                                          fontSize: '10.5px',
-                                          fontWeight: 800,
-                                          padding: '2.5px 8px',
-                                          borderRadius: '6px',
-                                          backgroundColor: '#FEF3C7',
-                                          color: '#92400E',
-                                          border: '1px solid #FCD34D',
-                                        }}
-                                      >
-                                        👑 Team Leader
-                                      </span>
-                                    ) : (
-                                      <span
-                                        style={{
-                                          fontSize: '10.5px',
-                                          fontWeight: 600,
-                                          padding: '2px 7px',
-                                          borderRadius: '6px',
-                                          backgroundColor: '#F1F5F9',
-                                          color: '#64748B',
-                                        }}
-                                      >
-                                        Candidate #{idx + 1}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', color: 'var(--color-text-muted)', marginTop: '3px', flexWrap: 'wrap' }}>
-                                    <span style={{ fontFamily: 'ui-monospace, SFMono-Regular, monospace', fontWeight: 600, color: 'var(--color-ink)', backgroundColor: '#F1F5F9', padding: '1px 6px', borderRadius: '4px' }}>
-                                      Roll #{student.roll_no}
-                                    </span>
-                                    {student.email && (
-                                      <span style={{ color: '#64748B' }}>
-                                        {student.email}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Status Badges & Attendance Segmented Control */}
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                                {isEarlyJoining ? (
-                                  <span
-                                    style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '5px',
-                                      fontSize: '11.5px',
-                                      fontWeight: 700,
-                                      padding: '4px 10px',
-                                      borderRadius: '8px',
-                                      backgroundColor: '#FEF3C7',
-                                      color: '#B45309',
-                                      border: '1px solid #FCD34D',
-                                    }}
-                                  >
-                                    <Clock size={13} /> Early Joining
-                                  </span>
-                                ) : isAbsentOnly ? (
-                                  <span
-                                    style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '5px',
-                                      fontSize: '11.5px',
-                                      fontWeight: 700,
-                                      padding: '4px 10px',
-                                      borderRadius: '8px',
-                                      backgroundColor: '#FEE2E2',
-                                      color: '#DC2626',
-                                      border: '1px solid #FCA5A5',
-                                    }}
-                                  >
-                                    <UserX size={13} /> Marked Absent
-                                  </span>
-                                ) : hasScore ? (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    {isMasked ? (
-                                      <>
-                                        <span
-                                          style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: '5px',
-                                            fontSize: '11.5px',
-                                            fontWeight: 700,
-                                            padding: '4px 10px',
-                                            borderRadius: '8px',
-                                            backgroundColor: '#F1F5F9',
-                                            color: '#475569',
-                                            border: '1px solid #CBD5E1',
-                                          }}
-                                        >
-                                          <CheckCircle2 size={13} color="#059669" /> Recorded ••••
-                                        </span>
-                                        {isPhaseLive && (
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setEditingStudentIds((prev) => new Set(prev).add(student.id));
-                                              setRevealedStudentIds((prev) => new Set(prev).add(student.id));
-                                            }}
-                                            style={{
-                                              display: 'inline-flex',
-                                              alignItems: 'center',
-                                              gap: '4px',
-                                              padding: '4px 9px',
-                                              fontSize: '11.5px',
-                                              fontWeight: 700,
-                                              borderRadius: '7px',
-                                              border: '1px solid #BFDBFE',
-                                              backgroundColor: '#EFF6FF',
-                                              color: '#1D4ED8',
-                                              cursor: 'pointer',
-                                            }}
-                                            title="Click to edit and view candidate marks"
-                                          >
-                                            <Edit3 size={12} /> Edit
-                                          </button>
-                                        )}
-                                      </>
-                                    ) : (
-                                      <>
-                                        <span
-                                          style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: '5px',
-                                            fontSize: '12px',
-                                            fontWeight: 800,
-                                            padding: '4px 11px',
-                                            borderRadius: '8px',
-                                            backgroundColor: '#ECFDF5',
-                                            color: '#059669',
-                                            border: '1px solid #A7F3D0',
-                                          }}
-                                        >
-                                          <CheckCircle2 size={14} /> Score: {current.score} / {maxMarks}
-                                        </span>
-                                        {scoreRating && (
-                                          <span
-                                            style={{
-                                              fontSize: '11px',
-                                              fontWeight: 700,
-                                              padding: '3px 8px',
-                                              borderRadius: '6px',
-                                              backgroundColor: scoreRating.bg,
-                                              color: scoreRating.color,
-                                              border: `1px solid ${scoreRating.border}`,
-                                            }}
-                                          >
-                                            {scoreRating.label}
-                                          </span>
-                                        )}
-                                        {isStudentSubmitted && isPhaseLive && (
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              setEditingStudentIds((prev) => {
-                                                const next = new Set(prev);
-                                                next.delete(student.id);
-                                                return next;
-                                              });
-                                              setRevealedStudentIds((prev) => {
-                                                const next = new Set(prev);
-                                                next.delete(student.id);
-                                                return next;
-                                              });
-                                            }}
-                                            style={{
-                                              display: 'inline-flex',
-                                              alignItems: 'center',
-                                              gap: '4px',
-                                              padding: '4px 8px',
-                                              fontSize: '11px',
-                                              fontWeight: 600,
-                                              borderRadius: '6px',
-                                              border: '1px solid #CBD5E1',
-                                              backgroundColor: '#F8FAFC',
-                                              color: '#64748B',
-                                              cursor: 'pointer',
-                                            }}
-                                            title="Lock and mask score with dots"
-                                          >
-                                            <Lock size={11} /> Mask
-                                          </button>
-                                        )}
-                                      </>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <span
-                                    style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '5px',
-                                      fontSize: '11px',
-                                      fontWeight: 600,
-                                      padding: '4px 9px',
-                                      borderRadius: '6px',
-                                      backgroundColor: '#F1F5F9',
-                                      color: '#64748B',
-                                    }}
-                                  >
-                                    <Clock size={12} /> Score Pending
-                                  </span>
-                                )}
-
-                                {/* Interactive Attendance Segmented Control */}
-                                <div style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: '#F1F5F9', padding: '3px', borderRadius: '10px', gap: '2px', border: '1px solid #E2E8F0' }}>
-                                  <button
-                                    type="button"
-                                    disabled={!isPhaseLive}
-                                    onClick={() => {
-                                      if (!isPhaseLive) return;
-                                      setStudentScores({
-                                        ...studentScores,
-                                        [student.id]: {
-                                          ...current,
-                                          isAbsent: false,
-                                          attendanceStatus: 'present',
-                                        },
-                                      });
-                                    }}
-                                    style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '4px',
-                                      padding: '4px 9px',
-                                      borderRadius: '7px',
-                                      fontSize: '11.5px',
-                                      fontWeight: isPresent ? 700 : 500,
-                                      cursor: isPhaseLive ? 'pointer' : 'not-allowed',
-                                      border: 'none',
-                                      backgroundColor: isPresent ? '#10B981' : 'transparent',
-                                      color: isPresent ? '#FFFFFF' : '#64748B',
-                                      transition: 'all 0.15s ease',
-                                      opacity: isPhaseLive ? 1 : 0.7,
-                                    }}
-                                    title={isPhaseLive ? "Student is present and participating" : "Phase stopped by administrator"}
-                                  >
-                                    <CheckCircle2 size={12} /> Present
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    disabled={!isPhaseLive}
-                                    onClick={() => {
-                                      if (!isPhaseLive) return;
-                                      setStudentScores({
-                                        ...studentScores,
-                                        [student.id]: {
-                                          ...current,
-                                          isAbsent: true,
-                                          attendanceStatus: 'early_joining',
-                                          score: '',
-                                          remarks: current.remarks || 'Scheduled for early joining',
-                                        },
-                                      });
-                                    }}
-                                    style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '4px',
-                                      padding: '4px 9px',
-                                      borderRadius: '7px',
-                                      fontSize: '11.5px',
-                                      fontWeight: isEarlyJoining ? 700 : 500,
-                                      cursor: isPhaseLive ? 'pointer' : 'not-allowed',
-                                      border: 'none',
-                                      backgroundColor: isEarlyJoining ? '#F59E0B' : 'transparent',
-                                      color: isEarlyJoining ? '#FFFFFF' : '#64748B',
-                                      transition: 'all 0.15s ease',
-                                      opacity: isPhaseLive ? 1 : 0.7,
-                                    }}
-                                    title={isPhaseLive ? "Unable to attend current shift; shift to early joining" : "Phase stopped by administrator"}
-                                  >
-                                    <Clock size={12} /> Early Joining
-                                  </button>
-
-                                  <button
-                                    type="button"
-                                    disabled={!isPhaseLive}
-                                    onClick={() => {
-                                      if (!isPhaseLive) return;
-                                      setStudentScores({
-                                        ...studentScores,
-                                        [student.id]: {
-                                          ...current,
-                                          isAbsent: true,
-                                          attendanceStatus: 'absent',
-                                          score: '',
-                                        },
-                                      });
-                                    }}
-                                    style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '4px',
-                                      padding: '4px 9px',
-                                      borderRadius: '7px',
-                                      fontSize: '11.5px',
-                                      fontWeight: isAbsentOnly ? 700 : 500,
-                                      cursor: isPhaseLive ? 'pointer' : 'not-allowed',
-                                      border: 'none',
-                                      backgroundColor: isAbsentOnly ? '#EF4444' : 'transparent',
-                                      color: isAbsentOnly ? '#FFFFFF' : '#64748B',
-                                      transition: 'all 0.15s ease',
-                                      opacity: isPhaseLive ? 1 : 0.7,
-                                    }}
-                                    title={isPhaseLive ? "Mark student absent" : "Phase stopped by administrator"}
-                                  >
-                                    <UserX size={12} /> Absent
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Scoring Controls Section */}
-                            {!current.isAbsent ? (
+                          return (
+                            <>
                               <div
                                 style={{
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                  gap: '12px',
-                                  paddingTop: '12px',
-                                  borderTop: '1px solid #F1F5F9',
-                                  paddingLeft: '6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  padding: '6px 14px',
+                                  borderRadius: '8px',
+                                  backgroundColor: scoredCount === total && total > 0 ? '#ECFDF5' : '#F1F5F9',
+                                  border: scoredCount === total && total > 0 ? '1px solid #A7F3D0' : '1px solid #CBD5E1',
+                                  fontSize: '12.5px',
+                                  color: scoredCount === total && total > 0 ? '#059669' : '#475569',
+                                  fontWeight: 700,
                                 }}
                               >
-                                <div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                    <label
-                                      style={{
-                                        fontSize: '12.5px',
-                                        fontWeight: 800,
-                                        color: 'var(--color-ink)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '6px',
-                                        margin: 0,
-                                      }}
-                                    >
-                                      <Target size={14} color="#2563EB" /> Candidate Viva Score (0 – {maxMarks})
-                                    </label>
+                                <CheckCircle2 size={14} color={scoredCount === total && total > 0 ? '#059669' : '#64748B'} />
+                                <span>Progress: <strong>{scoredCount} / {total} Scored</strong></span>
+                              </div>
 
-                                    {/* Individual Score Mask/Reveal / Edit Mode Indicator */}
-                                    {hasScore && (
-                                      isMasked ? (
+                              <div
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  padding: '6px 14px',
+                                  borderRadius: '8px',
+                                  backgroundColor: '#EFF6FF',
+                                  border: '1px solid #BFDBFE',
+                                  fontSize: '12.5px',
+                                  color: '#1E40AF',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                <Star size={14} color="#2563EB" fill="#2563EB" />
+                                <span>Average: <strong>{scorePrivacy ? '● ● ●' : avg} / {maxMarks}</strong></span>
+                              </div>
+                            </>
+                          );
+                        })()}
+
+                        {/* Score Privacy Toggle Button */}
+                        <button
+                          type="button"
+                          onClick={() => setScorePrivacy(!scorePrivacy)}
+                          className="btn btn-outline"
+                          style={{
+                            fontSize: '12px',
+                            padding: '6px 14px',
+                            fontWeight: 700,
+                            borderRadius: '8px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            backgroundColor: scorePrivacy ? '#EFF6FF' : '#FFFFFF',
+                            color: scorePrivacy ? '#1D4ED8' : '#475569',
+                            border: scorePrivacy ? '1.5px solid #93C5FD' : '1px solid #CBD5E1',
+                          }}
+                          title={scorePrivacy ? 'Scores are hidden with dots. Click to reveal.' : 'Scores are visible. Click to mask with dots.'}
+                        >
+                          {scorePrivacy ? (
+                            <>
+                              <Lock size={13} color="#2563EB" /> Privacy: Dots Only (Active)
+                            </>
+                          ) : (
+                            <>
+                              <Eye size={13} /> Privacy: Off (Scores Visible)
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = { ...studentScores };
+                            panelTeamMembers.forEach((m) => {
+                              if (next[m.id]) {
+                                next[m.id] = { ...next[m.id], isAbsent: false };
+                              }
+                            });
+                            setStudentScores(next);
+                          }}
+                          className="btn btn-outline"
+                          style={{ fontSize: '12px', padding: '6px 14px', fontWeight: 600, borderRadius: '8px' }}
+                        >
+                          <UserCheck size={13} /> Mark All Present
+                        </button>
+                      </div>
+                    </div>
+
+                    {panelTeamLoading ? (
+                      <div style={{ padding: '60px 20px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                        <RefreshCw size={26} className="animate-spin" style={{ margin: '0 auto 12px', opacity: 0.6, color: '#2563EB' }} />
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)' }}>Loading candidate roster &amp; records...</div>
+                        <p style={{ fontSize: '12.5px', marginTop: '4px' }}>Fetching student profiles and prior phase marks from database.</p>
+                      </div>
+                    ) : panelTeamMembers.length === 0 ? (
+                      <EmptyStateGraphic
+                        type="roster"
+                        title="No Candidate Roster Available"
+                        description="No registered student candidates were found for this team in the system database."
+                      />
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {panelTeamMembers.map((student, idx) => {
+                          const current = studentScores[student.id] || { score: '', isAbsent: false, remarks: '' };
+                          const isLeader = student.id === selectedPanelTeam.leader_id || student.role === 'leader';
+                          const numScore = parseFloat(current.score);
+                          const hasScore = current.score !== '' && !isNaN(numScore);
+
+                          // Dynamic max marks and live state from active phase configuration
+                          const activePhaseConfig = evaluationPhases.find((p: any) => p.phase_number === (selectedPanelPhase || 1));
+                          const isPhaseLive = activePhaseConfig ? activePhaseConfig.is_live : false;
+                          const maxMarks = activePhaseConfig?.marks_weightage || activePhaseConfig?.max_marks || (selectedPanelPhase === 1 ? 20 : selectedPanelPhase === 2 ? 40 : 40);
+                          const rubricConfig = getPhaseRubricConfig(selectedPanelPhase || 1, maxMarks);
+                          const dynamicPresets = getPresetsForMaxMarks(maxMarks);
+
+                          // Student is actively being edited if they are in editingStudentIds or not yet submitted
+                          const isStudentSubmitted = submittedStudentIds.has(student.id);
+                          const isEditing = editingStudentIds.has(student.id) || (!isStudentSubmitted && hasScore);
+                          
+                          // Masked dots mode applies when submitted AND not actively editing, OR when scorePrivacy is ON and not revealed
+                          const isMasked = (!isEditing && isStudentSubmitted) || (scorePrivacy && !isEditing && !revealedStudentIds.has(student.id));
+
+                          // Recalculate total score helper
+                          const updateCategoryScore = (catKey: string, val: string) => {
+                            if (!isPhaseLive) return;
+                            const clean = val.replace(/[^0-9.]/g, '');
+                            const parts = clean.split('.');
+                            let sanitized = parts[0];
+                            if (parts.length > 1) {
+                              sanitized += '.' + parts.slice(1).join('').slice(0, 1);
+                            }
+                            const catObj = rubricConfig.categories.find((c) => c.key === catKey);
+                            const catMax = catObj?.max || 10;
+                            const num = parseFloat(sanitized);
+                            if (!isNaN(num) && num > catMax) {
+                              sanitized = String(catMax);
+                            }
+
+                            const updatedStudent = {
+                              ...current,
+                              [catKey]: sanitized,
+                            };
+
+                            // Sum all categories
+                            const pScore = parseFloat(catKey === 'presentation' ? sanitized : updatedStudent.presentation || '0') || 0;
+                            const cScore = parseFloat(catKey === 'code' ? sanitized : updatedStudent.code || '0') || 0;
+                            const qScore = parseFloat(catKey === 'query_handling' ? sanitized : updatedStudent.query_handling || '0') || 0;
+                            const rScore = selectedPanelPhase === 3 ? (parseFloat(catKey === 'report' ? sanitized : updatedStudent.report || '0') || 0) : 0;
+
+                            const totalSum = pScore + cScore + qScore + rScore;
+                            const totalStr = totalSum > 0 ? (Number.isInteger(totalSum) ? `${totalSum}.0` : totalSum.toFixed(1)) : (sanitized === '' ? '' : '0.0');
+
+                            updatedStudent.score = totalStr;
+
+                            setEditingStudentIds((prev) => new Set(prev).add(student.id));
+                            setStudentScores({
+                              ...studentScores,
+                              [student.id]: updatedStudent,
+                            });
+                          };
+
+                          const isPresent = !current.isAbsent && current.attendanceStatus !== 'early_joining';
+                          const isEarlyJoining = current.attendanceStatus === 'early_joining';
+                          const isAbsentOnly = current.isAbsent && !isEarlyJoining;
+
+                          return (
+                            <div
+                              key={student.id}
+                              style={{
+                                padding: '18px 20px',
+                                borderRadius: '14px',
+                                border: hasScore
+                                  ? '1.5px solid #93C5FD'
+                                  : isAbsentOnly
+                                  ? '1.5px solid #FCA5A5'
+                                  : isEarlyJoining
+                                  ? '1.5px solid #FCD34D'
+                                  : '1.5px solid var(--color-border)',
+                                backgroundColor: isAbsentOnly
+                                  ? '#FFF5F5'
+                                  : isEarlyJoining
+                                  ? '#FFFDF5'
+                                  : hasScore
+                                  ? '#F8FAFF'
+                                  : '#FFFFFF',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '16px',
+                                transition: 'all 0.15s ease',
+                              }}
+                            >
+                              {/* Student Header Bar */}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                  <div
+                                    style={{
+                                      width: '36px',
+                                      height: '36px',
+                                      borderRadius: '9px',
+                                      backgroundColor: isLeader ? '#EEF2FF' : '#F1F5F9',
+                                      color: isLeader ? '#4F46E5' : '#475569',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontWeight: 800,
+                                      fontSize: '13.5px',
+                                    }}
+                                  >
+                                    {idx + 1}
+                                  </div>
+                                  <div>
+                                    <div style={{ fontSize: '14.5px', fontWeight: 800, color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      {student.full_name}
+                                      {isLeader && (
+                                        <span className="badge badge-brand" style={{ fontSize: '10px', padding: '1px 6px' }}>
+                                          Team Leader
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div style={{ fontSize: '11.5px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                                      {student.roll_no} • {student.email} {student.cpi ? `• CPI: ${student.cpi}` : ''}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Attendance Segmented Switcher */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div
+                                    style={{
+                                      display: 'inline-flex',
+                                      backgroundColor: '#F1F5F9',
+                                      padding: '3px',
+                                      borderRadius: '9px',
+                                      border: '1px solid #E2E8F0',
+                                    }}
+                                  >
+                                    <button
+                                      type="button"
+                                      disabled={!isPhaseLive}
+                                      onClick={() => {
+                                        if (!isPhaseLive) return;
+                                        setStudentScores({
+                                          ...studentScores,
+                                          [student.id]: {
+                                            ...current,
+                                            isAbsent: false,
+                                            attendanceStatus: 'present',
+                                          },
+                                        });
+                                      }}
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        padding: '4px 10px',
+                                        borderRadius: '7px',
+                                        fontSize: '11.5px',
+                                        fontWeight: isPresent ? 700 : 500,
+                                        cursor: isPhaseLive ? 'pointer' : 'not-allowed',
+                                        border: 'none',
+                                        backgroundColor: isPresent ? '#059669' : 'transparent',
+                                        color: isPresent ? '#FFFFFF' : '#64748B',
+                                        transition: 'all 0.15s ease',
+                                        opacity: isPhaseLive ? 1 : 0.7,
+                                      }}
+                                      title={isPhaseLive ? "Student is present and participating" : "Phase stopped by administrator"}
+                                    >
+                                      <CheckCircle2 size={12} /> Present
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      disabled={!isPhaseLive}
+                                      onClick={() => {
+                                        if (!isPhaseLive) return;
+                                        setStudentScores({
+                                          ...studentScores,
+                                          [student.id]: {
+                                            ...current,
+                                            isAbsent: true,
+                                            attendanceStatus: 'early_joining',
+                                            score: '',
+                                            presentation: '',
+                                            code: '',
+                                            query_handling: '',
+                                            report: '',
+                                            remarks: current.remarks || 'Scheduled for early joining',
+                                          },
+                                        });
+                                      }}
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        padding: '4px 9px',
+                                        borderRadius: '7px',
+                                        fontSize: '11.5px',
+                                        fontWeight: isEarlyJoining ? 700 : 500,
+                                        cursor: isPhaseLive ? 'pointer' : 'not-allowed',
+                                        border: 'none',
+                                        backgroundColor: isEarlyJoining ? '#F59E0B' : 'transparent',
+                                        color: isEarlyJoining ? '#FFFFFF' : '#64748B',
+                                        transition: 'all 0.15s ease',
+                                        opacity: isPhaseLive ? 1 : 0.7,
+                                      }}
+                                      title={isPhaseLive ? "Unable to attend current shift; shift to early joining" : "Phase stopped by administrator"}
+                                    >
+                                      <Clock size={12} /> Early Joining
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      disabled={!isPhaseLive}
+                                      onClick={() => {
+                                        if (!isPhaseLive) return;
+                                        setStudentScores({
+                                          ...studentScores,
+                                          [student.id]: {
+                                            ...current,
+                                            isAbsent: true,
+                                            attendanceStatus: 'absent',
+                                            score: '',
+                                            presentation: '',
+                                            code: '',
+                                            query_handling: '',
+                                            report: '',
+                                          },
+                                        });
+                                      }}
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        padding: '4px 9px',
+                                        borderRadius: '7px',
+                                        fontSize: '11.5px',
+                                        fontWeight: isAbsentOnly ? 700 : 500,
+                                        cursor: isPhaseLive ? 'pointer' : 'not-allowed',
+                                        border: 'none',
+                                        backgroundColor: isAbsentOnly ? '#EF4444' : 'transparent',
+                                        color: isAbsentOnly ? '#FFFFFF' : '#64748B',
+                                        transition: 'all 0.15s ease',
+                                        opacity: isPhaseLive ? 1 : 0.7,
+                                      }}
+                                      title={isPhaseLive ? "Mark student absent" : "Phase stopped by administrator"}
+                                    >
+                                      <UserX size={12} /> Absent
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* RUBRIC SCORING & TOTAL CONTROLS SECTION */}
+                              {isPresent ? (
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '14px',
+                                    paddingTop: '12px',
+                                    borderTop: '1px solid #F1F5F9',
+                                  }}
+                                >
+                                  {/* Dynamic Rubric Categories Grid (3 or 4 Categories) */}
+                                  <div>
+                                    <div style={{ fontSize: '11.5px', fontWeight: 800, color: 'var(--color-text-faint)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <Layers size={13} color="#4F46E5" /> Evaluation Rubrics Breakdown ({rubricConfig.categories.length} Categories):
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${selectedPanelPhase === 3 ? '180px' : '200px'}, 1fr))`, gap: '10px' }}>
+                                      {rubricConfig.categories.map((cat) => {
+                                        const catVal = (current as any)[cat.key] || '';
+                                        const catPresets = cat.max <= 8
+                                          ? ['2.0', '4.0', '6.0', `${cat.max}.0`].filter((p, i, a) => parseFloat(p) <= cat.max && a.indexOf(p) === i)
+                                          : cat.max <= 12
+                                          ? ['4.0', '7.0', '10.0', `${cat.max}.0`]
+                                          : ['6.0', '10.0', '13.0', `${cat.max}.0`];
+
+                                        return (
+                                          <div
+                                            key={cat.key}
+                                            style={{
+                                              padding: '10px 12px',
+                                              borderRadius: '10px',
+                                              border: '1px solid #E2E8F0',
+                                              backgroundColor: '#FFFFFF',
+                                              display: 'flex',
+                                              flexDirection: 'column',
+                                              gap: '8px',
+                                              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                                            }}
+                                          >
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                              <div>
+                                                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                  {cat.icon === 'presentation' ? '📊' : cat.icon === 'code' ? '💻' : cat.icon === 'query' ? '💬' : '📑'} {cat.shortLabel}
+                                                </div>
+                                                <div style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>{cat.desc}</div>
+                                              </div>
+                                              <span style={{ fontSize: '11px', fontWeight: 700, color: '#4F46E5' }}>/{cat.max}M</span>
+                                            </div>
+
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              <input
+                                                type={isMasked ? 'password' : 'text'}
+                                                inputMode="decimal"
+                                                disabled={!isPhaseLive}
+                                                readOnly={isMasked || !isPhaseLive}
+                                                placeholder={isMasked ? '••' : '0.0'}
+                                                value={isMasked && catVal !== '' ? '••' : catVal}
+                                                onClick={() => {
+                                                  if (isMasked && isPhaseLive) {
+                                                    setEditingStudentIds((prev) => new Set(prev).add(student.id));
+                                                    setRevealedStudentIds((prev) => new Set(prev).add(student.id));
+                                                  }
+                                                }}
+                                                onChange={(e) => updateCategoryScore(cat.key, e.target.value)}
+                                                style={{
+                                                  width: '64px',
+                                                  height: '32px',
+                                                  padding: '4px 8px',
+                                                  fontSize: '13px',
+                                                  fontWeight: 700,
+                                                  borderRadius: '6px',
+                                                  border: catVal !== '' ? '1.5px solid #2563EB' : '1px solid #CBD5E1',
+                                                  backgroundColor: !isPhaseLive ? '#F1F5F9' : '#FFFFFF',
+                                                  textAlign: 'center',
+                                                  outline: 'none',
+                                                }}
+                                              />
+                                              {/* Quick Chips */}
+                                              {isPhaseLive && !isMasked && (
+                                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                                  {catPresets.map((presetVal) => (
+                                                    <button
+                                                      key={presetVal}
+                                                      type="button"
+                                                      onClick={() => updateCategoryScore(cat.key, presetVal)}
+                                                      style={{
+                                                        padding: '2px 6px',
+                                                        fontSize: '10px',
+                                                        fontWeight: catVal === presetVal ? 800 : 600,
+                                                        borderRadius: '4px',
+                                                        border: catVal === presetVal ? '1px solid #1E40AF' : '1px solid #E2E8F0',
+                                                        backgroundColor: catVal === presetVal ? '#2563EB' : '#F8FAFC',
+                                                        color: catVal === presetVal ? '#FFFFFF' : '#475569',
+                                                        cursor: 'pointer',
+                                                      }}
+                                                    >
+                                                      {presetVal}
+                                                    </button>
+                                                  ))}
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+
+                                  {/* Total Candidate Viva Score Bar */}
+                                  <div
+                                    style={{
+                                      padding: '12px 16px',
+                                      borderRadius: '12px',
+                                      backgroundColor: '#F8FAFC',
+                                      border: '1.5px solid #E2E8F0',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      flexWrap: 'wrap',
+                                      gap: '12px',
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                      <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <Target size={15} color="#2563EB" /> Total Viva Score:
+                                      </div>
+
+                                      {/* Total score box */}
+                                      <div style={{ position: 'relative', width: '110px' }}>
+                                        <input
+                                          type={isMasked ? 'password' : 'text'}
+                                          inputMode="decimal"
+                                          disabled={!isPhaseLive}
+                                          readOnly={isMasked || !isPhaseLive}
+                                          style={{
+                                            width: '100%',
+                                            height: '38px',
+                                            padding: '6px 36px 6px 10px',
+                                            fontSize: isMasked ? '18px' : '15px',
+                                            fontWeight: 800,
+                                            borderRadius: '8px',
+                                            border: hasScore ? '2px solid #2563EB' : '1.5px solid #CBD5E1',
+                                            backgroundColor: isMasked && hasScore ? '#F8FAFC' : !isPhaseLive ? '#F1F5F9' : '#FFFFFF',
+                                            color: !isPhaseLive ? '#64748B' : '#1E40AF',
+                                            outline: 'none',
+                                            textAlign: 'center',
+                                          }}
+                                          value={isMasked && hasScore ? '••••' : current.score}
+                                          placeholder={isMasked ? '••••' : '0.0'}
+                                          onClick={() => {
+                                            if (isMasked && isPhaseLive) {
+                                              setEditingStudentIds((prev) => new Set(prev).add(student.id));
+                                              setRevealedStudentIds((prev) => new Set(prev).add(student.id));
+                                            }
+                                          }}
+                                          onChange={(e) => {
+                                            if (!isPhaseLive) return;
+                                            const rawVal = e.target.value.replace(/[^0-9.]/g, '');
+                                            const parts = rawVal.split('.');
+                                            let sanitized = parts[0];
+                                            if (parts.length > 1) sanitized += '.' + parts.slice(1).join('').slice(0, 1);
+                                            const num = parseFloat(sanitized);
+                                            if (!isNaN(num) && num > maxMarks) sanitized = String(maxMarks);
+                                            setEditingStudentIds((prev) => new Set(prev).add(student.id));
+                                            setStudentScores({
+                                              ...studentScores,
+                                              [student.id]: { ...current, score: sanitized },
+                                            });
+                                          }}
+                                        />
+                                        <span
+                                          style={{
+                                            position: 'absolute',
+                                            right: '8px',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            fontSize: '11px',
+                                            fontWeight: 700,
+                                            color: '#64748B',
+                                            pointerEvents: 'none',
+                                          }}
+                                        >
+                                          /{maxMarks}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Action buttons & Privacy controls */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                      {/* Confirm Single Score Button */}
+                                      {!isMasked && isPhaseLive && (
+                                        <button
+                                          type="button"
+                                          disabled={!hasScore || savingStudentId === student.id}
+                                          onClick={() => handleConfirmSingleScore(student.id)}
+                                          style={{
+                                            height: '38px',
+                                            padding: '0 14px',
+                                            borderRadius: '8px',
+                                            background: hasScore ? 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)' : '#F1F5F9',
+                                            color: hasScore ? '#FFFFFF' : '#94A3B8',
+                                            border: hasScore ? '1px solid #1E40AF' : '1px solid #CBD5E1',
+                                            fontSize: '12px',
+                                            fontWeight: 700,
+                                            cursor: hasScore ? 'pointer' : 'not-allowed',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '5px',
+                                            boxShadow: hasScore ? '0 2px 6px rgba(37, 99, 235, 0.22)' : 'none',
+                                          }}
+                                        >
+                                          {savingStudentId === student.id ? (
+                                            <>
+                                              <RefreshCw size={13} className="animate-spin" /> Saving...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Check size={14} /> Confirm
+                                            </>
+                                          )}
+                                        </button>
+                                      )}
+
+                                      {/* Edit button when masked */}
+                                      {isMasked && hasScore && isPhaseLive && (
                                         <button
                                           type="button"
                                           onClick={() => {
@@ -3238,22 +3517,26 @@ export default function FacultyDashboardPage() {
                                             setRevealedStudentIds((prev) => new Set(prev).add(student.id));
                                           }}
                                           style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            padding: '2px 6px',
-                                            fontSize: '11px',
+                                            height: '38px',
+                                            padding: '0 12px',
+                                            borderRadius: '8px',
+                                            backgroundColor: '#EFF6FF',
+                                            color: '#1D4ED8',
+                                            border: '1px solid #BFDBFE',
+                                            fontSize: '12px',
                                             fontWeight: 700,
-                                            color: '#2563EB',
                                             cursor: 'pointer',
                                             display: 'inline-flex',
                                             alignItems: 'center',
                                             gap: '4px',
                                           }}
-                                          title="Click to unlock edit mode and view marks"
                                         >
-                                          <Edit3 size={12} /> Edit Marks
+                                          <Edit3 size={13} /> Edit Marks
                                         </button>
-                                      ) : (
+                                      )}
+
+                                      {/* Lock & Mask Button */}
+                                      {!isMasked && hasScore && (
                                         <button
                                           type="button"
                                           onClick={() => {
@@ -3262,238 +3545,29 @@ export default function FacultyDashboardPage() {
                                               next.delete(student.id);
                                               return next;
                                             });
-                                            setRevealedStudentIds((prev) => {
-                                              const next = new Set(prev);
-                                              next.delete(student.id);
-                                              return next;
-                                            });
                                           }}
                                           style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            padding: '2px 6px',
-                                            fontSize: '11px',
+                                            height: '38px',
+                                            padding: '0 10px',
+                                            borderRadius: '8px',
+                                            background: '#F1F5F9',
+                                            border: '1px solid #CBD5E1',
+                                            fontSize: '11.5px',
                                             fontWeight: 600,
-                                            color: '#64748B',
+                                            color: '#475569',
                                             cursor: 'pointer',
                                             display: 'inline-flex',
                                             alignItems: 'center',
                                             gap: '4px',
                                           }}
-                                          title="Lock marks and display dots only"
+                                          title="Lock marks and display privacy dots"
                                         >
                                           <Lock size={12} /> Lock &amp; Mask
                                         </button>
-                                      )
-                                    )}
-                                  </div>
-
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                                    {/* Numeric Score Box with suffix and privacy dot masking */}
-                                    <div style={{ position: 'relative', width: '135px' }}>
-                                      <input
-                                        type={isMasked ? 'password' : 'text'}
-                                        inputMode="decimal"
-                                        disabled={!isPhaseLive}
-                                        readOnly={isMasked || !isPhaseLive}
-                                        style={{
-                                          width: '100%',
-                                          height: '42px',
-                                          padding: '8px 44px 8px 14px',
-                                          fontSize: isMasked ? '20px' : '16px',
-                                          fontWeight: 800,
-                                          borderRadius: '10px',
-                                          border: hasScore
-                                            ? isMasked
-                                              ? '1.5px solid #CBD5E1'
-                                              : '2px solid #2563EB'
-                                            : '1.5px solid #CBD5E1',
-                                          backgroundColor: isMasked && hasScore ? '#F8FAFC' : !isPhaseLive ? '#F1F5F9' : '#FFFFFF',
-                                          color: !isPhaseLive ? '#64748B' : 'var(--color-ink)',
-                                          letterSpacing: isMasked ? '3px' : 'normal',
-                                          outline: 'none',
-                                          boxShadow: hasScore && !isMasked && isPhaseLive ? '0 0 0 3px rgba(37, 99, 235, 0.12)' : 'none',
-                                          transition: 'all 0.15s ease',
-                                          cursor: !isPhaseLive ? 'not-allowed' : isMasked ? 'pointer' : 'text',
-                                        }}
-                                        value={isMasked && hasScore ? '••••' : current.score}
-                                        onClick={() => {
-                                          if (isMasked && isPhaseLive) {
-                                            setEditingStudentIds((prev) => new Set(prev).add(student.id));
-                                            setRevealedStudentIds((prev) => new Set(prev).add(student.id));
-                                          }
-                                        }}
-                                        onChange={(e) => {
-                                          if (!isPhaseLive) return;
-                                          const rawVal = e.target.value;
-                                          // Strictly allow numbers and at most 1 decimal point
-                                          const clean = rawVal.replace(/[^0-9.]/g, '');
-                                          const parts = clean.split('.');
-                                          let sanitized = parts[0];
-                                          if (parts.length > 1) {
-                                            sanitized += '.' + parts.slice(1).join('').slice(0, 1);
-                                          }
-                                          const num = parseFloat(sanitized);
-                                          if (!isNaN(num) && num > maxMarks) {
-                                            sanitized = String(maxMarks);
-                                          }
-                                          setEditingStudentIds((prev) => new Set(prev).add(student.id));
-                                          setStudentScores({
-                                            ...studentScores,
-                                            [student.id]: { ...current, score: sanitized },
-                                          });
-                                        }}
-                                        placeholder={isMasked ? '••••' : '0.0'}
-                                      />
-                                      <span
-                                        style={{
-                                          position: 'absolute',
-                                          right: '12px',
-                                          top: '50%',
-                                          transform: 'translateY(-50%)',
-                                          fontSize: '11.5px',
-                                          fontWeight: 700,
-                                          color: '#64748B',
-                                          pointerEvents: 'none',
-                                        }}
-                                      >
-                                        / {maxMarks}
-                                      </span>
+                                      )}
                                     </div>
-
-                                    {/* Individual Confirm Score Button */}
-                                    {!isMasked && isPhaseLive && (
-                                      <button
-                                        type="button"
-                                        disabled={!hasScore || savingStudentId === student.id}
-                                        onClick={() => handleConfirmSingleScore(student.id)}
-                                        style={{
-                                          height: '42px',
-                                          padding: '0 15px',
-                                          borderRadius: '10px',
-                                          background: hasScore ? 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)' : '#F1F5F9',
-                                          color: hasScore ? '#FFFFFF' : '#94A3B8',
-                                          border: hasScore ? '1px solid #1E40AF' : '1px solid #CBD5E1',
-                                          fontSize: '12px',
-                                          fontWeight: 700,
-                                          cursor: hasScore ? 'pointer' : 'not-allowed',
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '5px',
-                                          boxShadow: hasScore ? '0 2px 6px rgba(37, 99, 235, 0.22)' : 'none',
-                                          transition: 'all 0.15s ease',
-                                        }}
-                                        title="Save and safely lock this score so it won't be lost"
-                                      >
-                                        {savingStudentId === student.id ? (
-                                          <>
-                                            <RefreshCw size={13} className="animate-spin" /> Saving...
-                                          </>
-                                        ) : (
-                                          <>
-                                            <Check size={14} /> Confirm
-                                          </>
-                                        )}
-                                      </button>
-                                    )}
-
-                                    {/* Edit button when masked */}
-                                    {isMasked && hasScore && isPhaseLive && (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setEditingStudentIds((prev) => new Set(prev).add(student.id));
-                                          setRevealedStudentIds((prev) => new Set(prev).add(student.id));
-                                        }}
-                                        style={{
-                                          height: '42px',
-                                          padding: '0 14px',
-                                          borderRadius: '10px',
-                                          backgroundColor: '#EFF6FF',
-                                          color: '#1D4ED8',
-                                          border: '1px solid #BFDBFE',
-                                          fontSize: '12px',
-                                          fontWeight: 700,
-                                          cursor: 'pointer',
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '5px',
-                                          transition: 'all 0.15s ease',
-                                        }}
-                                        title="Click to edit and view candidate marks"
-                                      >
-                                        <Edit3 size={13} /> Edit
-                                      </button>
-                                    )}
-
-                                    {/* Clear Score Button if present and editing */}
-                                    {hasScore && !isMasked && isPhaseLive && (
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setStudentScores({
-                                            ...studentScores,
-                                            [student.id]: { ...current, score: '' },
-                                          });
-                                        }}
-                                        style={{
-                                          height: '42px',
-                                          background: '#F8FAFC',
-                                          border: '1px solid #CBD5E1',
-                                          borderRadius: '10px',
-                                          padding: '0 12px',
-                                          fontSize: '11.5px',
-                                          color: '#64748B',
-                                          cursor: 'pointer',
-                                          fontWeight: 600,
-                                          transition: 'all 0.15s ease',
-                                        }}
-                                        title="Reset candidate score"
-                                      >
-                                        Reset
-                                      </button>
-                                    )}
-
-                                    {/* Quick 1-Tap Preset Pills */}
-                                    {isPhaseLive && (
-                                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-                                        {dynamicPresets.map((val) => {
-                                          const isSelected = !isMasked && isEditing && (current.score === val || current.score === parseFloat(val).toString());
-                                          return (
-                                            <button
-                                              key={val}
-                                              type="button"
-                                              onClick={() => {
-                                                setEditingStudentIds((prev) => new Set(prev).add(student.id));
-                                                setRevealedStudentIds((prev) => new Set(prev).add(student.id));
-                                                setStudentScores({
-                                                  ...studentScores,
-                                                  [student.id]: { ...current, score: val },
-                                                });
-                                              }}
-                                              style={{
-                                                padding: '5px 10px',
-                                                fontSize: '11.5px',
-                                                fontWeight: isSelected ? 800 : 600,
-                                                borderRadius: '8px',
-                                                border: isSelected ? '1.5px solid #1E40AF' : '1px solid #E2E8F0',
-                                                background: isSelected ? 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)' : isMasked ? '#F8FAFC' : '#FFFFFF',
-                                                color: isSelected ? '#FFFFFF' : isMasked ? '#64748B' : '#334155',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                boxShadow: isSelected ? '0 2px 6px rgba(37, 99, 235, 0.22)' : '0 1px 2px rgba(0,0,0,0.02)',
-                                              }}
-                                              title={isMasked ? `Set to ${val} (Switches to Edit Mode)` : `Set score to ${val}`}
-                                            >
-                                              {val}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
                                   </div>
                                 </div>
-                              </div>
                             ) : isEarlyJoining ? (
                               /* Moved to Early Joining Banner inside Card */
                               <div
