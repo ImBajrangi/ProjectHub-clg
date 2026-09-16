@@ -101,6 +101,7 @@ export default function AdminDashboardPage() {
   // Panels Directory State
   const [panelPhaseFilter, setPanelPhaseFilter] = useState<1 | 2 | 3>(1);
   const [panelSearch, setPanelSearch] = useState('');
+  const [togglingPhase, setTogglingPhase] = useState<number | null>(null);
 
   // Admin Authority Governance & Creation State
   const [authorityModalOpen, setAuthorityModalOpen] = useState(false);
@@ -678,8 +679,20 @@ export default function AdminDashboardPage() {
   };
 
   const handleTogglePhaseLive = async (phaseNumber: 1 | 2 | 3, currentLive: boolean) => {
+    if (togglingPhase) return;
+    setTogglingPhase(phaseNumber);
+    const willBeLive = !currentLive;
+
+    // Optimistic local state update for zero UI lag
+    setAdminData((prev: any) => {
+      if (!prev) return prev;
+      const updatedPhases = (prev.phases || []).map((ph: any) =>
+        Number(ph.phase_number) === Number(phaseNumber) ? { ...ph, is_live: willBeLive } : ph
+      );
+      return { ...prev, phases: updatedPhases };
+    });
+
     try {
-      const willBeLive = !currentLive;
       const res = await fetch('/api/phases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -697,7 +710,8 @@ export default function AdminDashboardPage() {
             ? `Phase ${phaseNumber} evaluation is now LIVE. Panel members can record and update marks.`
             : `Phase ${phaseNumber} evaluation STOPPED & LOCKED. Panel members can no longer modify marks.`,
         });
-        loadAdminData();
+        clientCache.invalidate(clientCache.keys.ADMIN_DATA);
+        await loadAdminData();
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new Event('codeshastra_notification_update'));
           try {
@@ -705,10 +719,22 @@ export default function AdminDashboardPage() {
             bc.postMessage({ type: 'UPDATE' });
             setTimeout(() => { try { bc.close(); } catch { } }, 1000);
           } catch { }
+          try {
+            const bc2 = new BroadcastChannel('codeshastra_phases_channel');
+            bc2.postMessage({ type: 'PHASE_TOGGLE', phaseNumber, isLive: willBeLive });
+            setTimeout(() => { try { bc2.close(); } catch { } }, 1000);
+          } catch { }
         }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setToastMessage({ type: 'error', text: errData.error || 'Failed to update phase status' });
+        await loadAdminData();
       }
     } catch {
       setToastMessage({ type: 'error', text: 'Network error while updating phase status' });
+      await loadAdminData();
+    } finally {
+      setTogglingPhase(null);
     }
   };
 
@@ -1998,34 +2024,48 @@ Output ONLY the raw valid JSON array.`;
                         </p>
                       </div>
 
-                      <button
-                        onClick={() => handleTogglePhaseLive(ph.phase_number, ph.is_live)}
-                        className={ph.is_live ? 'btn btn-outline' : 'btn btn-primary'}
-                        style={{
-                          width: '100%',
-                          fontSize: '13px',
-                          fontWeight: 700,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                          backgroundColor: ph.is_live ? '#FEF2F2' : undefined,
-                          color: ph.is_live ? '#DC2626' : undefined,
-                          borderColor: ph.is_live ? '#FCA5A5' : undefined,
-                        }}
-                      >
-                        {ph.is_live ? (
-                          <>
-                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#DC2626', display: 'inline-block' }} />
-                            <span>Stop Phase {ph.phase_number} (Lock Marks)</span>
-                          </>
-                        ) : (
-                          <>
-                            <Play size={13} fill="currentColor" />
-                            <span>Start Phase {ph.phase_number} (Go Live)</span>
-                          </>
-                        )}
-                      </button>
+                      {(() => {
+                        const isTogglingPh = togglingPhase === ph.phase_number;
+                        return (
+                          <button
+                            type="button"
+                            disabled={isTogglingPh}
+                            onClick={() => handleTogglePhaseLive(ph.phase_number, ph.is_live)}
+                            className={ph.is_live ? 'btn btn-outline' : 'btn btn-primary'}
+                            style={{
+                              width: '100%',
+                              fontSize: '13px',
+                              fontWeight: 700,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                              cursor: isTogglingPh ? 'wait' : 'pointer',
+                              opacity: isTogglingPh ? 0.75 : 1,
+                              backgroundColor: ph.is_live ? '#FEF2F2' : undefined,
+                              color: ph.is_live ? '#DC2626' : undefined,
+                              borderColor: ph.is_live ? '#FCA5A5' : undefined,
+                            }}
+                          >
+                            {isTogglingPh ? (
+                              <>
+                                <RefreshCw size={13} className="animate-spin" />
+                                <span>{ph.is_live ? `Stopping Phase ${ph.phase_number}...` : `Starting Phase ${ph.phase_number}...`}</span>
+                              </>
+                            ) : ph.is_live ? (
+                              <>
+                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#DC2626', display: 'inline-block' }} />
+                                <span>Stop Phase {ph.phase_number} (Lock Marks)</span>
+                              </>
+                            ) : (
+                              <>
+                                <Play size={13} fill="currentColor" />
+                                <span>Start Phase {ph.phase_number} (Go Live)</span>
+                              </>
+                            )}
+                          </button>
+                        );
+                      })()}
                     </div>
                   );
                 })}
@@ -2629,44 +2669,57 @@ Output ONLY the raw valid JSON array.`;
                     </div>
 
                     <div className="panels-actions-buttons" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                      {/* Direct Stop / Start Phase Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePhaseLive(panelPhaseFilter as (1 | 2 | 3), isCurrentPanelPhaseLive)}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          height: '38px',
-                          padding: '0 13px',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                          backgroundColor: isCurrentPanelPhaseLive ? '#FEF2F2' : '#ECFDF5',
-                          color: isCurrentPanelPhaseLive ? '#DC2626' : '#059669',
-                          border: isCurrentPanelPhaseLive ? '1.5px solid #FCA5A5' : '1.5px solid #A7F3D0',
-                          whiteSpace: 'nowrap',
-                        }}
-                        title={
-                          isCurrentPanelPhaseLive
-                            ? `Phase ${panelPhaseFilter} is currently LIVE. Click to STOP this phase and immediately lock marks from panel members.`
-                            : `Phase ${panelPhaseFilter} is currently STOPPED. Click to GO LIVE so panel members can record marks.`
-                        }
-                      >
-                        {isCurrentPanelPhaseLive ? (
-                          <>
-                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#DC2626', display: 'inline-block' }} />
-                            <span>Stop Phase {panelPhaseFilter} (Lock Marks)</span>
-                          </>
-                        ) : (
-                          <>
-                            <Play size={13} fill="#059669" color="#059669" />
-                            <span>Start Phase {panelPhaseFilter} (Go Live)</span>
-                          </>
-                        )}
-                      </button>
+                      {/* Direct Stop / Start Phase Button with Integrated Spinner Loader */}
+                      {(() => {
+                        const isToggling = togglingPhase === panelPhaseFilter;
+                        return (
+                          <button
+                            type="button"
+                            disabled={isToggling}
+                            onClick={() => handleTogglePhaseLive(panelPhaseFilter as (1 | 2 | 3), isCurrentPanelPhaseLive)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              height: '38px',
+                              padding: '0 14px',
+                              borderRadius: '8px',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: isToggling ? 'wait' : 'pointer',
+                              opacity: isToggling ? 0.75 : 1,
+                              transition: 'all 0.15s ease',
+                              backgroundColor: isCurrentPanelPhaseLive ? '#FEF2F2' : '#ECFDF5',
+                              color: isCurrentPanelPhaseLive ? '#DC2626' : '#059669',
+                              border: isCurrentPanelPhaseLive ? '1.5px solid #FCA5A5' : '1.5px solid #A7F3D0',
+                              whiteSpace: 'nowrap',
+                              boxShadow: isToggling ? 'inset 0 1px 3px rgba(0,0,0,0.1)' : '0 1px 2px rgba(0,0,0,0.03)',
+                            }}
+                            title={
+                              isCurrentPanelPhaseLive
+                                ? `Phase ${panelPhaseFilter} is currently LIVE. Click to STOP this phase and immediately lock marks from panel members.`
+                                : `Phase ${panelPhaseFilter} is currently STOPPED. Click to GO LIVE so panel members can record marks.`
+                            }
+                          >
+                            {isToggling ? (
+                              <>
+                                <RefreshCw size={13} className="animate-spin" />
+                                <span>{isCurrentPanelPhaseLive ? `Stopping Phase ${panelPhaseFilter}...` : `Starting Phase ${panelPhaseFilter}...`}</span>
+                              </>
+                            ) : isCurrentPanelPhaseLive ? (
+                              <>
+                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#DC2626', display: 'inline-block' }} />
+                                <span>Stop Phase {panelPhaseFilter} (Lock Marks)</span>
+                              </>
+                            ) : (
+                              <>
+                                <Play size={13} fill="#059669" color="#059669" />
+                                <span>Start Phase {panelPhaseFilter} (Go Live)</span>
+                              </>
+                            )}
+                          </button>
+                        );
+                      })()}
 
                       {/* Export Panels Buttons */}
                       <div style={{ display: 'flex', gap: '4px' }}>
@@ -2711,81 +2764,6 @@ Output ONLY the raw valid JSON array.`;
                   </div>
                 </div>
               </div>
-              {/* Phase Live / Stopped Status Banner */}
-              {isCurrentPanelPhaseLive ? (
-                <div
-                  style={{
-                    backgroundColor: '#ECFDF5',
-                    border: '1.5px solid #A7F3D0',
-                    color: '#065F46',
-                    borderRadius: '12px',
-                    padding: '12px 18px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: '12px',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <CheckCircle2 size={18} color="#059669" />
-                    <div style={{ fontSize: '13px' }}>
-                      <strong>Phase {panelPhaseFilter} Evaluation is LIVE:</strong> Panel members can score teams and record attendance.
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleTogglePhaseLive(panelPhaseFilter as (1 | 2 | 3), true)}
-                    style={{
-                      fontSize: '12px',
-                      padding: '6px 14px',
-                      height: '32px',
-                      gap: '6px',
-                      backgroundColor: '#FEF2F2',
-                      color: '#DC2626',
-                      border: '1.5px solid #FCA5A5',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontWeight: 700,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#DC2626', display: 'inline-block' }} />
-                    Stop Phase {panelPhaseFilter} (Lock Marks)
-                  </button>
-                </div>
-              ) : (
-                <div
-                  style={{
-                    backgroundColor: '#FEF2F2',
-                    border: '1.5px solid #FCA5A5',
-                    color: '#991B1B',
-                    borderRadius: '12px',
-                    padding: '12px 18px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    flexWrap: 'wrap',
-                    gap: '12px',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Lock size={18} color="#DC2626" />
-                    <div style={{ fontSize: '13px' }}>
-                      <strong>Phase {panelPhaseFilter} Evaluation is STOPPED &amp; LOCKED:</strong> Faculty panel members cannot add, update, or modify student marks.
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleTogglePhaseLive(panelPhaseFilter as (1 | 2 | 3), false)}
-                    className="btn btn-primary"
-                    style={{ fontSize: '12px', padding: '6px 14px', height: '32px', gap: '6px' }}
-                  >
-                    <Play size={12} fill="currentColor" /> Set Phase {panelPhaseFilter} to LIVE
-                  </button>
-                </div>
-              )}
 
               {/* Panels Display Grid */}
               {filteredPanels.length === 0 ? (

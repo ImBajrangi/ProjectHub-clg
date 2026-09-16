@@ -3,10 +3,16 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { NotificationTemplates } from '@/lib/notifications';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     const phases = await db.getPhases();
-    return NextResponse.json({ phases });
+    return NextResponse.json(
+      { phases },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    );
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch phases' }, { status: 500 });
   }

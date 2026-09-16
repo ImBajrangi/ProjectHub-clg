@@ -874,7 +874,7 @@ export const db = {
 
   async setPhaseLive(phaseNumber: 1 | 2 | 3, isLive: boolean): Promise<EvaluationPhase | null> {
     const store = await this.getStore();
-    const phase = store.evaluation_phases.find((p) => p.phase_number === phaseNumber);
+    const phase = store.evaluation_phases.find((p) => Number(p.phase_number) === Number(phaseNumber));
     const now = new Date().toISOString();
 
     if (phase) {
@@ -882,12 +882,17 @@ export const db = {
       phase.updated_at = now;
     }
 
-    supabase
+    const { error: writeErr } = await supabase
       .from('evaluation_phases')
       .update({ is_live: isLive, updated_at: now })
-      .eq('phase_number', phaseNumber)
-      .then(({ error: writeErr }) => { if (writeErr) logSupabaseError('evaluation_phases (setPhaseLive)', writeErr); });
+      .eq('phase_number', phaseNumber);
 
+    if (writeErr) {
+      logSupabaseError('evaluation_phases (setPhaseLive)', writeErr);
+      throw new Error(`Failed to update phase status: ${writeErr.message}`);
+    }
+
+    lastStoreFetch = Date.now();
     return phase || null;
   },
 
