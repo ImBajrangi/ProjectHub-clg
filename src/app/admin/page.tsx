@@ -3145,7 +3145,7 @@ Output ONLY the raw valid JSON array.`;
                       Defaulting Teams Audit ({defaultingTeams.length})
                     </h3>
                     <p style={{ fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                      Teams missing designated leaders, lacking approved problem statements, or awaiting supervisor clearance.
+                      Teams missing designated leaders awaiting student activation at /leader.
                     </p>
                   </div>
                 </div>
@@ -3216,8 +3216,6 @@ Output ONLY the raw valid JSON array.`;
                           <td>
                             {!t.leader_id ? (
                               <span className="badge badge-danger" style={{ fontSize: '10px' }}>Leader Not Elected at /leader</span>
-                            ) : t.problemStatement?.status !== 'approved' ? (
-                              <span className="badge badge-warning" style={{ fontSize: '10px' }}>Problem Statement Unapproved</span>
                             ) : (
                               <span className="badge badge-warning" style={{ fontSize: '10px' }}>Phase Clearance Pending</span>
                             )}
@@ -3848,35 +3846,31 @@ Output ONLY the raw valid JSON array.`;
 
             {/* Compliance Reason Guide & Summary Metrics */}
             <div style={{ padding: '16px 24px', backgroundColor: '#FFF5F5', borderBottom: '1px solid #FEE2E2', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 200px', padding: '10px 14px', backgroundColor: '#FFFFFF', borderRadius: '8px', border: '1px solid #FECACA' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#991B1B', textTransform: 'uppercase' }}>1. Missing Leaders</div>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#DC2626', marginTop: '2px' }}>
-                  {defaultingTeams.filter((t: any) => !t.leader_id).length} <span style={{ fontSize: '12px', fontWeight: 500, color: '#64748B' }}>/ {defaultingTeams.length} Teams</span>
+              <div style={{ flex: '1 1 300px', padding: '12px 16px', backgroundColor: '#FFFFFF', borderRadius: '10px', border: '1px solid #FECACA' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#991B1B', textTransform: 'uppercase' }}>Missing Team Leaders</div>
+                <div style={{ fontSize: '20px', fontWeight: 800, color: '#DC2626', marginTop: '2px' }}>
+                  {defaultingTeams.length} <span style={{ fontSize: '12px', fontWeight: 500, color: '#64748B' }}>/ {teams.length} Total Teams</span>
                 </div>
-                <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>Students must claim lead at <code style={{ backgroundColor: '#F1F5F9', padding: '1px 4px', borderRadius: '3px' }}>/leader</code></div>
+                <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '4px' }}>
+                  Students must claim and elect their leader by visiting <code style={{ backgroundColor: '#F1F5F9', padding: '1px 5px', borderRadius: '3px', color: '#1E293B', fontWeight: 600 }}>/leader</code>.
+                </div>
               </div>
 
-              <div style={{ flex: '1 1 200px', padding: '10px 14px', backgroundColor: '#FFFFFF', borderRadius: '8px', border: '1px solid #FECACA' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#991B1B', textTransform: 'uppercase' }}>2. Unapproved Statement</div>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#DC2626', marginTop: '2px' }}>
-                  {defaultingTeams.filter((t: any) => t.problemStatement?.status !== 'approved').length} <span style={{ fontSize: '12px', fontWeight: 500, color: '#64748B' }}>Teams</span>
+              <div style={{ flex: '1 1 300px', padding: '12px 16px', backgroundColor: '#FFFFFF', borderRadius: '10px', border: '1px solid #BBF7D0' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#166534', textTransform: 'uppercase' }}>Elected Leaders Active</div>
+                <div style={{ fontSize: '20px', fontWeight: 800, color: '#16A34A', marginTop: '2px' }}>
+                  {teams.length - defaultingTeams.length} <span style={{ fontSize: '12px', fontWeight: 500, color: '#64748B' }}>Teams Ready</span>
                 </div>
-                <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>Pending mentor sign-off or submission</div>
-              </div>
-
-              <div style={{ flex: '1 1 200px', padding: '10px 14px', backgroundColor: '#FFFFFF', borderRadius: '8px', border: '1px solid #FECACA' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#991B1B', textTransform: 'uppercase' }}>3. Phase 1 Clearance</div>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#DC2626', marginTop: '2px' }}>
-                  {defaultingTeams.filter((t: any) => !t.phase1_approved).length} <span style={{ fontSize: '12px', fontWeight: 500, color: '#64748B' }}>Teams</span>
+                <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '4px' }}>
+                  Leaders actively assigned and synchronized across the database.
                 </div>
-                <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>Phase 1 review grading in progress</div>
               </div>
             </div>
 
             {/* Filter & Search Bar */}
             <div style={{ padding: '14px 24px', borderBottom: '1px solid var(--color-hairline)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: 1 }}>
-                <div style={{ position: 'relative', minWidth: '240px', flex: '1 1 260px' }}>
+                <div style={{ position: 'relative', minWidth: '260px', flex: '1 1 300px' }}>
                   <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
                   <input
                     type="text"
@@ -3899,49 +3893,17 @@ Output ONLY the raw valid JSON array.`;
                     type="button"
                     onClick={() => setDefaultingReasonFilter('all')}
                     style={{
-                      padding: '5px 10px',
+                      padding: '5px 12px',
                       fontSize: '11px',
                       fontWeight: 600,
                       borderRadius: '6px',
-                      border: defaultingReasonFilter === 'all' ? '1px solid #DC2626' : '1px solid var(--color-border)',
-                      backgroundColor: defaultingReasonFilter === 'all' ? '#FEF2F2' : '#FFFFFF',
-                      color: defaultingReasonFilter === 'all' ? '#DC2626' : 'var(--color-ink)',
+                      border: '1px solid #DC2626',
+                      backgroundColor: '#FEF2F2',
+                      color: '#DC2626',
                       cursor: 'pointer',
                     }}
                   >
-                    All ({defaultingTeams.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDefaultingReasonFilter('no_leader')}
-                    style={{
-                      padding: '5px 10px',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      borderRadius: '6px',
-                      border: defaultingReasonFilter === 'no_leader' ? '1px solid #DC2626' : '1px solid var(--color-border)',
-                      backgroundColor: defaultingReasonFilter === 'no_leader' ? '#FEF2F2' : '#FFFFFF',
-                      color: defaultingReasonFilter === 'no_leader' ? '#DC2626' : 'var(--color-ink)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    No Leader ({defaultingTeams.filter((t: any) => !t.leader_id).length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDefaultingReasonFilter('no_ps')}
-                    style={{
-                      padding: '5px 10px',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      borderRadius: '6px',
-                      border: defaultingReasonFilter === 'no_ps' ? '1px solid #DC2626' : '1px solid var(--color-border)',
-                      backgroundColor: defaultingReasonFilter === 'no_ps' ? '#FEF2F2' : '#FFFFFF',
-                      color: defaultingReasonFilter === 'no_ps' ? '#DC2626' : 'var(--color-ink)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Unapproved PS ({defaultingTeams.filter((t: any) => t.problemStatement?.status !== 'approved').length})
+                    Awaiting Leader ({defaultingTeams.length})
                   </button>
                 </div>
               </div>
@@ -3984,28 +3946,21 @@ Output ONLY the raw valid JSON array.`;
                     (t.program && t.program.toLowerCase().includes(q)) ||
                     (t.supervisor?.name && t.supervisor.name.toLowerCase().includes(q));
 
-                  if (!matchesSearch) return false;
-
-                  if (defaultingReasonFilter === 'no_leader') return !t.leader_id;
-                  if (defaultingReasonFilter === 'no_ps') return t.problemStatement?.status !== 'approved';
-                  if (defaultingReasonFilter === 'pending_p1') return !t.phase1_approved;
-                  return true;
+                  return matchesSearch;
                 });
 
                 if (filtered.length === 0) {
                   return (
                     <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
                       <AlertTriangle size={32} color="#CBD5E1" style={{ margin: '0 auto 10px' }} />
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)' }}>No Defaulting Teams Match Search</div>
-                      <div style={{ fontSize: '12px', marginTop: '4px' }}>Try clearing your search query or filter chip.</div>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-ink)' }}>No Teams Match Search</div>
+                      <div style={{ fontSize: '12px', marginTop: '4px' }}>Try clearing your search query.</div>
                     </div>
                   );
                 }
 
                 return filtered.map((t: any) => {
-                  const hasLeader = Boolean(t.leader_id);
-                  const isPsApproved = t.problemStatement?.status === 'approved';
-                  const isP1Cleared = t.phase1_approved;
+                  const hasLeader = Boolean(t.leader || t.leader_id);
 
                   return (
                     <div
@@ -4041,20 +3996,10 @@ Output ONLY the raw valid JSON array.`;
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', flex: '1 1 260px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', flex: '1 1 200px' }}>
                         {!hasLeader && (
-                          <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px', backgroundColor: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA' }}>
-                            Leader Not Elected
-                          </span>
-                        )}
-                        {!isPsApproved && (
-                          <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px', backgroundColor: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A' }}>
-                            PS Unapproved
-                          </span>
-                        )}
-                        {!isP1Cleared && (
-                          <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #E2E8F0' }}>
-                            Phase 1 Pending
+                          <span style={{ fontSize: '10.5px', fontWeight: 700, padding: '3px 10px', borderRadius: '5px', backgroundColor: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA' }}>
+                            Leader Not Elected at /leader
                           </span>
                         )}
                       </div>

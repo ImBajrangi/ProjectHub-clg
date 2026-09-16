@@ -52,7 +52,10 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      const leader = t.leader_id
+      const teamStudents = students.filter((s) => s.team_id === t.id);
+      const teamLeaderStudent = teamStudents.find((s) => s.is_leader);
+
+      let leaderUser = t.leader_id
         ? (store.users || []).find(
             (u) =>
               u &&
@@ -60,7 +63,21 @@ export async function GET(req: NextRequest) {
                String(u.email || '').toLowerCase().trim() === String(t.leader_id).toLowerCase().trim())
           )
         : null;
-      const teamStudents = students.filter((s) => s.team_id === t.id);
+
+      if (!leaderUser && teamLeaderStudent) {
+        leaderUser = (store.users || []).find(
+          (u) =>
+            u &&
+            (String(u.id).toLowerCase().trim() === String(teamLeaderStudent.user_id || '').toLowerCase().trim() ||
+             String(u.email || '').toLowerCase().trim() === String(teamLeaderStudent.email || '').toLowerCase().trim())
+        ) || null;
+      }
+
+      const leader = leaderUser
+        ? { id: leaderUser.id, name: leaderUser.full_name, email: leaderUser.email, phone: leaderUser.phone || teamLeaderStudent?.mobile || '' }
+        : (teamLeaderStudent ? { id: teamLeaderStudent.id, name: teamLeaderStudent.full_name, email: teamLeaderStudent.email, phone: teamLeaderStudent.mobile || '' } : null);
+
+      const hasLeader = Boolean(t.leader_id || teamLeaderStudent || (leader && leader.id));
       const ps = problemStatements.find((p) => p.team_id === t.id);
       const teamMeetings = meetings.filter((m) => m.team_id === t.id);
       const teamEvals = evaluations.filter((e) => e.team_id === t.id);
@@ -85,9 +102,15 @@ export async function GET(req: NextRequest) {
           };
         };
 
+        const isThisStudentLeader = Boolean(
+          st.is_leader ||
+          (t.leader_id && (String(t.leader_id) === String(st.id) || String(t.leader_id) === String(st.user_id))) ||
+          (leader && String(leader.id) === String(st.id))
+        );
+
         return {
           ...st,
-          isLeader: t.leader_id === st.id,
+          isLeader: isThisStudentLeader,
           evaluations: studentEvals,
           phase1: formatEval(p1Eval),
           phase2: formatEval(p2Eval),
@@ -95,14 +118,7 @@ export async function GET(req: NextRequest) {
         };
       });
 
-      const hasLeader = Boolean(t.leader_id);
-      const isPsApproved = ps?.status === 'approved';
-      const isP1Cleared = t.phase1_approved;
-      const isP2Cleared = t.phase2_approved;
-      const isP3Cleared = t.phase3_approved;
-      const isReportUploaded = Boolean(t.report_url);
-
-      const isDefaulting = !hasLeader || !isPsApproved || (!isP1Cleared && phases[0]?.is_live);
+      const isDefaulting = !hasLeader;
 
       return {
         id: t.id,
@@ -119,7 +135,8 @@ export async function GET(req: NextRequest) {
               phone: supUser.phone || '',
             }
           : null,
-        leader: leader ? { id: leader.id, name: leader.full_name, email: leader.email, phone: leader.phone } : null,
+        leader: leader ? { id: leader.id, name: leader.name, email: leader.email, phone: leader.phone } : null,
+        leader_id: t.leader_id || teamLeaderStudent?.id || leader?.id || null,
         studentCount: teamStudents.length,
         students: studentsWithEvals,
         problemStatement: ps,
@@ -233,8 +250,8 @@ export async function GET(req: NextRequest) {
           totalStudents: students.length,
           totalSupervisors: supervisors.length,
           totalAdmins: (store.users || []).filter((u) => u.role === 'admin').length,
-          claimedLeaders: teams.filter((t) => t.leader_id).length,
-          unclaimedLeaders: teams.filter((t) => !t.leader_id).length,
+          claimedLeaders: auditTeams.filter((t) => !t.isDefaulting).length,
+          unclaimedLeaders: auditTeams.filter((t) => t.isDefaulting).length,
           approvedProblemStatements: problemStatements.filter((p) => p.status === 'approved').length,
           totalMeetings: meetings.length,
           totalEvaluations: evaluations.length,
