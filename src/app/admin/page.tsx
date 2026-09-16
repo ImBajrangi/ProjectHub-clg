@@ -1220,52 +1220,88 @@ export default function AdminDashboardPage() {
     return (dbRooms || []).map((r: any) => (typeof r === 'string' ? r : r?.name)).filter(Boolean);
   }, [dbRooms]);
 
+  // All Display Rooms (including custom room if editing existing panel)
+  const ALL_DISPLAY_ROOMS = useMemo(() => {
+    const list = [...AB10_ROOMS];
+    if (editingPanel?.room_number && !list.includes(editingPanel.room_number)) {
+      list.push(editingPanel.room_number);
+    }
+    return list;
+  }, [AB10_ROOMS, editingPanel]);
+
+  // Auto-sync panelFormRoom when rooms list loads
+  useEffect(() => {
+    if (ALL_DISPLAY_ROOMS.length > 0 && !editingPanel) {
+      if (!panelFormRoom || !ALL_DISPLAY_ROOMS.includes(panelFormRoom)) {
+        setPanelFormRoom(ALL_DISPLAY_ROOMS[0]);
+      }
+    }
+  }, [ALL_DISPLAY_ROOMS, editingPanel, panelFormRoom]);
+
   // Standard Shift Presets with Time Slots
   const SHIFT_PRESETS = useMemo(() => {
     return dbShifts || [];
   }, [dbShifts]);
 
-  // Calculate Live Room Occupancy & Availability for selected Date, Shift & Phase
+  // Real occupancy check helper for any room
+  const getOccupyingPanelForRoom = (roomName: string) => {
+    if (!roomName) return null;
+    const cleanRoom = roomName.toLowerCase().replace(/^room\s+/i, '').trim();
+
+    return (panels || []).find((p: any) => {
+      // Exclude the current panel being edited
+      if (editingPanel && p.id === editingPanel.id) return false;
+
+      // Match evaluation phase
+      if (p.phase_number !== panelFormPhase) return false;
+
+      // Match presentation date
+      const pDate = (p.date || '').trim();
+      const curDate = (panelFormDate || '').trim();
+      if (pDate && curDate && pDate !== curDate) return false;
+
+      // Match shift / time window
+      const pShift = (p.time_window || '').toLowerCase().trim();
+      const curShift = (panelFormShift || '').toLowerCase().trim();
+      if (pShift && curShift) {
+        const getShiftKey = (s: string) => {
+          if (s.includes('morning') || s.includes('batch 1') || s.includes('shift 1') || s.includes('08:00') || s.includes('09:00')) return 'shift1';
+          if (s.includes('afternoon') || s.includes('batch 2') || s.includes('shift 2') || s.includes('12:00') || s.includes('01:00') || s.includes('02:00')) return 'shift2';
+          return s;
+        };
+        if (getShiftKey(pShift) !== getShiftKey(curShift)) return false;
+      }
+
+      // Match room number
+      const pCleanRoom = (p.room_number || '').toLowerCase().replace(/^room\s+/i, '').trim();
+      return pCleanRoom === cleanRoom || (p.room_number || '').toLowerCase().trim() === roomName.toLowerCase().trim();
+    });
+  };
+
+  // Calculate Live Room Occupancy & Availability for displayed rooms
   const roomOccupancyMap = useMemo(() => {
     const map: Record<string, { isAvailable: boolean; occupiedByPanel?: string }> = {};
 
-    AB10_ROOMS.forEach((room) => {
-      const normalizedRoom = room.toLowerCase().replace('room ', '').trim();
-      const existing = (panels || []).find((p: any) => {
-        const pRoom = (p.room_number || '').toLowerCase().replace('room ', '').trim();
-        const roomMatch = pRoom === normalizedRoom || (p.room_number || '').toLowerCase() === room.toLowerCase();
-        const dateMatch = !p.date || !panelFormDate || p.date === panelFormDate;
-
-        // Match shift / time window
-        const pShift = (p.time_window || '').toLowerCase();
-        const curShift = (panelFormShift || '').toLowerCase();
-        const shiftMatch = !pShift || !curShift ||
-          pShift.slice(0, 7) === curShift.slice(0, 7) ||
-          pShift.includes(curShift.slice(0, 8)) ||
-          curShift.includes(pShift.slice(0, 8));
-
-        return roomMatch && dateMatch && shiftMatch && p.phase_number === panelFormPhase;
-      });
-
-      if (existing) {
-        map[room] = {
-          isAvailable: false,
-          occupiedByPanel: existing.panel_name || `Panel (Phase ${existing.phase_number})`,
-        };
-      } else {
-        map[room] = {
-          isAvailable: true,
-        };
-      }
+    ALL_DISPLAY_ROOMS.forEach((room) => {
+      const occ = getOccupyingPanelForRoom(room);
+      map[room] = {
+        isAvailable: !occ,
+        occupiedByPanel: occ ? (occ.panel_name || `Panel #${occ.panel_number}`) : undefined,
+      };
     });
 
     return map;
-  }, [AB10_ROOMS, panels, panelFormDate, panelFormShift, panelFormPhase]);
+  }, [ALL_DISPLAY_ROOMS, panels, panelFormDate, panelFormShift, panelFormPhase, editingPanel]);
+
+  // Occupying panel for currently selected room (strictly real check)
+  const occupyingPanelForSelected = useMemo(() => {
+    return getOccupyingPanelForRoom(panelFormRoom);
+  }, [panelFormRoom, panels, panelFormDate, panelFormShift, panelFormPhase, editingPanel]);
 
   // First available vacant room
   const firstAvailableRoom = useMemo(() => {
-    return AB10_ROOMS.find((r) => roomOccupancyMap[r]?.isAvailable) || AB10_ROOMS[0];
-  }, [AB10_ROOMS, roomOccupancyMap]);
+    return ALL_DISPLAY_ROOMS.find((r) => roomOccupancyMap[r]?.isAvailable) || ALL_DISPLAY_ROOMS[0];
+  }, [ALL_DISPLAY_ROOMS, roomOccupancyMap]);
 
   // Auto-allot available room helper
   const handleAutoAllotRoom = () => {
@@ -4119,9 +4155,9 @@ Output ONLY the raw valid JSON array.`;
                     </div>
                   </div>
 
-                  {/* Interactive Symmetric 4-Column Room Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                    {AB10_ROOMS.map((room) => {
+                  {/* Interactive Room Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(Math.max(ALL_DISPLAY_ROOMS.length, 1), 4)}, 1fr)`, gap: '8px' }}>
+                    {ALL_DISPLAY_ROOMS.map((room) => {
                       const occ = roomOccupancyMap[room];
                       const isSelected = panelFormRoom === room;
                       const isVacant = occ?.isAvailable;
@@ -4182,12 +4218,12 @@ Output ONLY the raw valid JSON array.`;
                     })}
                   </div>
 
-                  {/* Room Conflict Notice if selected room is in use */}
-                  {!roomOccupancyMap[panelFormRoom]?.isAvailable && (
+                  {/* Room Conflict Notice - Strictly shows ONLY when another panel is genuinely booked in this room */}
+                  {occupyingPanelForSelected && (
                     <div style={{ padding: '8px 12px', borderRadius: '8px', backgroundColor: '#FFF1F2', border: '1px solid #FECACA', fontSize: '11.5px', color: '#991B1B', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                         <AlertTriangle size={14} color="#DC2626" />
-                        <span><strong>Room Occupancy Notice:</strong> {panelFormRoom} is already booked by {roomOccupancyMap[panelFormRoom]?.occupiedByPanel || 'another panel'} for this shift.</span>
+                        <span><strong>Room Occupancy Notice:</strong> {panelFormRoom} is already booked by {occupyingPanelForSelected.panel_name || `Panel #${occupyingPanelForSelected.panel_number}`} for this shift.</span>
                       </span>
                       {firstAvailableRoom && firstAvailableRoom !== panelFormRoom && (
                         <button
