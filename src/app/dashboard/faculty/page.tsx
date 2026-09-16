@@ -1117,6 +1117,41 @@ export default function FacultyDashboardPage() {
                               </div>
                             )}
                           </div>
+
+                          {/* Judging Partners */}
+                          {p.judges && p.judges.length > 0 && (
+                            <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed #E2E8F0', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                              <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Users size={11} color="#2563EB" />
+                                <span>Judging Partners ({p.judges.length}):</span>
+                              </div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                {p.judges.map((j: any) => {
+                                  const isMe = j.id === currentUser?.id;
+                                  return (
+                                    <span
+                                      key={j.id}
+                                      style={{
+                                        fontSize: '10.5px',
+                                        fontWeight: isMe ? 700 : 500,
+                                        padding: '2px 6px',
+                                        borderRadius: '4px',
+                                        backgroundColor: isMe ? '#EFF6FF' : '#F8FAFC',
+                                        color: isMe ? '#1D4ED8' : '#334155',
+                                        border: isMe ? '1px solid #BFDBFE' : '1px solid #E2E8F0',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '3px',
+                                      }}
+                                    >
+                                      <span>{j.full_name || j.name || 'Faculty Judge'}</span>
+                                      {isMe && <span style={{ fontSize: '9px', fontWeight: 800, color: '#2563EB' }}>(You)</span>}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -2245,27 +2280,65 @@ export default function FacultyDashboardPage() {
                     </div>
                   </div>
 
-                  {(() => {
-                    const activePhaseConfig = evaluationPhases.find((p: any) => p.phase_number === (selectedPanelPhase || 1));
-                    const isPhaseLive = activePhaseConfig ? activePhaseConfig.is_live : false;
-                    const maxMarks = activePhaseConfig?.marks_weightage || activePhaseConfig?.max_marks || (selectedPanelPhase === 1 ? 20 : selectedPanelPhase === 2 ? 40 : 40);
-                    return (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        {isPhaseLive ? (
-                          <span className="badge badge-success" style={{ fontSize: '11.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                            <CheckCircle2 size={13} /> Live Defense Mode
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    {/* Active Judging Panel Chips */}
+                    {(() => {
+                      const currentPanel = panelData.find((p: any) => p.phase_number === selectedPanelPhase && (p.evaluableTeams || p.teams || []).some((t: any) => t.id === selectedPanelTeam.id));
+                      if (!currentPanel?.judges || currentPanel.judges.length === 0) return null;
+                      return (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', backgroundColor: '#F8FAFC', padding: '4px 10px', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <Users size={12} color="#2563EB" /> Judging Partners ({currentPanel.judges.length}):
                           </span>
-                        ) : (
-                          <span className="badge" style={{ backgroundColor: '#FEF2F2', color: '#DC2626', border: '1.5px solid #FCA5A5', fontSize: '11.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                            <Lock size={13} /> Evaluation Stopped / Locked
+                          {currentPanel.judges.map((j: any) => {
+                            const isMe = j.id === currentUser?.id;
+                            return (
+                              <span
+                                key={j.id}
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: isMe ? 700 : 500,
+                                  padding: '2px 7px',
+                                  borderRadius: '5px',
+                                  backgroundColor: isMe ? '#EFF6FF' : '#FFFFFF',
+                                  color: isMe ? '#1D4ED8' : '#334155',
+                                  border: isMe ? '1px solid #BFDBFE' : '1px solid #CBD5E1',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px',
+                                }}
+                              >
+                                <span>{j.full_name || j.name}</span>
+                                {isMe && <span style={{ fontSize: '9px', fontWeight: 800, color: '#2563EB' }}>(You)</span>}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+
+                    {(() => {
+                      const activePhaseConfig = evaluationPhases.find((p: any) => p.phase_number === (selectedPanelPhase || 1));
+                      const isPhaseLive = activePhaseConfig ? activePhaseConfig.is_live : false;
+                      const maxMarks = activePhaseConfig?.marks_weightage || activePhaseConfig?.max_marks || (selectedPanelPhase === 1 ? 20 : selectedPanelPhase === 2 ? 40 : 40);
+                      return (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          {isPhaseLive ? (
+                            <span className="badge badge-success" style={{ fontSize: '11.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                              <CheckCircle2 size={13} /> Live Defense Mode
+                            </span>
+                          ) : (
+                            <span className="badge" style={{ backgroundColor: '#FEF2F2', color: '#DC2626', border: '1.5px solid #FCA5A5', fontSize: '11.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                              <Lock size={13} /> Evaluation Stopped / Locked
+                            </span>
+                          )}
+                          <span className="badge badge-brand" style={{ fontSize: '11px', fontWeight: 700 }}>
+                            Rubric: {maxMarks} Marks Scale
                           </span>
-                        )}
-                        <span className="badge badge-brand" style={{ fontSize: '11px', fontWeight: 700 }}>
-                          Rubric: {maxMarks} Marks Scale
-                        </span>
-                      </div>
-                    );
-                  })()}
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
 
                 {/* Stopped Phase Notification Banner */}
@@ -3825,6 +3898,45 @@ export default function FacultyDashboardPage() {
                                   {p.time_window && <span>• Shift: <strong>{p.time_window}</strong></span>}
                                   {p.range && <span>• Teams: <strong>{p.range}</strong></span>}
                                 </div>
+
+                                {/* Judging Partners */}
+                                {p.judges && p.judges.length > 0 && (
+                                  <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                      <Users size={12} color="#2563EB" />
+                                      Judging Partners ({p.judges.length}):
+                                    </span>
+                                    {p.judges.map((j: any) => {
+                                      const isMe = j.id === currentUser?.id;
+                                      return (
+                                        <span
+                                          key={j.id}
+                                          style={{
+                                            fontSize: '11px',
+                                            fontWeight: isMe ? 700 : 500,
+                                            padding: '2px 8px',
+                                            borderRadius: '6px',
+                                            backgroundColor: isMe ? '#EFF6FF' : '#F8FAFC',
+                                            color: isMe ? '#1D4ED8' : '#334155',
+                                            border: isMe ? '1px solid #BFDBFE' : '1px solid #E2E8F0',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                          }}
+                                        >
+                                          <span>{j.full_name || j.name || 'Faculty Judge'}</span>
+                                          {isMe ? (
+                                            <span style={{ fontSize: '9px', fontWeight: 800, backgroundColor: '#DBEAFE', color: '#1E40AF', padding: '1px 4px', borderRadius: '3px' }}>
+                                              You
+                                            </span>
+                                          ) : j.email ? (
+                                            <span style={{ fontSize: '9.5px', color: '#64748B' }}>({j.email})</span>
+                                          ) : null}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                )}
                               </div>
 
                               <div style={{ textAlign: 'right' }}>
