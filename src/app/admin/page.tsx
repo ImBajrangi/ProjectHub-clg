@@ -2666,14 +2666,15 @@ Output ONLY the raw valid JSON array.`;
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {/* Header & Controls */}
-              <div className="card" style={{ padding: '14px 16px', width: '100%', boxSizing: 'border-box' }}>
-                <div className="panels-toolbar" style={{ width: '100%', boxSizing: 'border-box' }}>
+              <div className="card" style={{ padding: '16px 18px', width: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {/* Top Row: Phase Selection Pills + Live/Stop Status Button */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                   {/* Phase Selection Pills */}
                   <div className="segmented-control touch-scroll-x" style={{ padding: '3px', boxSizing: 'border-box', overflowX: 'auto', display: 'flex', flexShrink: 0 }}>
                     <button
                       className={`segmented-pill ${panelPhaseFilter === 1 ? 'active' : ''}`}
                       onClick={() => setPanelPhaseFilter(1)}
-                      style={{ padding: '6px 12px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', flexShrink: 0 }}
+                      style={{ padding: '6px 14px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', flexShrink: 0 }}
                     >
                       <Target size={13} color={panelPhaseFilter === 1 ? '#2563EB' : 'currentColor'} />
                       <span>Round 1 (19-Sep)</span>
@@ -2681,7 +2682,7 @@ Output ONLY the raw valid JSON array.`;
                     <button
                       className={`segmented-pill ${panelPhaseFilter === 2 ? 'active' : ''}`}
                       onClick={() => setPanelPhaseFilter(2)}
-                      style={{ padding: '6px 12px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', flexShrink: 0 }}
+                      style={{ padding: '6px 14px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', flexShrink: 0 }}
                     >
                       <Layers size={13} color={panelPhaseFilter === 2 ? '#059669' : 'currentColor'} />
                       <span>Round 2 (17-Oct)</span>
@@ -2689,132 +2690,132 @@ Output ONLY the raw valid JSON array.`;
                     <button
                       className={`segmented-pill ${panelPhaseFilter === 3 ? 'active' : ''}`}
                       onClick={() => setPanelPhaseFilter(3)}
-                      style={{ padding: '6px 12px', fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', flexShrink: 0 }}
+                      style={{ padding: '6px 14px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', flexShrink: 0 }}
                     >
                       <Award size={13} color={panelPhaseFilter === 3 ? '#D97706' : 'currentColor'} />
                       <span>Round 3 (Final Defense)</span>
                     </button>
                   </div>
 
-                  {/* Right Controls: Search + Unified Action Buttons */}
-                  <div className="panels-actions-group">
-                    <div className="search-input-wrapper" style={{ minWidth: '160px', maxWidth: '240px', flex: '1 1 auto' }}>
-                      <input
-                        type="text"
-                        className="input-field"
-                        style={{ height: '38px', fontSize: '12.5px' }}
-                        placeholder="Search panel, room, judge..."
-                        value={panelSearch}
-                        onChange={(e) => setPanelSearch(e.target.value)}
-                      />
-                      <div className="search-icon">
-                        <Search size={14} />
-                      </div>
-                      {panelSearch && (
-                        <button
-                          type="button"
-                          onClick={() => setPanelSearch('')}
-                          className="clear-btn"
-                          aria-label="Clear search"
-                        >
-                          <X size={14} />
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="panels-actions-buttons" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                      {/* Direct Stop / Start Phase Button with Integrated Spinner Loader */}
-                      {(() => {
-                        const isToggling = togglingPhase === panelPhaseFilter;
-                        return (
-                          <button
-                            type="button"
-                            disabled={isToggling}
-                            onClick={() => handleTogglePhaseLive(panelPhaseFilter as (1 | 2 | 3), isCurrentPanelPhaseLive)}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              height: '38px',
-                              padding: '0 14px',
-                              borderRadius: '8px',
-                              fontSize: '12px',
-                              fontWeight: 700,
-                              cursor: isToggling ? 'wait' : 'pointer',
-                              opacity: isToggling ? 0.75 : 1,
-                              transition: 'all 0.15s ease',
-                              backgroundColor: isCurrentPanelPhaseLive ? '#FEF2F2' : '#ECFDF5',
-                              color: isCurrentPanelPhaseLive ? '#DC2626' : '#059669',
-                              border: isCurrentPanelPhaseLive ? '1.5px solid #FCA5A5' : '1.5px solid #A7F3D0',
-                              whiteSpace: 'nowrap',
-                              boxShadow: isToggling ? 'inset 0 1px 3px rgba(0,0,0,0.1)' : '0 1px 2px rgba(0,0,0,0.03)',
-                            }}
-                            title={
-                              isCurrentPanelPhaseLive
-                                ? `Phase ${panelPhaseFilter} is currently LIVE. Click to STOP this phase and immediately lock marks from panel members.`
-                                : `Phase ${panelPhaseFilter} is currently STOPPED. Click to GO LIVE so panel members can record marks.`
-                            }
-                          >
-                            {isToggling ? (
-                              <>
-                                <RefreshCw size={13} className="animate-spin" />
-                                <span>{isCurrentPanelPhaseLive ? `Stopping Phase ${panelPhaseFilter}...` : `Starting Phase ${panelPhaseFilter}...`}</span>
-                              </>
-                            ) : isCurrentPanelPhaseLive ? (
-                              <>
-                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#DC2626', display: 'inline-block' }} />
-                                <span>Stop Phase {panelPhaseFilter} (Lock Marks)</span>
-                              </>
-                            ) : (
-                              <>
-                                <Play size={13} fill="#059669" color="#059669" />
-                                <span>Start Phase {panelPhaseFilter} (Go Live)</span>
-                              </>
-                            )}
-                          </button>
-                        );
-                      })()}
-
-                      {/* Export Panels Buttons */}
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            exportPanelsData(filteredPanels, 'xlsx');
-                            setToastMessage({ type: 'success', text: `Phase ${panelPhaseFilter} Panels Excel report downloaded.` });
-                          }}
-                          className="btn btn-outline"
-                          style={{ height: '38px', padding: '0 10px', fontSize: '11.5px', gap: '4px', borderRadius: '8px' }}
-                          title="Export Panels Schedule as Excel (.xlsx)"
-                        >
-                          <Download size={13} /> Excel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            exportPanelsData(filteredPanels, 'csv');
-                            setToastMessage({ type: 'success', text: `Phase ${panelPhaseFilter} Panels CSV report downloaded.` });
-                          }}
-                          className="btn btn-outline"
-                          style={{ height: '38px', padding: '0 10px', fontSize: '11.5px', gap: '4px', borderRadius: '8px' }}
-                          title="Export Panels Schedule as CSV (.csv)"
-                        >
-                          CSV
-                        </button>
-                      </div>
-
+                  {/* Direct Stop / Start Phase Button with Integrated Spinner Loader */}
+                  {(() => {
+                    const isToggling = togglingPhase === panelPhaseFilter;
+                    return (
                       <button
-                        onClick={() => {
-                          setPanelFormPhase(panelPhaseFilter);
-                          setCreatePanelModalOpen(true);
-                          setPanelFormError(null);
+                        type="button"
+                        disabled={isToggling}
+                        onClick={() => handleTogglePhaseLive(panelPhaseFilter as (1 | 2 | 3), isCurrentPanelPhaseLive)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          height: '36px',
+                          padding: '0 14px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: isToggling ? 'wait' : 'pointer',
+                          opacity: isToggling ? 0.75 : 1,
+                          transition: 'all 0.15s ease',
+                          backgroundColor: isCurrentPanelPhaseLive ? '#FEF2F2' : '#ECFDF5',
+                          color: isCurrentPanelPhaseLive ? '#DC2626' : '#059669',
+                          border: isCurrentPanelPhaseLive ? '1.5px solid #FCA5A5' : '1.5px solid #A7F3D0',
+                          whiteSpace: 'nowrap',
+                          boxShadow: isToggling ? 'inset 0 1px 3px rgba(0,0,0,0.1)' : '0 1px 2px rgba(0,0,0,0.03)',
                         }}
-                        className="btn btn-primary"
-                        style={{ fontSize: '12px', height: '38px', padding: '0 14px', gap: '6px', whiteSpace: 'nowrap' }}
+                        title={
+                          isCurrentPanelPhaseLive
+                            ? `Phase ${panelPhaseFilter} is currently LIVE. Click to STOP this phase and immediately lock marks from panel members.`
+                            : `Phase ${panelPhaseFilter} is currently STOPPED. Click to GO LIVE so panel members can record marks.`
+                        }
                       >
-                        <Plus size={14} /> Add Single Panel
+                        {isToggling ? (
+                          <>
+                            <RefreshCw size={13} className="animate-spin" />
+                            <span>{isCurrentPanelPhaseLive ? `Stopping Phase ${panelPhaseFilter}...` : `Starting Phase ${panelPhaseFilter}...`}</span>
+                          </>
+                        ) : isCurrentPanelPhaseLive ? (
+                          <>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#DC2626', display: 'inline-block' }} />
+                            <span>Stop Phase {panelPhaseFilter} (Lock Marks)</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play size={13} fill="#059669" color="#059669" />
+                            <span>Start Phase {panelPhaseFilter} (Go Live)</span>
+                          </>
+                        )}
+                      </button>
+                    );
+                  })()}
+                </div>
+
+                {/* Bottom Row: Search Bar on Left + Export & Add Actions on Right */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', paddingTop: '12px', borderTop: '1px solid #F1F5F9' }}>
+                  <div className="search-input-wrapper" style={{ minWidth: '220px', maxWidth: '340px', flex: '1 1 auto' }}>
+                    <input
+                      type="text"
+                      className="input-field"
+                      style={{ height: '36px', fontSize: '12.5px' }}
+                      placeholder="Search panel, room, judge..."
+                      value={panelSearch}
+                      onChange={(e) => setPanelSearch(e.target.value)}
+                    />
+                    <div className="search-icon">
+                      <Search size={14} />
+                    </div>
+                    {panelSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setPanelSearch('')}
+                        className="clear-btn"
+                        aria-label="Clear search"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    {/* Export Panels Buttons */}
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          exportPanelsData(filteredPanels, 'xlsx');
+                          setToastMessage({ type: 'success', text: `Phase ${panelPhaseFilter} Panels Excel report downloaded.` });
+                        }}
+                        className="btn btn-outline"
+                        style={{ height: '36px', padding: '0 10px', fontSize: '11.5px', gap: '4px', borderRadius: '7px' }}
+                        title="Export Panels Schedule as Excel (.xlsx)"
+                      >
+                        <Download size={13} /> Excel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          exportPanelsData(filteredPanels, 'csv');
+                          setToastMessage({ type: 'success', text: `Phase ${panelPhaseFilter} Panels CSV report downloaded.` });
+                        }}
+                        className="btn btn-outline"
+                        style={{ height: '36px', padding: '0 10px', fontSize: '11.5px', gap: '4px', borderRadius: '7px' }}
+                        title="Export Panels Schedule as CSV (.csv)"
+                      >
+                        CSV
                       </button>
                     </div>
+
+                    <button
+                      onClick={() => {
+                        setPanelFormPhase(panelPhaseFilter);
+                        setCreatePanelModalOpen(true);
+                        setPanelFormError(null);
+                      }}
+                      className="btn btn-primary"
+                      style={{ fontSize: '12px', height: '36px', padding: '0 14px', gap: '6px', whiteSpace: 'nowrap', borderRadius: '7px' }}
+                    >
+                      <Plus size={14} /> Add Single Panel
+                    </button>
                   </div>
                 </div>
               </div>
