@@ -167,21 +167,26 @@ export default function AdminDashboardPage() {
   const [manageRoomsModalOpen, setManageRoomsModalOpen] = useState(false);
   const [manageShiftsModalOpen, setManageShiftsModalOpen] = useState(false);
 
-  // Standard Shift Time & Preset Configuration Helpers
+  // Standard Shift Time & Preset Configuration Helpers (15-min intervals, strictly 08:00 AM - 06:00 PM)
   const STANDARD_TIME_OPTIONS = [
-    '07:00 AM', '07:30 AM', '08:00 AM', '08:30 AM', '09:00 AM', '09:30 AM',
-    '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM',
-    '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM',
-    '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM',
-    '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM', '09:00 PM', '09:30 PM'
+    '08:00 AM', '08:15 AM', '08:30 AM', '08:45 AM',
+    '09:00 AM', '09:15 AM', '09:30 AM', '09:45 AM',
+    '10:00 AM', '10:15 AM', '10:30 AM', '10:45 AM',
+    '11:00 AM', '11:15 AM', '11:30 AM', '11:45 AM',
+    '12:00 PM', '12:15 PM', '12:30 PM', '12:45 PM',
+    '01:00 PM', '01:15 PM', '01:30 PM', '01:45 PM',
+    '02:00 PM', '02:15 PM', '02:30 PM', '02:45 PM',
+    '03:00 PM', '03:15 PM', '03:30 PM', '03:45 PM',
+    '04:00 PM', '04:15 PM', '04:30 PM', '04:45 PM',
+    '05:00 PM', '05:15 PM', '05:30 PM', '05:45 PM',
+    '06:00 PM'
   ];
 
   const SHIFT_TEMPLATES = [
     { label: 'Shift 1: Morning', startTime: '08:00 AM', endTime: '10:00 AM', color: '#059669', colorBg: '#ECFDF5', colorBorder: '#A7F3D0' },
-    { label: 'Shift 2: Midday', startTime: '10:30 AM', endTime: '12:30 PM', color: '#2563EB', colorBg: '#EFF6FF', colorBorder: '#BFDBFE' },
-    { label: 'Shift 3: Afternoon', startTime: '01:30 PM', endTime: '03:30 PM', color: '#D97706', colorBg: '#FFFBEB', colorBorder: '#FDE68A' },
-    { label: 'Shift 4: Evening', startTime: '04:00 PM', endTime: '06:00 PM', color: '#7C3AED', colorBg: '#FAF5FF', colorBorder: '#E9D5FF' },
-    { label: 'Shift 5: Late Evening', startTime: '06:30 PM', endTime: '08:30 PM', color: '#0D9488', colorBg: '#F0FDFA', colorBorder: '#99F6E4' },
+    { label: 'Shift 2: Midday', startTime: '10:15 AM', endTime: '12:15 PM', color: '#2563EB', colorBg: '#EFF6FF', colorBorder: '#BFDBFE' },
+    { label: 'Shift 3: Afternoon', startTime: '01:15 PM', endTime: '03:15 PM', color: '#D97706', colorBg: '#FFFBEB', colorBorder: '#FDE68A' },
+    { label: 'Shift 4: Evening', startTime: '03:45 PM', endTime: '05:45 PM', color: '#7C3AED', colorBg: '#FAF5FF', colorBorder: '#E9D5FF' },
   ];
 
   // Room Edit / Add State
@@ -873,7 +878,7 @@ export default function AdminDashboardPage() {
     const finalRoom = panelFormRoom === 'Custom' ? panelFormCustomRoom : panelFormRoom;
     const finalVenue = panelFormVenue?.trim() || 'Academic Block AB10';
     const finalPanelNumber = Number(panelFormNumber) || (editingPanel ? editingPanel.panel_number : nextSequentialPanelNumber);
-    const finalPanelName = panelFormName.trim() || `Panel ${finalPanelNumber} (${getFormattedTeamRange(panelFormRangeStart, panelFormRangeEnd)})`;
+    const finalPanelName = panelFormName.trim() || `Panel ${finalPanelNumber} (${getFormattedTeamRange(panelFormRangeStart, panelFormRangeEnd, panelFormProgram)})`;
 
     try {
       const res = await fetch('/api/panels', {
@@ -1157,8 +1162,25 @@ export default function AdminDashboardPage() {
   };
 
   // Helper to get granular batch breakdowns for a panel range
-  const getPanelBatches = (startNum: number, endNum: number) => {
-    const matching = (teams || []).filter((t: any) => t.team_number >= startNum && t.team_number <= endNum);
+  // Helper to get granular batch breakdowns for a panel range (Strict BCA vs BCA DS separation)
+  const getPanelBatches = (startNum: number, endNum: number, programFilter?: string, panelName?: string) => {
+    let matching = (teams || []).filter((t: any) => t.team_number >= startNum && t.team_number <= endNum);
+    
+    // Auto-detect program from parameter or panel name if available
+    const prog = programFilter && programFilter !== 'all'
+      ? programFilter
+      : (panelName?.toUpperCase().includes('DS') || panelName?.toUpperCase().includes('BCA - DS') || panelName?.toUpperCase().includes('BCA-DS'))
+      ? 'BCA - DS'
+      : (panelName?.toUpperCase().includes('BCA'))
+      ? 'BCA'
+      : undefined;
+
+    if (prog === 'BCA') {
+      matching = matching.filter((t: any) => t.program === 'BCA' || t.team_code?.startsWith('BCA'));
+    } else if (prog === 'BCA - DS') {
+      matching = matching.filter((t: any) => t.program?.includes('DS') || t.team_code?.startsWith('DS'));
+    }
+
     const bcaList = matching.filter((t: any) => t.program === 'BCA' || t.team_code?.startsWith('BCA'));
     const dsList = matching.filter((t: any) => t.program?.includes('DS') || t.team_code?.startsWith('DS'));
     const otherList = matching.filter((t: any) => !t.team_code?.startsWith('BCA') && !t.team_code?.startsWith('DS'));
@@ -1209,9 +1231,9 @@ export default function AdminDashboardPage() {
     return batches;
   };
 
-  // Helper to get formatted team range label from start and end numbers (e.g. BCA-1 → BCA-10 & DS-1 → DS-9)
-  const getFormattedTeamRange = (startNum: number, endNum: number) => {
-    const batches = getPanelBatches(startNum, endNum);
+  // Helper to get formatted team range label from start and end numbers
+  const getFormattedTeamRange = (startNum: number, endNum: number, programFilter?: string, panelName?: string) => {
+    const batches = getPanelBatches(startNum, endNum, programFilter, panelName);
     if (batches.length === 0) return `Teams #${startNum}–#${endNum}`;
     return batches.map(b => b.label).join(' & ');
   };
@@ -1284,12 +1306,17 @@ export default function AdminDashboardPage() {
     return presets;
   }, [dsTeams]);
 
-  // Teams currently included within the selected start and end range
+  // Teams currently included within the selected start and end range (Strictly isolated by Program)
   const selectedRangeTeams = useMemo(() => {
-    return (teams || []).filter(
+    const candidateList = panelFormProgram === 'BCA' 
+      ? bcaTeams 
+      : panelFormProgram === 'BCA - DS' 
+      ? dsTeams 
+      : teams;
+    return (candidateList || []).filter(
       (t: any) => t.team_number >= panelFormRangeStart && t.team_number <= panelFormRangeEnd
     );
-  }, [teams, panelFormRangeStart, panelFormRangeEnd]);
+  }, [teams, bcaTeams, dsTeams, panelFormProgram, panelFormRangeStart, panelFormRangeEnd]);
 
   const selectedRangeStudentCount = useMemo(() => {
     return selectedRangeTeams.reduce((acc: number, t: any) => acc + (t.students?.length || 0), 0);
@@ -3114,7 +3141,7 @@ Output ONLY the raw valid JSON array.`;
               ) : (
                 <div className="grid-cols-3">
                   {filteredPanels.map((p: any) => {
-                    const pBatches = getPanelBatches(p.team_range_start, p.team_range_end);
+                    const pBatches = getPanelBatches(p.team_range_start, p.team_range_end, undefined, p.panel_name);
                     return (
                       <div
                         key={p.id}
@@ -4562,7 +4589,7 @@ Output ONLY the raw valid JSON array.`;
                             type="text"
                             className="input-field"
                             style={{ height: '36px', fontSize: '12px' }}
-                            placeholder={`Panel ${panelFormNumber || nextSequentialPanelNumber} (${getFormattedTeamRange(panelFormRangeStart, panelFormRangeEnd)})`}
+                            placeholder={`Panel ${panelFormNumber || nextSequentialPanelNumber} (${getFormattedTeamRange(panelFormRangeStart, panelFormRangeEnd, panelFormProgram)})`}
                             value={panelFormName}
                             onChange={(e) => setPanelFormName(e.target.value)}
                           />
@@ -4770,7 +4797,7 @@ Output ONLY the raw valid JSON array.`;
                           <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#1E40AF', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>Selected Batch:</span>
                             <span style={{ backgroundColor: '#DBEAFE', padding: '2px 8px', borderRadius: '4px', border: '1px solid #93C5FD' }}>
-                              {getFormattedTeamRange(panelFormRangeStart, panelFormRangeEnd)}
+                              {getFormattedTeamRange(panelFormRangeStart, panelFormRangeEnd, panelFormProgram)}
                             </span>
                           </div>
                           <div style={{ fontSize: '10.5px', color: '#3B82F6', fontWeight: 600 }}>
@@ -5565,6 +5592,9 @@ Output ONLY the raw valid JSON array.`;
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <input
                           type="time"
+                          min="08:00"
+                          max="18:00"
+                          step="900"
                           className="input-field"
                           style={{ height: '32px', fontSize: '12px', fontWeight: 600, padding: '2px 6px' }}
                           value={shift1StartTime}
@@ -5574,6 +5604,9 @@ Output ONLY the raw valid JSON array.`;
                         <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600 }}>to</span>
                         <input
                           type="time"
+                          min="08:00"
+                          max="18:00"
+                          step="900"
                           className="input-field"
                           style={{ height: '32px', fontSize: '12px', fontWeight: 600, padding: '2px 6px' }}
                           value={shift1EndTime}
@@ -5596,6 +5629,9 @@ Output ONLY the raw valid JSON array.`;
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <input
                           type="time"
+                          min="08:00"
+                          max="18:00"
+                          step="900"
                           className="input-field"
                           style={{ height: '32px', fontSize: '12px', fontWeight: 600, padding: '2px 6px' }}
                           value={shift2StartTime}
@@ -5605,6 +5641,9 @@ Output ONLY the raw valid JSON array.`;
                         <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 600 }}>to</span>
                         <input
                           type="time"
+                          min="08:00"
+                          max="18:00"
+                          step="900"
                           className="input-field"
                           style={{ height: '32px', fontSize: '12px', fontWeight: 600, padding: '2px 6px' }}
                           value={shift2EndTime}

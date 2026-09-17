@@ -112,13 +112,25 @@ export async function GET(req: NextRequest) {
         }));
       const phases = (store.evaluation_phases || []).sort((a, b) => (a.phase_number || 0) - (b.phase_number || 0));
 
-      // Panels for this team
+      // Panels for this team (Strict separation of BCA vs BCA DS)
+      const isThisTeamDs = team.program?.toUpperCase().includes('DS') || team.team_code?.toUpperCase().startsWith('DS');
+      const isThisTeamBca = team.program === 'BCA' || team.team_code?.toUpperCase().startsWith('BCA');
+
       const relevantPanels = (store.panels || [])
-        .filter(
-          (p) =>
+        .filter((p) => {
+          const inRange =
             team.team_number >= (p.team_range_start || 0) &&
-            team.team_number <= (p.team_range_end || 999)
-        )
+            team.team_number <= (p.team_range_end || 999);
+          if (!inRange) return false;
+
+          const pName = (p.panel_name || '').toUpperCase();
+          const isDsPanel = pName.includes('DS');
+          const isBcaPanel = pName.includes('BCA') && !pName.includes('BCA - DS') && !pName.includes('BCA-DS') && !isDsPanel;
+
+          if (isThisTeamDs && isBcaPanel) return false;
+          if (isThisTeamBca && isDsPanel) return false;
+          return true;
+        })
         .map((p) => ({
           id: p.id,
           panel_number: p.panel_number,

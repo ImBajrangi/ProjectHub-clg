@@ -32,12 +32,24 @@ export async function GET(req: NextRequest) {
         .map((m) => allSupervisors.find((s) => s.id === m.supervisor_id))
         .filter(Boolean);
 
-      // Teams within this panel's range
-      const matchingTeams = allTeams.filter(
-        (t) =>
+      // Teams within this panel's range (Strict separation of BCA vs BCA DS)
+      const pName = (p.panel_name || '').toUpperCase();
+      const isDsPanel = pName.includes('DS');
+      const isBcaPanel = pName.includes('BCA') && !pName.includes('BCA - DS') && !pName.includes('BCA-DS') && !isDsPanel;
+
+      const matchingTeams = allTeams.filter((t) => {
+        const inRange =
           t.team_number >= (p.team_range_start || 0) &&
-          t.team_number <= (p.team_range_end || 999)
-      );
+          t.team_number <= (p.team_range_end || 999);
+        if (!inRange) return false;
+
+        const isDsTeam = t.program?.toUpperCase().includes('DS') || t.team_code?.toUpperCase().startsWith('DS');
+        const isBcaTeam = t.program === 'BCA' || t.team_code?.toUpperCase().startsWith('BCA');
+
+        if (isDsPanel) return isDsTeam;
+        if (isBcaPanel) return isBcaTeam;
+        return true;
+      });
 
       return {
         ...p,
@@ -92,15 +104,22 @@ export async function GET(req: NextRequest) {
 
       if (sessionUser.role === 'supervisor') {
         return NextResponse.json(
-          { panels: panelEvaluations, allPanels: enrichedPanels },
+          { panels: panelEvaluations },
           { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
         );
       }
     }
 
+    if (sessionUser.role === 'admin') {
+      return NextResponse.json(
+        { panels: enrichedPanels },
+        { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+      );
+    }
+
     return NextResponse.json(
-      { panels: enrichedPanels },
-      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+      { error: 'Access denied: Panel evaluation management is restricted to Faculty & Admin.' },
+      { status: 403 }
     );
   } catch (error) {
     console.error('Panels API error:', error);
