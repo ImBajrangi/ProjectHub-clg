@@ -30,11 +30,11 @@ export default function Footer() {
       type: 'linkedin',
     },
     {
-      name: 'CodeShastra',
+      name: 'Rishabh Labs',
       role: 'Code Master',
-      link: 'https://www.instagram.com/code___shastra/',
+      link: 'https://www.instagram.com/rishabhlabs/',
       image: '/image/CodeShastra.webp',
-      initials: 'CS',
+      initials: 'RL',
       type: 'instagram',
     },
   ];

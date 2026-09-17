@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     { name: 'Arpit Pandey', url: 'https://www.linkedin.com/in/dev-arpit/' },
     { name: 'Rishabh Mishra', url: 'https://www.linkedin.com/in/rishabh-mishra-bab420309/' },
     { name: 'Harsh Sharma', url: 'https://www.linkedin.com/in/harshiitm/' },
-    { name: 'CodeShastra Team', url: 'https://www.instagram.com/code___shastra/' },
+    { name: 'Rishabh Labs', url: 'https://www.instagram.com/rishabhlabs/' },
   ],
   keywords: [
     'CodeShastra Hub',

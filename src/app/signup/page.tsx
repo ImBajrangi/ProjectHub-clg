@@ -51,12 +51,12 @@ const developers: DevProfile[] = [
     initials: 'HS',
   },
   {
-    name: 'CodeShastra',
+    name: 'Rishabh Labs',
     role: 'Team',
-    link: 'https://www.instagram.com/code___shastra/',
+    link: 'https://www.instagram.com/rishabhlabs/',
     image: '/image/CodeShastra.webp',
     fallback: '/image/CodeShastra.png',
-    initials: 'CS',
+    initials: 'RL',
   },
 ];
 
@@ -569,556 +569,284 @@ function SignUpForm() {
               )}
               <h1 className="cohere-login-title">Sign up</h1>
 
-          {/* Error Message Banner */}
-          {error && (
-            <div className="cohere-alert-box">
-              <AlertCircle size={15} style={{ flexShrink: 0 }} />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Congratulations Success Bar with Themed Join Illustration */}
-          {successMessage && (
-            <div className="cohere-congrats-bar" role="status" aria-live="polite">
-              <div className="cohere-congrats-art">
-                <img
-                  src="/images/undraw/join-themed.svg"
-                  alt="Team designated successfully - Congratulations!"
-                  className="cohere-congrats-img"
-                />
-              </div>
-              <div className="cohere-congrats-content">
-                <div className="cohere-congrats-pill mono">
-                  <CheckCircle2 size={12} strokeWidth={2.5} />
-                  <span>LEADERSHIP CONFIRMED</span>
+              {/* Error Message Banner */}
+              {error && (
+                <div className="cohere-alert-box">
+                  <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                  <span>{error}</span>
                 </div>
-                <h3 className="cohere-congrats-heading">Congratulations!</h3>
-                <p className="cohere-congrats-sub">
-                  Your team leader account has been activated. Directing you to your workspace.
-                </p>
-                <div className="cohere-congrats-progress-track">
-                  <div className="cohere-congrats-progress-fill" />
-                </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="cohere-form">
-            {/* Signature Cohere Stacked Compartment Box */}
-            <div className="cohere-stacked-box">
-              {/* Team Selector Compartment with Search Team Bar */}
-              <div className="cohere-compartment" ref={teamDropdownRef} style={{ position: 'relative' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label htmlFor="cohere-team-select-trigger" className="cohere-comp-label">
-                    PROJECT TEAM
-                  </label>
-                  {teams.length > 0 && (
-                    <span style={{ fontSize: '10.5px', color: '#64748B', fontFamily: 'monospace' }}>
-                      {teams.length} teams
-                    </span>
-                  )}
+              {/* Congratulations Success Bar with Themed Join Illustration */}
+              {successMessage && (
+                <div className="cohere-congrats-bar" role="status" aria-live="polite">
+                  <div className="cohere-congrats-art">
+                    <img
+                      src="/images/undraw/join-themed.svg"
+                      alt="Team designated successfully - Congratulations!"
+                      className="cohere-congrats-img"
+                    />
+                  </div>
+                  <div className="cohere-congrats-content">
+                    <div className="cohere-congrats-pill mono">
+                      <CheckCircle2 size={12} strokeWidth={2.5} />
+                      <span>LEADERSHIP CONFIRMED</span>
+                    </div>
+                    <h3 className="cohere-congrats-heading">Congratulations!</h3>
+                    <p className="cohere-congrats-sub">
+                      Your team leader account has been activated. Directing you to your workspace.
+                    </p>
+                    <div className="cohere-congrats-progress-track">
+                      <div className="cohere-congrats-progress-fill" />
+                    </div>
+                  </div>
                 </div>
+              )}
 
-                {/* Searchable Combobox Trigger */}
-                <div
-                  id="cohere-team-select-trigger"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => {
-                    if (!loadingTeams && !submitting) {
-                      setEmailDropdownOpen(false);
-                      setTeamDropdownOpen((prev) => !prev);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      if (!loadingTeams && !submitting) {
-                        setEmailDropdownOpen(false);
-                        setTeamDropdownOpen((prev) => !prev);
-                      }
-                    }
-                  }}
-                  className="cohere-select-wrapper"
-                  style={{
-                    cursor: loadingTeams || submitting ? 'not-allowed' : 'pointer',
-                    padding: '3px 0 1px 0',
-                    userSelect: 'none',
-                  }}
-                >
-                  <div
-                    className="mono"
-                    style={{
-                      fontSize: '14.5px',
-                      color: selectedTeamObj ? '#111827' : '#6B7280',
-                      fontWeight: selectedTeamObj ? 600 : 400,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      width: '100%',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      paddingRight: '24px',
-                    }}
-                  >
-                    {loadingTeams ? (
-                      'Loading eligible teams...'
-                    ) : selectedTeamObj ? (
-                      <>
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedTeamObj.team_name}</span>
-                        <span
-                          style={{
-                            fontSize: '10.5px',
-                            color: '#475569',
-                            fontWeight: 600,
-                            backgroundColor: '#F1F5F9',
-                            border: '1px solid #E2E8F0',
-                            padding: '1px 6px',
-                            borderRadius: '4px',
-                            flexShrink: 0,
-                          }}
-                        >
-                          {selectedTeamObj.program}
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="cohere-form">
+                {/* Signature Cohere Stacked Compartment Box */}
+                <div className="cohere-stacked-box">
+                  {/* Team Selector Compartment with Search Team Bar */}
+                  <div className="cohere-compartment" ref={teamDropdownRef} style={{ position: 'relative' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label htmlFor="cohere-team-select-trigger" className="cohere-comp-label">
+                        PROJECT TEAM
+                      </label>
+                      {teams.length > 0 && (
+                        <span style={{ fontSize: '10.5px', color: '#64748B', fontFamily: 'monospace' }}>
+                          {teams.length} teams
                         </span>
-                      </>
-                    ) : (
-                      '-- Choose your project team --'
-                    )}
-                  </div>
-                  <div className="cohere-select-chevron" style={{ color: '#6B7280' }}>
-                    {teamDropdownOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                  </div>
-                </div>
-
-                {/* Hidden input to ensure HTML form validity */}
-                <input type="hidden" name="teamId" value={selectedTeamId} required />
-
-                {/* Searchable Dropdown Menu with Search Team Bar */}
-                {teamDropdownOpen && (
-                  <div
-                    className="team-search-dropdown-popup"
-                    style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 8px)',
-                      left: 0,
-                      right: 0,
-                      zIndex: 1000,
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: '12px',
-                      border: '1px solid #E2E8F0',
-                      boxShadow: '0 20px 35px -4px rgba(15, 23, 42, 0.16), 0 8px 16px -4px rgba(15, 23, 42, 0.08)',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {/* Search Team Bar Header */}
-                    <div
-                      style={{
-                        padding: '10px 14px',
-                        borderBottom: '1px solid #F1F5F9',
-                        backgroundColor: '#F8FAFC',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                      }}
-                    >
-                      <Search size={15} style={{ color: '#64748B', flexShrink: 0 }} />
-                      <input
-                        ref={searchInputRef}
-                        type="text"
-                        value={teamSearchQuery}
-                        onChange={(e) => setTeamSearchQuery(e.target.value)}
-                        placeholder="Search team name, code, program..."
-                        className="cohere-team-search-input"
-                        style={{
-                          border: 'none',
-                          outline: 'none',
-                          boxShadow: 'none',
-                          WebkitBoxShadow: 'none',
-                          background: 'transparent',
-                          fontSize: '13.5px',
-                          color: '#0F172A',
-                          width: '100%',
-                          fontFamily: 'inherit',
-                          padding: '2px 0',
-                          lineHeight: '1.4',
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      {teamSearchQuery && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setTeamSearchQuery('');
-                            searchInputRef.current?.focus();
-                          }}
-                          style={{
-                            border: 'none',
-                            background: 'transparent',
-                            color: '#94A3B8',
-                            cursor: 'pointer',
-                            padding: '3px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            borderRadius: '4px',
-                          }}
-                          aria-label="Clear search"
-                        >
-                          <X size={14} />
-                        </button>
                       )}
                     </div>
 
-                    {/* Filtered Team List */}
+                    {/* Searchable Combobox Trigger */}
                     <div
+                      id="cohere-team-select-trigger"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        if (!loadingTeams && !submitting) {
+                          setEmailDropdownOpen(false);
+                          setTeamDropdownOpen((prev) => !prev);
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          if (!loadingTeams && !submitting) {
+                            setEmailDropdownOpen(false);
+                            setTeamDropdownOpen((prev) => !prev);
+                          }
+                        }
+                      }}
+                      className="cohere-select-wrapper"
                       style={{
-                        maxHeight: '210px',
-                        overflowY: 'auto',
-                        padding: '6px',
+                        cursor: loadingTeams || submitting ? 'not-allowed' : 'pointer',
+                        padding: '3px 0 1px 0',
+                        userSelect: 'none',
                       }}
                     >
-                      {filteredTeams.length === 0 ? (
-                        <div style={{ padding: '24px 14px', textAlign: 'center' }}>
-                          <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#64748B' }}>
-                            No teams match &ldquo;<strong>{teamSearchQuery}</strong>&rdquo;
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setTeamSearchQuery('');
-                              searchInputRef.current?.focus();
-                            }}
-                            style={{
-                              fontSize: '12px',
-                              color: '#2563EB',
-                              background: 'transparent',
-                              border: 'none',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              padding: '2px 6px',
-                            }}
-                          >
-                            Clear search filter
-                          </button>
-                        </div>
-                      ) : (
-                        filteredTeams.map((t) => {
-                          const isSelected = t.id === selectedTeamId;
-                          return (
-                            <div
-                              key={t.id}
-                              onClick={() => {
-                                setSelectedTeamId(t.id);
-                                setTeamDropdownOpen(false);
-                              }}
+                      <div
+                        className="mono"
+                        style={{
+                          fontSize: '14.5px',
+                          color: selectedTeamObj ? '#111827' : '#6B7280',
+                          fontWeight: selectedTeamObj ? 600 : 400,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          width: '100%',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          paddingRight: '24px',
+                        }}
+                      >
+                        {loadingTeams ? (
+                          'Loading eligible teams...'
+                        ) : selectedTeamObj ? (
+                          <>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedTeamObj.team_name}</span>
+                            <span
                               style={{
-                                padding: '10px 12px',
-                                borderRadius: '8px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                gap: '8px',
-                                cursor: 'pointer',
-                                backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
-                                transition: 'all 0.12s ease',
-                                margin: '1px 0',
-                              }}
-                              onMouseEnter={(e) => {
-                                if (!isSelected) e.currentTarget.style.backgroundColor = '#F8FAFC';
-                              }}
-                              onMouseLeave={(e) => {
-                                if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                                fontSize: '10.5px',
+                                color: '#475569',
+                                fontWeight: 600,
+                                backgroundColor: '#F1F5F9',
+                                border: '1px solid #E2E8F0',
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                flexShrink: 0,
                               }}
                             >
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                                <span
-                                  style={{
-                                    fontSize: '13.5px',
-                                    fontWeight: isSelected ? 700 : 500,
-                                    color: isSelected ? '#1D4ED8' : '#0F172A',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                  }}
-                                >
-                                  {t.team_name}
-                                </span>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#64748B' }}>
-                                  <span style={{ fontFamily: 'monospace' }}>{t.team_code}</span>
-                                  <span>•</span>
-                                  <span
-                                    style={{
-                                      backgroundColor: '#F1F5F9',
-                                      padding: '1px 6px',
-                                      borderRadius: '4px',
-                                      border: '1px solid #E2E8F0',
-                                      fontWeight: 500,
-                                    }}
-                                  >
-                                    {t.program}
-                                  </span>
-                                </div>
-                              </div>
-                              {isSelected && (
-                                <CheckCircle2 size={16} style={{ color: '#2563EB', flexShrink: 0 }} />
-                              )}
+                              {selectedTeamObj.program}
+                            </span>
+                          </>
+                        ) : (
+                          '-- Choose your project team --'
+                        )}
+                      </div>
+                      <div className="cohere-select-chevron" style={{ color: '#6B7280' }}>
+                        {teamDropdownOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                      </div>
+                    </div>
+
+                    {/* Hidden input to ensure HTML form validity */}
+                    <input type="hidden" name="teamId" value={selectedTeamId} required />
+
+                    {/* Searchable Dropdown Menu with Search Team Bar */}
+                    {teamDropdownOpen && (
+                      <div
+                        className="team-search-dropdown-popup"
+                        style={{
+                          position: 'absolute',
+                          top: 'calc(100% + 8px)',
+                          left: 0,
+                          right: 0,
+                          zIndex: 1000,
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '12px',
+                          border: '1px solid #E2E8F0',
+                          boxShadow: '0 20px 35px -4px rgba(15, 23, 42, 0.16), 0 8px 16px -4px rgba(15, 23, 42, 0.08)',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {/* Search Team Bar Header */}
+                        <div
+                          style={{
+                            padding: '10px 14px',
+                            borderBottom: '1px solid #F1F5F9',
+                            backgroundColor: '#F8FAFC',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                          }}
+                        >
+                          <Search size={15} style={{ color: '#64748B', flexShrink: 0 }} />
+                          <input
+                            ref={searchInputRef}
+                            type="text"
+                            value={teamSearchQuery}
+                            onChange={(e) => setTeamSearchQuery(e.target.value)}
+                            placeholder="Search team name, code, program..."
+                            className="cohere-team-search-input"
+                            style={{
+                              border: 'none',
+                              outline: 'none',
+                              boxShadow: 'none',
+                              WebkitBoxShadow: 'none',
+                              background: 'transparent',
+                              fontSize: '13.5px',
+                              color: '#0F172A',
+                              width: '100%',
+                              fontFamily: 'inherit',
+                              padding: '2px 0',
+                              lineHeight: '1.4',
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          {teamSearchQuery && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTeamSearchQuery('');
+                                searchInputRef.current?.focus();
+                              }}
+                              style={{
+                                border: 'none',
+                                background: 'transparent',
+                                color: '#94A3B8',
+                                cursor: 'pointer',
+                                padding: '3px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                borderRadius: '4px',
+                              }}
+                              aria-label="Clear search"
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Filtered Team List */}
+                        <div
+                          style={{
+                            maxHeight: '210px',
+                            overflowY: 'auto',
+                            padding: '6px',
+                          }}
+                        >
+                          {filteredTeams.length === 0 ? (
+                            <div style={{ padding: '24px 14px', textAlign: 'center' }}>
+                              <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#64748B' }}>
+                                No teams match &ldquo;<strong>{teamSearchQuery}</strong>&rdquo;
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setTeamSearchQuery('');
+                                  searchInputRef.current?.focus();
+                                }}
+                                style={{
+                                  fontSize: '12px',
+                                  color: '#2563EB',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  padding: '2px 6px',
+                                }}
+                              >
+                                Clear search filter
+                              </button>
                             </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Compartment Divider */}
-              <div className="cohere-comp-divider" />
-
-              {/* Leader Email Selector Compartment with Search Bar */}
-              <div className="cohere-compartment" ref={emailDropdownRef} style={{ position: 'relative' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label htmlFor="cohere-email-select-trigger" className="cohere-comp-label">
-                    LEADER EMAIL
-                  </label>
-                  {selectedTeamId && members.length > 0 && (
-                    <span style={{ fontSize: '10.5px', color: '#64748B', fontFamily: 'monospace' }}>
-                      {members.length} members
-                    </span>
-                  )}
-                </div>
-
-                {/* Searchable Combobox Trigger */}
-                <div
-                  id="cohere-email-select-trigger"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => {
-                    if (!selectedTeamId || loadingMembers || submitting) return;
-                    setTeamDropdownOpen(false);
-                    setEmailDropdownOpen((prev) => !prev);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      if (selectedTeamId && !loadingMembers && !submitting) {
-                        setTeamDropdownOpen(false);
-                        setEmailDropdownOpen((prev) => !prev);
-                      }
-                    }
-                  }}
-                  className="cohere-select-wrapper"
-                  style={{
-                    cursor: !selectedTeamId || loadingMembers || submitting ? 'not-allowed' : 'pointer',
-                    padding: '3px 0 1px 0',
-                    userSelect: 'none',
-                  }}
-                >
-                  <div
-                    className="mono"
-                    style={{
-                      fontSize: '14.5px',
-                      color: selectedMemberObj ? '#111827' : '#6B7280',
-                      fontWeight: selectedMemberObj ? 600 : 400,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      width: '100%',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      paddingRight: '24px',
-                    }}
-                  >
-                    {!selectedTeamId ? (
-                      '-- Select team first --'
-                    ) : loadingMembers ? (
-                      'Loading team members...'
-                    ) : selectedMemberObj ? (
-                      <>
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedMemberObj.full_name}</span>
-                        <span
-                          style={{
-                            fontSize: '10.5px',
-                            color: '#475569',
-                            fontWeight: 600,
-                            backgroundColor: '#F1F5F9',
-                            border: '1px solid #E2E8F0',
-                            padding: '1px 6px',
-                            borderRadius: '4px',
-                            flexShrink: 0,
-                          }}
-                        >
-                          {selectedMemberObj.email}
-                        </span>
-                      </>
-                    ) : (
-                      '-- Select your student email --'
-                    )}
-                  </div>
-                  <div className="cohere-select-chevron" style={{ color: '#6B7280' }}>
-                    {emailDropdownOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                  </div>
-                </div>
-
-                {/* Hidden input to ensure HTML form validity */}
-                <input type="hidden" name="studentEmail" value={selectedEmail} required />
-
-                {/* Searchable Dropdown Menu with Search Member Bar */}
-                {emailDropdownOpen && (
-                  <div
-                    className="team-search-dropdown-popup"
-                    style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 8px)',
-                      left: 0,
-                      right: 0,
-                      zIndex: 1000,
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: '12px',
-                      border: '1px solid #E2E8F0',
-                      boxShadow: '0 20px 35px -4px rgba(15, 23, 42, 0.16), 0 8px 16px -4px rgba(15, 23, 42, 0.08)',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {/* Search Member Bar Header */}
-                    <div
-                      style={{
-                        padding: '10px 14px',
-                        borderBottom: '1px solid #F1F5F9',
-                        backgroundColor: '#F8FAFC',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                      }}
-                    >
-                      <Search size={15} style={{ color: '#64748B', flexShrink: 0 }} />
-                      <input
-                        ref={emailSearchInputRef}
-                        type="text"
-                        value={emailSearchQuery}
-                        onChange={(e) => setEmailSearchQuery(e.target.value)}
-                        placeholder="Search student name, email, roll no..."
-                        className="cohere-team-search-input"
-                        style={{
-                          border: 'none',
-                          outline: 'none',
-                          boxShadow: 'none',
-                          WebkitBoxShadow: 'none',
-                          background: 'transparent',
-                          fontSize: '13.5px',
-                          color: '#0F172A',
-                          width: '100%',
-                          fontFamily: 'inherit',
-                          padding: '2px 0',
-                          lineHeight: '1.4',
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      {emailSearchQuery && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEmailSearchQuery('');
-                            emailSearchInputRef.current?.focus();
-                          }}
-                          style={{
-                            border: 'none',
-                            background: 'transparent',
-                            color: '#94A3B8',
-                            cursor: 'pointer',
-                            padding: '3px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            borderRadius: '4px',
-                          }}
-                          aria-label="Clear search"
-                        >
-                          <X size={14} />
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Filtered Member List */}
-                    <div
-                      style={{
-                        maxHeight: '210px',
-                        overflowY: 'auto',
-                        padding: '6px',
-                      }}
-                    >
-                      {filteredMembers.length === 0 ? (
-                        <div style={{ padding: '24px 14px', textAlign: 'center' }}>
-                          <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#64748B' }}>
-                            No team members match &ldquo;<strong>{emailSearchQuery}</strong>&rdquo;
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEmailSearchQuery('');
-                              emailSearchInputRef.current?.focus();
-                            }}
-                            style={{
-                              fontSize: '12px',
-                              color: '#2563EB',
-                              background: 'transparent',
-                              border: 'none',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              padding: '2px 6px',
-                            }}
-                          >
-                            Clear search filter
-                          </button>
-                        </div>
-                      ) : (
-                        filteredMembers.map((m) => {
-                          const isSelected = m.email.toLowerCase() === selectedEmail.toLowerCase();
-                          return (
-                            <div
-                              key={m.id || m.email}
-                              onClick={() => {
-                                setSelectedEmail(m.email);
-                                setEmailDropdownOpen(false);
-                              }}
-                              style={{
-                                padding: '10px 12px',
-                                borderRadius: '8px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                gap: '8px',
-                                cursor: 'pointer',
-                                backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
-                                transition: 'all 0.12s ease',
-                                margin: '1px 0',
-                              }}
-                              onMouseEnter={(e) => {
-                                if (!isSelected) e.currentTarget.style.backgroundColor = '#F8FAFC';
-                              }}
-                              onMouseLeave={(e) => {
-                                if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
-                              }}
-                            >
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                                <span
+                          ) : (
+                            filteredTeams.map((t) => {
+                              const isSelected = t.id === selectedTeamId;
+                              return (
+                                <div
+                                  key={t.id}
+                                  onClick={() => {
+                                    setSelectedTeamId(t.id);
+                                    setTeamDropdownOpen(false);
+                                  }}
                                   style={{
-                                    fontSize: '13.5px',
-                                    fontWeight: isSelected ? 700 : 500,
-                                    color: isSelected ? '#1D4ED8' : '#0F172A',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
+                                    padding: '10px 12px',
+                                    borderRadius: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: '8px',
+                                    cursor: 'pointer',
+                                    backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
+                                    transition: 'all 0.12s ease',
+                                    margin: '1px 0',
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (!isSelected) e.currentTarget.style.backgroundColor = '#F8FAFC';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
                                   }}
                                 >
-                                  {m.full_name}
-                                </span>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#64748B', flexWrap: 'wrap' }}>
-                                  <span style={{ fontFamily: 'monospace' }}>{m.email}</span>
-                                  {m.roll_no && (
-                                    <>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                                    <span
+                                      style={{
+                                        fontSize: '13.5px',
+                                        fontWeight: isSelected ? 700 : 500,
+                                        color: isSelected ? '#1D4ED8' : '#0F172A',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {t.team_name}
+                                    </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#64748B' }}>
+                                      <span style={{ fontFamily: 'monospace' }}>{t.team_code}</span>
                                       <span>•</span>
                                       <span
                                         style={{
@@ -1129,124 +857,396 @@ function SignUpForm() {
                                           fontWeight: 500,
                                         }}
                                       >
-                                        Roll: {m.roll_no}
+                                        {t.program}
                                       </span>
-                                    </>
+                                    </div>
+                                  </div>
+                                  {isSelected && (
+                                    <CheckCircle2 size={16} style={{ color: '#2563EB', flexShrink: 0 }} />
                                   )}
                                 </div>
-                              </div>
-                              {isSelected && (
-                                <CheckCircle2 size={16} style={{ color: '#2563EB', flexShrink: 0 }} />
-                              )}
-                            </div>
-                          );
-                        })
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Compartment Divider */}
+                  <div className="cohere-comp-divider" />
+
+                  {/* Leader Email Selector Compartment with Search Bar */}
+                  <div className="cohere-compartment" ref={emailDropdownRef} style={{ position: 'relative' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label htmlFor="cohere-email-select-trigger" className="cohere-comp-label">
+                        LEADER EMAIL
+                      </label>
+                      {selectedTeamId && members.length > 0 && (
+                        <span style={{ fontSize: '10.5px', color: '#64748B', fontFamily: 'monospace' }}>
+                          {members.length} members
+                        </span>
                       )}
+                    </div>
+
+                    {/* Searchable Combobox Trigger */}
+                    <div
+                      id="cohere-email-select-trigger"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        if (!selectedTeamId || loadingMembers || submitting) return;
+                        setTeamDropdownOpen(false);
+                        setEmailDropdownOpen((prev) => !prev);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          if (selectedTeamId && !loadingMembers && !submitting) {
+                            setTeamDropdownOpen(false);
+                            setEmailDropdownOpen((prev) => !prev);
+                          }
+                        }
+                      }}
+                      className="cohere-select-wrapper"
+                      style={{
+                        cursor: !selectedTeamId || loadingMembers || submitting ? 'not-allowed' : 'pointer',
+                        padding: '3px 0 1px 0',
+                        userSelect: 'none',
+                      }}
+                    >
+                      <div
+                        className="mono"
+                        style={{
+                          fontSize: '14.5px',
+                          color: selectedMemberObj ? '#111827' : '#6B7280',
+                          fontWeight: selectedMemberObj ? 600 : 400,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          width: '100%',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          paddingRight: '24px',
+                        }}
+                      >
+                        {!selectedTeamId ? (
+                          '-- Select team first --'
+                        ) : loadingMembers ? (
+                          'Loading team members...'
+                        ) : selectedMemberObj ? (
+                          <>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedMemberObj.full_name}</span>
+                            <span
+                              style={{
+                                fontSize: '10.5px',
+                                color: '#475569',
+                                fontWeight: 600,
+                                backgroundColor: '#F1F5F9',
+                                border: '1px solid #E2E8F0',
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                flexShrink: 0,
+                              }}
+                            >
+                              {selectedMemberObj.email}
+                            </span>
+                          </>
+                        ) : (
+                          '-- Select your student email --'
+                        )}
+                      </div>
+                      <div className="cohere-select-chevron" style={{ color: '#6B7280' }}>
+                        {emailDropdownOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                      </div>
+                    </div>
+
+                    {/* Hidden input to ensure HTML form validity */}
+                    <input type="hidden" name="studentEmail" value={selectedEmail} required />
+
+                    {/* Searchable Dropdown Menu with Search Member Bar */}
+                    {emailDropdownOpen && (
+                      <div
+                        className="team-search-dropdown-popup"
+                        style={{
+                          position: 'absolute',
+                          top: 'calc(100% + 8px)',
+                          left: 0,
+                          right: 0,
+                          zIndex: 1000,
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '12px',
+                          border: '1px solid #E2E8F0',
+                          boxShadow: '0 20px 35px -4px rgba(15, 23, 42, 0.16), 0 8px 16px -4px rgba(15, 23, 42, 0.08)',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {/* Search Member Bar Header */}
+                        <div
+                          style={{
+                            padding: '10px 14px',
+                            borderBottom: '1px solid #F1F5F9',
+                            backgroundColor: '#F8FAFC',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                          }}
+                        >
+                          <Search size={15} style={{ color: '#64748B', flexShrink: 0 }} />
+                          <input
+                            ref={emailSearchInputRef}
+                            type="text"
+                            value={emailSearchQuery}
+                            onChange={(e) => setEmailSearchQuery(e.target.value)}
+                            placeholder="Search student name, email, roll no..."
+                            className="cohere-team-search-input"
+                            style={{
+                              border: 'none',
+                              outline: 'none',
+                              boxShadow: 'none',
+                              WebkitBoxShadow: 'none',
+                              background: 'transparent',
+                              fontSize: '13.5px',
+                              color: '#0F172A',
+                              width: '100%',
+                              fontFamily: 'inherit',
+                              padding: '2px 0',
+                              lineHeight: '1.4',
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          {emailSearchQuery && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEmailSearchQuery('');
+                                emailSearchInputRef.current?.focus();
+                              }}
+                              style={{
+                                border: 'none',
+                                background: 'transparent',
+                                color: '#94A3B8',
+                                cursor: 'pointer',
+                                padding: '3px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                borderRadius: '4px',
+                              }}
+                              aria-label="Clear search"
+                            >
+                              <X size={14} />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Filtered Member List */}
+                        <div
+                          style={{
+                            maxHeight: '210px',
+                            overflowY: 'auto',
+                            padding: '6px',
+                          }}
+                        >
+                          {filteredMembers.length === 0 ? (
+                            <div style={{ padding: '24px 14px', textAlign: 'center' }}>
+                              <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#64748B' }}>
+                                No team members match &ldquo;<strong>{emailSearchQuery}</strong>&rdquo;
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEmailSearchQuery('');
+                                  emailSearchInputRef.current?.focus();
+                                }}
+                                style={{
+                                  fontSize: '12px',
+                                  color: '#2563EB',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  padding: '2px 6px',
+                                }}
+                              >
+                                Clear search filter
+                              </button>
+                            </div>
+                          ) : (
+                            filteredMembers.map((m) => {
+                              const isSelected = m.email.toLowerCase() === selectedEmail.toLowerCase();
+                              return (
+                                <div
+                                  key={m.id || m.email}
+                                  onClick={() => {
+                                    setSelectedEmail(m.email);
+                                    setEmailDropdownOpen(false);
+                                  }}
+                                  style={{
+                                    padding: '10px 12px',
+                                    borderRadius: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: '8px',
+                                    cursor: 'pointer',
+                                    backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
+                                    transition: 'all 0.12s ease',
+                                    margin: '1px 0',
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (!isSelected) e.currentTarget.style.backgroundColor = '#F8FAFC';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent';
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                                    <span
+                                      style={{
+                                        fontSize: '13.5px',
+                                        fontWeight: isSelected ? 700 : 500,
+                                        color: isSelected ? '#1D4ED8' : '#0F172A',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {m.full_name}
+                                    </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#64748B', flexWrap: 'wrap' }}>
+                                      <span style={{ fontFamily: 'monospace' }}>{m.email}</span>
+                                      {m.roll_no && (
+                                        <>
+                                          <span>•</span>
+                                          <span
+                                            style={{
+                                              backgroundColor: '#F1F5F9',
+                                              padding: '1px 6px',
+                                              borderRadius: '4px',
+                                              border: '1px solid #E2E8F0',
+                                              fontWeight: 500,
+                                            }}
+                                          >
+                                            Roll: {m.roll_no}
+                                          </span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                  {isSelected && (
+                                    <CheckCircle2 size={16} style={{ color: '#2563EB', flexShrink: 0 }} />
+                                  )}
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Verified Member Details Badge */}
+                {selectedMemberObj && (
+                  <div className="cohere-member-preview">
+                    <div className="cohere-preview-header">
+                      <div className="cohere-preview-header-left">
+                        <ShieldCheck size={14} color="#344D41" strokeWidth={2.5} />
+                        <span>Verified Roster Record</span>
+                      </div>
+                      <span className="cohere-preview-status-tag mono">ELIGIBLE LEADER</span>
+                    </div>
+
+                    <div className="cohere-preview-details mono">
+                      <div className="cohere-preview-row">
+                        <div className="cohere-preview-field">
+                          <span className="cohere-preview-label">NAME</span>
+                          <span className="cohere-preview-val">{selectedMemberObj.full_name}</span>
+                        </div>
+                        <div className="cohere-preview-field">
+                          <span className="cohere-preview-label">ROLL NO</span>
+                          <span className="cohere-preview-val">{selectedMemberObj.roll_no}</span>
+                        </div>
+                      </div>
+
+                      <div className="cohere-preview-row">
+                        <div className="cohere-preview-field">
+                          <span className="cohere-preview-label">COURSE</span>
+                          <span className="cohere-preview-val">{selectedMemberObj.course}</span>
+                        </div>
+                        <div className="cohere-preview-field">
+                          <span className="cohere-preview-label">PHONE</span>
+                          <span className="cohere-preview-val">{selectedMemberObj.mobile || '—'}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
-              </div>
-            </div>
 
-            {/* Verified Member Details Badge */}
-            {selectedMemberObj && (
-              <div className="cohere-member-preview">
-                <div className="cohere-preview-header">
-                  <div className="cohere-preview-header-left">
-                    <ShieldCheck size={14} color="#344D41" strokeWidth={2.5} />
-                    <span>Verified Roster Record</span>
-                  </div>
-                  <span className="cohere-preview-status-tag mono">ELIGIBLE LEADER</span>
-                </div>
-
-                <div className="cohere-preview-details mono">
-                  <div className="cohere-preview-row">
-                    <div className="cohere-preview-field">
-                      <span className="cohere-preview-label">NAME</span>
-                      <span className="cohere-preview-val">{selectedMemberObj.full_name}</span>
-                    </div>
-                    <div className="cohere-preview-field">
-                      <span className="cohere-preview-label">ROLL NO</span>
-                      <span className="cohere-preview-val">{selectedMemberObj.roll_no}</span>
-                    </div>
-                  </div>
-
-                  <div className="cohere-preview-row">
-                    <div className="cohere-preview-field">
-                      <span className="cohere-preview-label">COURSE</span>
-                      <span className="cohere-preview-val">{selectedMemberObj.course}</span>
-                    </div>
-                    <div className="cohere-preview-field">
-                      <span className="cohere-preview-label">PHONE</span>
-                      <span className="cohere-preview-val">{selectedMemberObj.mobile || '—'}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Signature Cohere Slanted Split Button */}
-            <div className="cohere-btn-container" style={{ marginTop: selectedMemberObj ? '22px' : '28px' }}>
-              <button
-                type="submit"
-                className="cohere-slant-btn-root"
-                disabled={!selectedTeamId || !selectedEmail || submitting}
-              >
-                <svg
-                  viewBox="0 0 148 42"
-                  className="cohere-slant-unified-svg"
-                  aria-hidden="true"
-                >
-                  {/* Left piece */}
-                  <path
-                    d="M 8,0 L 91.25,0 Q 95.75,0 94.5,3.5 L 82,38.5 Q 80.75,42 76.25,42 L 8,42 Q 0,42 0,34 L 0,8 Q 0,0 8,0 Z"
-                    className="cohere-slant-svg-path"
-                  />
-                  {/* Right piece */}
-                  <path
-                    d="M 107.75,0 L 140,0 Q 148,0 148,8 L 148,34 Q 148,42 140,42 L 92.75,42 Q 88.25,42 89.5,38.5 L 102,3.5 Q 103.25,0 107.75,0 Z"
-                    className="cohere-slant-svg-path"
-                  />
-                </svg>
-
-                <span className="cohere-slant-text-overlay">
-                  {submitting ? 'Activating...' : 'Sign up'}
-                </span>
-
-                <span className="cohere-slant-icon-overlay">
-                  {submitting ? (
-                    <span className="cohere-mini-spinner" />
-                  ) : (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="4" y1="12" x2="20" y2="12" />
-                      <polyline points="14 6 20 12 14 18" />
+                {/* Signature Cohere Slanted Split Button */}
+                <div className="cohere-btn-container" style={{ marginTop: selectedMemberObj ? '22px' : '28px' }}>
+                  <button
+                    type="submit"
+                    className="cohere-slant-btn-root"
+                    disabled={!selectedTeamId || !selectedEmail || submitting}
+                  >
+                    <svg
+                      viewBox="0 0 148 42"
+                      className="cohere-slant-unified-svg"
+                      aria-hidden="true"
+                    >
+                      {/* Left piece */}
+                      <path
+                        d="M 8,0 L 91.25,0 Q 95.75,0 94.5,3.5 L 82,38.5 Q 80.75,42 76.25,42 L 8,42 Q 0,42 0,34 L 0,8 Q 0,0 8,0 Z"
+                        className="cohere-slant-svg-path"
+                      />
+                      {/* Right piece */}
+                      <path
+                        d="M 107.75,0 L 140,0 Q 148,0 148,8 L 148,34 Q 148,42 140,42 L 92.75,42 Q 88.25,42 89.5,38.5 L 102,3.5 Q 103.25,0 107.75,0 Z"
+                        className="cohere-slant-svg-path"
+                      />
                     </svg>
-                  )}
-                </span>
-              </button>
-            </div>
 
-            {/* Terms and Policies */}
-            <p className="cohere-terms-text">
-              By signing up, you agree to the{' '}
-              <a href="#" className="cohere-text-link" onClick={(e) => e.preventDefault()}>
-                Terms of Use
-              </a>{' '}
-              and{' '}
-              <a href="#" className="cohere-text-link" onClick={(e) => e.preventDefault()}>
-                Privacy Policy
-              </a>
-              .
-            </p>
+                    <span className="cohere-slant-text-overlay">
+                      {submitting ? 'Activating...' : 'Sign up'}
+                    </span>
 
-            {/* Login Navigation Link */}
-            <div className="cohere-signup-footer">
-              Already registered?{' '}
-              <Link href="/login" className="cohere-signup-link">
-                Sign in to your account
-              </Link>
-            </div>
-          </form>
+                    <span className="cohere-slant-icon-overlay">
+                      {submitting ? (
+                        <span className="cohere-mini-spinner" />
+                      ) : (
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="4" y1="12" x2="20" y2="12" />
+                          <polyline points="14 6 20 12 14 18" />
+                        </svg>
+                      )}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Terms and Policies */}
+                <p className="cohere-terms-text">
+                  By signing up, you agree to the{' '}
+                  <a href="#" className="cohere-text-link" onClick={(e) => e.preventDefault()}>
+                    Terms of Use
+                  </a>{' '}
+                  and{' '}
+                  <a href="#" className="cohere-text-link" onClick={(e) => e.preventDefault()}>
+                    Privacy Policy
+                  </a>
+                  .
+                </p>
+
+                {/* Login Navigation Link */}
+                <div className="cohere-signup-footer">
+                  Already registered?{' '}
+                  <Link href="/login" className="cohere-signup-link">
+                    Sign in to your account
+                  </Link>
+                </div>
+              </form>
             </>
           )}
         </div>

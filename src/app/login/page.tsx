@@ -53,12 +53,12 @@ const developers: DevProfile[] = [
     initials: 'HS',
   },
   {
-    name: 'CodeShastra',
+    name: 'Rishabh Labs',
     role: 'Team',
-    link: 'https://www.instagram.com/code___shastra/',
+    link: 'https://www.instagram.com/rishabhlabs/',
     image: '/image/CodeShastra.webp',
     fallback: '/image/CodeShastra.png',
-    initials: 'CS',
+    initials: 'RL',
   },
 ];
 
