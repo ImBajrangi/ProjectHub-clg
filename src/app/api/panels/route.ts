@@ -192,16 +192,26 @@ export async function POST(req: NextRequest) {
       for (let i = 0; i < parsedList.length; i++) {
         const item = parsedList[i];
         const pNum = parseInt(item.panel_number || item.panel_index) || (nextPanelIndex + i);
-        const rStart = parseInt(
+        let rStart = parseInt(
           item.team_range_start || item.range_start || item.from_team || item.start_team || item.rangeStart || item.start
         );
-        const rEnd = parseInt(
+        let rEnd = parseInt(
           item.team_range_end || item.range_end || item.to_team || item.end_team || item.rangeEnd || item.end
         );
 
+        // Fallback: Parse group format like "G1-G10", "DS1-DS9", "G81-G93", "1-10", "BCA-1 to BCA-12"
+        const groupStr = String(item.group || item.team_range || item.batch_group || item.range || item.teams || '').trim();
+        if ((isNaN(rStart) || isNaN(rEnd)) && groupStr) {
+          const match = groupStr.match(/(\d+)\s*(?:-|to|–|—)\s*(?:[A-Za-z]*)(\d+)/i);
+          if (match) {
+            rStart = parseInt(match[1], 10);
+            rEnd = parseInt(match[2], 10);
+          }
+        }
+
         if (isNaN(rStart) || isNaN(rEnd) || rStart < 1 || rEnd < rStart) {
           validationErrors.push(
-            `Panel #${pNum} (Entry ${i + 1}): Invalid team range (start: ${item.team_range_start}, end: ${item.team_range_end}). Start must be >= 1 and End >= Start.`
+            `Panel #${pNum} (Entry ${i + 1}): Invalid team range (start: ${item.team_range_start || rStart}, end: ${item.team_range_end || rEnd}, group: ${item.group || 'N/A'}). Start must be >= 1 and End >= Start.`
           );
           continue;
         }
@@ -217,6 +227,12 @@ export async function POST(req: NextRequest) {
           rawFacultyTokens.push(...empIds.map((s: any) => String(s).trim()));
         }
 
+        // Check individual faculty fields (e.g. Faculty 1, Faculty 2, Reserve)
+        const f1 = item.faculty_1 || item.faculty1 || item['Faculty 1'] || item['faculty 1'];
+        if (f1) rawFacultyTokens.push(String(f1).trim());
+        const f2 = item.faculty_2 || item.faculty2 || item['Faculty 2'] || item['faculty 2'];
+        if (f2) rawFacultyTokens.push(String(f2).trim());
+
         // Check emails
         const emails = item.faculty_emails || item.emails || item.panel_emails || item.email;
         if (typeof emails === 'string') {
@@ -226,7 +242,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Check names / judges
-        const names = item.faculty_names || item.judges || item.faculty_members;
+        const names = item.faculty_names || item.judges || item.faculty_members || item.faculties;
         if (typeof names === 'string') {
           rawFacultyTokens.push(...names.split(',').map((s: string) => s.trim()));
         } else if (Array.isArray(names)) {
@@ -237,7 +253,7 @@ export async function POST(req: NextRequest) {
 
         if (rawFacultyTokens.length === 0) {
           validationErrors.push(
-            `Panel #${pNum} (Teams ${rStart}-${rEnd}): No faculty judges specified. Provide 'faculty_employee_ids'.`
+            `Panel #${pNum} (Teams ${rStart}-${rEnd}): No faculty judges specified. Provide 'faculty_names' or 'faculty_employee_ids'.`
           );
           continue;
         }
@@ -246,8 +262,12 @@ export async function POST(req: NextRequest) {
         const supervisorIds: string[] = [];
         const missingTokens: string[] = [];
 
+        const stripTitle = (n: string) =>
+          n.replace(/^(dr\.|dr|mr\.|mr|ms\.|ms|mrs\.|mrs|prof\.|prof)\s+/i, '').trim().toLowerCase();
+
         for (const token of rawFacultyTokens) {
           const cleanToken = token.toLowerCase();
+          const cleanNoTitle = stripTitle(token);
           
           // 1. Match by supervisor employee_id in profiles
           const matchedProfile = supervisorProfiles.find(
@@ -268,10 +288,19 @@ export async function POST(req: NextRequest) {
             continue;
           }
 
-          // 3. Match by full name
-          const matchedByName = supervisors.find(
-            (s) => s.full_name.toLowerCase().includes(cleanToken) || cleanToken.includes(s.full_name.toLowerCase())
-          );
+          // 3. Match by full name (with or without title)
+          const matchedByName = supervisors.find((s) => {
+            const supName = s.full_name.toLowerCase();
+            const supNoTitle = stripTitle(s.full_name);
+            return (
+              supName === cleanToken ||
+              supNoTitle === cleanNoTitle ||
+              supName.includes(cleanToken) ||
+              cleanToken.includes(supName) ||
+              supNoTitle.includes(cleanNoTitle) ||
+              cleanNoTitle.includes(supNoTitle)
+            );
+          });
           if (matchedByName && !supervisorIds.includes(matchedByName.id)) {
             supervisorIds.push(matchedByName.id);
             continue;
@@ -282,7 +311,7 @@ export async function POST(req: NextRequest) {
 
         if (missingTokens.length > 0) {
           validationErrors.push(
-            `Panel #${pNum}: The following faculty identifier(s) could not be resolved: ${missingTokens.join(', ')}. Please verify Employee ID.`
+            `Panel #${pNum}: The following faculty identifier(s) could not be resolved: ${missingTokens.join(', ')}. Please verify name or Employee ID.`
           );
           continue;
         }

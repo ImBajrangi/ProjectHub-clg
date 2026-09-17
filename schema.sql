@@ -205,7 +205,29 @@ CREATE TABLE IF NOT EXISTS public.push_subscriptions (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 15. INDEXES FOR PERFORMANCE & CONCURRENCY (up to 200 concurrent users)
+-- 15. PRESENTATION ROOMS TABLE
+CREATE TABLE IF NOT EXISTS public.presentation_rooms (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT UNIQUE NOT NULL,
+    building TEXT DEFAULT 'Academic Block AB10',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 16. PRESENTATION SHIFTS TABLE
+CREATE TABLE IF NOT EXISTS public.presentation_shifts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    label TEXT NOT NULL,
+    time_window TEXT NOT NULL,
+    time_short TEXT NOT NULL,
+    icon TEXT DEFAULT 'clock',
+    color TEXT DEFAULT '#2563EB',
+    color_bg TEXT DEFAULT '#EFF6FF',
+    color_border TEXT DEFAULT '#BFDBFE',
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 17. INDEXES FOR PERFORMANCE & CONCURRENCY (up to 200 concurrent users)
 CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
 CREATE INDEX IF NOT EXISTS idx_users_active_session ON public.users(active_session_token);
 CREATE INDEX IF NOT EXISTS idx_students_team ON public.students(team_id);
@@ -215,3 +237,6 @@ CREATE INDEX IF NOT EXISTS idx_teams_leader ON public.teams(leader_id);
 CREATE INDEX IF NOT EXISTS idx_meetings_team ON public.meetings(team_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON public.notifications(user_id, is_read);
 CREATE INDEX IF NOT EXISTS idx_evaluations_team ON public.evaluations(team_id);
+CREATE INDEX IF NOT EXISTS idx_panels_phase ON public.panels(phase_number);
+CREATE INDEX IF NOT EXISTS idx_panel_members_panel ON public.panel_members(panel_id);
+CREATE INDEX IF NOT EXISTS idx_panel_members_supervisor ON public.panel_members(supervisor_id);
