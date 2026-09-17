@@ -14,7 +14,10 @@ export async function GET(req: NextRequest) {
 
     const user = await auth.validateSession(token);
     if (!user) {
-      return NextResponse.json({ authenticated: false, user: null, error: 'Session expired or invalidated' }, { status: 200 });
+      const res = NextResponse.json({ authenticated: false, user: null, error: 'Session expired or invalidated' }, { status: 200 });
+      res.cookies.delete('codeshastra_token');
+      res.headers.append('Set-Cookie', 'codeshastra_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0; HttpOnly; SameSite=Lax');
+      return res;
     }
 
     let team = null;

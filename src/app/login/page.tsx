@@ -132,9 +132,14 @@ function LoginForm() {
   useEffect(() => {
     // If explicitly logging out or switching, flush session immediately
     if (searchParams.get('logout') === '1' || searchParams.get('switch') === '1') {
+      setActiveSessionUser(null);
+      setShowOtherAccountForm(true);
+      setEmail('');
+      setPassword('');
       clientCache.clear();
       localStorage.clear();
       sessionStorage.clear();
+      document.cookie = 'codeshastra_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0;';
       fetch('/api/auth/logout', { method: 'POST', cache: 'no-store' }).catch(() => { });
       return;
     }

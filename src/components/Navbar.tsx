@@ -363,11 +363,6 @@ export default function Navbar({
       document.cookie = 'codeshastra_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0;';
     } catch {}
 
-    // Safety fallback: Redirect after 1.5s regardless of network delays
-    const fallbackTimer = setTimeout(() => {
-      window.location.replace('/login?logout=1');
-    }, 1500);
-
     try {
       await fetch('/api/auth/logout', {
         method: 'POST',
@@ -376,8 +371,7 @@ export default function Navbar({
       });
     } catch {}
 
-    clearTimeout(fallbackTimer);
-    window.location.replace('/login?logout=1');
+    window.location.href = '/login?logout=1';
   };
 
   const getInitials = (name?: string) => {
@@ -562,95 +556,7 @@ export default function Navbar({
 
                         <div className="nav-dropdown-divider" />
 
-                        {/* Admin / Co-Admin Portal Switcher */}
-                        {activeUser.role === 'admin' && (
-                          <div style={{ padding: '4px 6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (pathname === '/admin') {
-                                  setUserMenuOpen(false);
-                                  return;
-                                }
-                                setSwitchingPortal('Admin Console');
-                                setUserMenuOpen(false);
-                                router.push('/admin');
-                              }}
-                              className="nav-dropdown-item"
-                              style={{
-                                backgroundColor: pathname === '/admin' ? 'rgba(245, 158, 11, 0.12)' : 'rgba(245, 158, 11, 0.05)',
-                                border: '1px solid rgba(245, 158, 11, 0.25)',
-                                borderRadius: '8px',
-                                color: 'var(--color-ink)',
-                                padding: '8px 10px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                width: '100%',
-                                textAlign: 'left',
-                                cursor: 'pointer',
-                              }}
-                            >
-                              <Shield size={15} style={{ color: '#D97706', flexShrink: 0 }} />
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '12.5px', fontWeight: 700, lineHeight: 1.2, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span>Use Admin Access</span>
-                                  {pathname === '/admin' && (
-                                    <span style={{ fontSize: '9.5px', fontWeight: 700, color: '#B45309', backgroundColor: '#FEF3C7', padding: '1px 5px', borderRadius: '4px' }}>
-                                      Active
-                                    </span>
-                                  )}
-                                </div>
-                                <div style={{ fontSize: '10.5px', color: 'var(--color-text-muted)' }}>
-                                  Full academic &amp; evaluation console
-                                </div>
-                              </div>
-                            </button>
 
-                            {/* Faculty Mentor Portal */}
-                            <button
-                              type="button"
-                                onClick={() => {
-                                  if (pathname === '/dashboard/faculty') {
-                                    setUserMenuOpen(false);
-                                    return;
-                                  }
-                                  setSwitchingPortal('Faculty Mentor Portal');
-                                  setUserMenuOpen(false);
-                                  router.push('/dashboard/faculty');
-                                }}
-                                className="nav-dropdown-item"
-                                style={{
-                                  backgroundColor: pathname === '/dashboard/faculty' ? 'rgba(37, 99, 235, 0.08)' : 'transparent',
-                                  borderRadius: '8px',
-                                  color: 'var(--color-ink)',
-                                  padding: '8px 10px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '8px',
-                                  width: '100%',
-                                  textAlign: 'left',
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                <Users size={15} style={{ color: '#2563EB', flexShrink: 0 }} />
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: '12.5px', fontWeight: 600, lineHeight: 1.2, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span>Faculty Mentor Portal</span>
-                                    {pathname === '/dashboard/faculty' && (
-                                      <span style={{ fontSize: '9.5px', fontWeight: 700, color: '#1D4ED8', backgroundColor: '#EFF6FF', padding: '1px 5px', borderRadius: '4px' }}>
-                                        Active
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div style={{ fontSize: '10.5px', color: 'var(--color-text-muted)' }}>
-                                    Mentor &amp; judge workspace
-                                  </div>
-                                </div>
-                              </button>
-                            <div className="nav-dropdown-divider" style={{ margin: '4px 0' }} />
-                          </div>
-                        )}
 
                         {/* Help & Guide */}
                         <button
