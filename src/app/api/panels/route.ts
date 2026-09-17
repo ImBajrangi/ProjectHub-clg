@@ -34,8 +34,8 @@ export async function GET(req: NextRequest) {
 
       // Teams within this panel's range (Strict separation of BCA vs BCA DS)
       const pName = (p.panel_name || '').toUpperCase();
-      const isDsPanel = pName.includes('DS');
-      const isBcaPanel = pName.includes('BCA') && !pName.includes('BCA - DS') && !pName.includes('BCA-DS') && !isDsPanel;
+      const isDsPanel = pName.includes('DS') || pName.includes('BCA - DS') || pName.includes('BCA-DS');
+      const isBcaPanel = (pName.includes('BCA') || /\bG\d+/i.test(pName) || /\(G\d+/i.test(pName) || pName.includes('(G')) && !isDsPanel;
 
       const matchingTeams = allTeams.filter((t) => {
         const inRange =

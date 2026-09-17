@@ -1167,11 +1167,16 @@ export default function AdminDashboardPage() {
     let matching = (teams || []).filter((t: any) => t.team_number >= startNum && t.team_number <= endNum);
     
     // Auto-detect program from parameter or panel name if available
+    const pUpper = (panelName || '').toUpperCase();
+    const isDsFromName = pUpper.includes('DS') || pUpper.includes('BCA - DS') || pUpper.includes('BCA-DS');
+    // In college presentation naming, 'G' stands for General/Group (BCA), e.g. G1-G10, G1–G10, Panel 2 (G1–G10)
+    const isBcaFromName = pUpper.includes('BCA') || /\bG\d+/i.test(pUpper) || /\(G\d+/i.test(pUpper) || pUpper.includes('(G');
+
     const prog = programFilter && programFilter !== 'all'
       ? programFilter
-      : (panelName?.toUpperCase().includes('DS') || panelName?.toUpperCase().includes('BCA - DS') || panelName?.toUpperCase().includes('BCA-DS'))
+      : isDsFromName
       ? 'BCA - DS'
-      : (panelName?.toUpperCase().includes('BCA'))
+      : isBcaFromName
       ? 'BCA'
       : undefined;
 
