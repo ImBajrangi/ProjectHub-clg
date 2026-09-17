@@ -291,7 +291,7 @@ export default function FacultyDashboardPage() {
           router.push('/dashboard/leader');
           return;
         }
-        if (authData.user.email?.toLowerCase() === 'admin@codeshastra.edu') {
+        if (authData.user.role === 'admin' && typeof window !== 'undefined' && !window.location.search.includes('mode=panel')) {
           router.push('/admin');
           return;
         }

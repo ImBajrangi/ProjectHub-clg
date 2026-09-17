@@ -607,10 +607,9 @@ export default function Navbar({
                               </div>
                             </button>
 
-                            {/* Faculty Mentor Portal only visible to Co-Admin faculty, NOT master admin admin@codeshastra.edu */}
-                            {activeUser.email?.toLowerCase() !== 'admin@codeshastra.edu' && (
-                              <button
-                                type="button"
+                            {/* Faculty Mentor Portal */}
+                            <button
+                              type="button"
                                 onClick={() => {
                                   if (pathname === '/dashboard/faculty') {
                                     setUserMenuOpen(false);
@@ -649,7 +648,6 @@ export default function Navbar({
                                   </div>
                                 </div>
                               </button>
-                            )}
                             <div className="nav-dropdown-divider" style={{ margin: '4px 0' }} />
                           </div>
                         )}

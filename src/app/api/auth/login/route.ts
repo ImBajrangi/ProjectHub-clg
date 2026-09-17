@@ -48,13 +48,15 @@ export async function POST(req: NextRequest) {
       token: result.token,
     });
 
-    // Set HTTP-only session cookie
+    // Set HTTP-only persistent session cookie (30 days)
+    const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
     res.cookies.set('codeshastra_token', result.token!, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 12 * 60 * 60, // 12 hours
+      maxAge: thirtyDaysInSeconds,
+      expires: new Date(Date.now() + thirtyDaysInSeconds * 1000),
     });
 
     return res;

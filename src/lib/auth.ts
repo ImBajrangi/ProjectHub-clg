@@ -25,8 +25,8 @@ export const auth = {
     return bcrypt.compareSync(password, hash);
   },
 
-  // Sign JWT
-  signToken(payload: AuthSession, expiresIn: string = '12h'): string {
+  // Sign JWT with persistent 30-day validity
+  signToken(payload: AuthSession, expiresIn: string = '30d'): string {
     return jwt.sign(payload, JWT_SECRET, { expiresIn } as any);
   },
 

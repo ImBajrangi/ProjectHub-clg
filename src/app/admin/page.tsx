@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Shield,
+  ShieldCheck,
   Users,
   Award,
   Layers,
@@ -1619,28 +1620,26 @@ Output ONLY the raw valid JSON array.`;
 
             {/* Quick Actions (Responsive: Desktop 4-in-a-row, Mobile 2x2 grid) */}
             <div className="admin-header-actions">
-              {currentUser?.email?.toLowerCase() !== 'admin@codeshastra.edu' && (
-                <Link
-                  href="/dashboard/faculty"
-                  className="btn btn-outline"
-                  style={{
-                    height: '38px',
-                    padding: '0 14px',
-                    fontSize: '12.5px',
-                    fontWeight: 600,
-                    gap: '6px',
-                    borderRadius: '8px',
-                    textDecoration: 'none',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxSizing: 'border-box',
-                  }}
-                  title="Switch to Faculty Mentor & Evaluation Panel Workspace"
-                >
-                  <Users size={15} color="var(--color-primary)" /> Faculty Portal
-                </Link>
-              )}
+              <Link
+                href="/dashboard/faculty"
+                className="btn btn-outline"
+                style={{
+                  height: '38px',
+                  padding: '0 14px',
+                  fontSize: '12.5px',
+                  fontWeight: 600,
+                  gap: '6px',
+                  borderRadius: '8px',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxSizing: 'border-box',
+                }}
+                title="Switch to Faculty Mentor & Evaluation Panel Workspace"
+              >
+                <Users size={15} color="var(--color-primary)" /> Faculty Portal
+              </Link>
 
               <button
                 type="button"
@@ -1769,8 +1768,8 @@ Output ONLY the raw valid JSON array.`;
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* 4 Metric Cards */}
             <div className="landing-stats-grid">
-              <div 
-                className="landing-stat-card" 
+              <div
+                className="landing-stat-card"
                 onClick={() => setActiveTab('teams')}
                 style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', textAlign: 'left', padding: '16px 18px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
                 title="Click to view full Teams & Students Directory"
@@ -1793,8 +1792,8 @@ Output ONLY the raw valid JSON array.`;
                 </div>
               </div>
 
-              <div 
-                className="landing-stat-card" 
+              <div
+                className="landing-stat-card"
                 onClick={() => { setActiveTab('teams'); setSearchQuery(''); }}
                 style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', textAlign: 'left', padding: '16px 18px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
                 title="Click to view team leader activation status"
@@ -1817,8 +1816,8 @@ Output ONLY the raw valid JSON array.`;
                 </div>
               </div>
 
-              <div 
-                className="landing-stat-card" 
+              <div
+                className="landing-stat-card"
                 onClick={() => setActiveTab('supervisors')}
                 style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', textAlign: 'left', padding: '16px 18px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease' }}
                 title="Click to view Faculty Mentors Directory"
@@ -1841,8 +1840,8 @@ Output ONLY the raw valid JSON array.`;
                 </div>
               </div>
 
-              <div 
-                className="landing-stat-card" 
+              <div
+                className="landing-stat-card"
                 onClick={() => setDefaultingModalOpen(true)}
                 style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', textAlign: 'left', padding: '16px 18px', position: 'relative', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease', border: defaultingTeams.length > 0 ? '1px solid #FECACA' : undefined }}
                 title="Click to pop up the full list of Defaulting Teams"
@@ -2294,7 +2293,7 @@ Output ONLY the raw valid JSON array.`;
                       cursor: 'pointer',
                     }}
                   >
-                    ✓ P1 Approved ({teams.filter((t: any) => t.phase1_approved).length})
+                    Permitted P1 ({teams.filter((t: any) => t.phase1_approved).length})
                   </button>
                   <button
                     type="button"
@@ -2310,7 +2309,7 @@ Output ONLY the raw valid JSON array.`;
                       cursor: 'pointer',
                     }}
                   >
-                    ⏳ P1 Pending ({teams.filter((t: any) => !t.phase1_approved).length})
+                    Non-Permitted P1 ({teams.filter((t: any) => !t.phase1_approved).length})
                   </button>
                   <button
                     type="button"
@@ -2326,7 +2325,7 @@ Output ONLY the raw valid JSON array.`;
                       cursor: 'pointer',
                     }}
                   >
-                    ✓ Synopsis Done ({teams.filter((t: any) => t.phase2_approved).length})
+                    Synopsis Done ({teams.filter((t: any) => t.phase2_approved).length})
                   </button>
                   <button
                     type="button"
@@ -2342,7 +2341,7 @@ Output ONLY the raw valid JSON array.`;
                       cursor: 'pointer',
                     }}
                   >
-                    ⏳ Synopsis Due ({teams.filter((t: any) => !t.phase2_approved).length})
+                    Synopsis Due ({teams.filter((t: any) => !t.phase2_approved).length})
                   </button>
                   <button
                     type="button"
@@ -2358,7 +2357,7 @@ Output ONLY the raw valid JSON array.`;
                       cursor: 'pointer',
                     }}
                   >
-                    ✓ Report &amp; Cert Done ({teams.filter((t: any) => t.phase3_report_clearance || t.phase3_approved).length})
+                    Report &amp; Cert Done ({teams.filter((t: any) => t.phase3_report_clearance || t.phase3_approved).length})
                   </button>
                   <button
                     type="button"
@@ -2478,20 +2477,20 @@ Output ONLY the raw valid JSON array.`;
                                 className={`badge ${t.phase1_approved ? 'badge-success' : 'badge-neutral'}`}
                                 style={{ fontSize: '10px', padding: '1px 6px', fontWeight: 700 }}
                               >
-                                {t.phase1_approved ? '✓ P1 Approved' : '⏳ P1 Pending'}
+                                {t.phase1_approved ? 'Permitted (P1)' : 'Non-Permitted (P1)'}
                               </span>
                               <span
                                 className={`badge ${t.phase2_approved ? 'badge-success' : 'badge-warning'}`}
                                 style={{ fontSize: '10px', padding: '1px 6px', fontWeight: 700 }}
                               >
-                                {t.phase2_approved ? '✓ Synopsis Done' : '⏳ Synopsis Due'}
+                                {t.phase2_approved ? 'Synopsis Done' : 'Synopsis Due'}
                               </span>
                             </div>
                             <span
                               className={`badge ${(t.phase3_report_clearance || t.phase3_approved) ? 'badge-success' : 'badge-neutral'}`}
                               style={{ fontSize: '10px', padding: '1px 6px', fontWeight: 700, width: 'fit-content' }}
                             >
-                              {(t.phase3_report_clearance || t.phase3_approved) ? '✓ Report & Cert Done' : '⏳ Report & Cert Due'}
+                              {(t.phase3_report_clearance || t.phase3_approved) ? 'Report Cleared' : 'Report Due'}
                             </span>
                           </div>
                         </td>
@@ -2506,16 +2505,49 @@ Output ONLY the raw valid JSON array.`;
                           </div>
                         </td>
                         <td>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedTeamModal(t);
-                            }}
-                            className="btn btn-outline"
-                            style={{ padding: '6px 12px', fontSize: '12px', gap: '5px' }}
-                          >
-                            <Eye size={13} /> View &amp; Score
-                          </button>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleAdminMilestone(t.id, 1, Boolean(t.phase1_approved));
+                              }}
+                              style={{
+                                padding: '5px 10px',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                borderRadius: '6px',
+                                border: t.phase1_approved ? '1px solid #BBF7D0' : '1px solid #CBD5E1',
+                                backgroundColor: t.phase1_approved ? '#F0FDF4' : '#F8FAFC',
+                                color: t.phase1_approved ? '#15803D' : '#475569',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                              title={t.phase1_approved ? 'Click to revoke Phase 1 permission' : 'Click to permit team for Phase 1'}
+                            >
+                              {t.phase1_approved ? (
+                                <>
+                                  <CheckCircle2 size={12} color="#16A34A" /> Permitted
+                                </>
+                              ) : (
+                                <>
+                                  <ShieldCheck size={12} color="#64748B" /> Permit P1
+                                </>
+                              )}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTeamModal(t);
+                              }}
+                              className="btn btn-outline"
+                              style={{ padding: '5px 10px', fontSize: '11px', gap: '4px' }}
+                            >
+                              <Eye size={12} /> View
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -2549,7 +2581,7 @@ Output ONLY the raw valid JSON array.`;
                       boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
                     }}
                   >
-                    {/* Top Row: Team Name */}
+                    {/* Top Row: Team Name & Quick Action */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
                       <div>
                         <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--color-ink)', lineHeight: 1.2 }}>
@@ -2559,6 +2591,28 @@ Output ONLY the raw valid JSON array.`;
                           {t.program} • {t.studentCount || (t.students?.length || 0)} Members
                         </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleAdminMilestone(t.id, 1, Boolean(t.phase1_approved));
+                        }}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '10.5px',
+                          fontWeight: 700,
+                          borderRadius: '6px',
+                          border: t.phase1_approved ? '1px solid #BBF7D0' : '1px solid #CBD5E1',
+                          backgroundColor: t.phase1_approved ? '#F0FDF4' : '#F8FAFC',
+                          color: t.phase1_approved ? '#15803D' : '#475569',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                        }}
+                      >
+                        {t.phase1_approved ? <><CheckCircle2 size={11} color="#16A34A" /> Permitted</> : <><ShieldCheck size={11} /> Permit</>}
+                      </button>
                     </div>
 
                     {/* Phase Milestones Bar */}
@@ -2567,19 +2621,19 @@ Output ONLY the raw valid JSON array.`;
                         className={`badge ${t.phase1_approved ? 'badge-success' : 'badge-neutral'}`}
                         style={{ fontSize: '10px', padding: '2px 6px', fontWeight: 700 }}
                       >
-                        {t.phase1_approved ? '✓ P1 Approved' : '⏳ P1 Pending'}
+                        {t.phase1_approved ? 'Permitted (P1)' : 'Non-Permitted (P1)'}
                       </span>
                       <span
                         className={`badge ${t.phase2_approved ? 'badge-success' : 'badge-warning'}`}
                         style={{ fontSize: '10px', padding: '2px 6px', fontWeight: 700 }}
                       >
-                        {t.phase2_approved ? '✓ Synopsis' : '⏳ Synopsis Due'}
+                        {t.phase2_approved ? 'Synopsis Done' : 'Synopsis Due'}
                       </span>
                       <span
                         className={`badge ${(t.phase3_report_clearance || t.phase3_approved) ? 'badge-success' : 'badge-neutral'}`}
                         style={{ fontSize: '10px', padding: '2px 6px', fontWeight: 700 }}
                       >
-                        {(t.phase3_report_clearance || t.phase3_approved) ? '✓ Report & Cert' : '⏳ Report Due'}
+                        {(t.phase3_report_clearance || t.phase3_approved) ? 'Report Cleared' : 'Report Due'}
                       </span>
                     </div>
 
@@ -6065,89 +6119,89 @@ Output ONLY the raw valid JSON array.`;
                                 {isStudentLeader ? <span style={{ color: '#059669', fontWeight: 700 }}>● Team Leader</span> : 'Member'}
                               </div>
                             </td>
-                          <td style={{ color: 'var(--color-text-muted)', fontSize: '12px', fontFamily: 'monospace' }}>{s.roll_no}</td>
-                          <td style={{ textAlign: 'center' }}>
-                            {s.phase1 ? (
-                              s.phase1.attendanceStatus === 'early_joining' || s.phase1.attendanceStatus === 'next_shift' ? (
-                                <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase1.remarks || 'Moved to Early Joining'}>
-                                  🕒 Early Joining
-                                </span>
-                              ) : s.phase1.isAbsent ? (
-                                <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase1.remarks || 'Marked Absent'}>
-                                  Absent
-                                </span>
+                            <td style={{ color: 'var(--color-text-muted)', fontSize: '12px', fontFamily: 'monospace' }}>{s.roll_no}</td>
+                            <td style={{ textAlign: 'center' }}>
+                              {s.phase1 ? (
+                                s.phase1.attendanceStatus === 'early_joining' || s.phase1.attendanceStatus === 'next_shift' ? (
+                                  <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase1.remarks || 'Moved to Early Joining'}>
+                                    🕒 Early Joining
+                                  </span>
+                                ) : s.phase1.isAbsent ? (
+                                  <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase1.remarks || 'Marked Absent'}>
+                                    Absent
+                                  </span>
+                                ) : (
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                    <span style={{ fontWeight: 700, color: '#059669', fontSize: '12.5px' }}>{s.phase1.score} / {getPhaseMaxMarks(1)}</span>
+                                    {s.phase1.criteria_scores && (
+                                      <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                        <span style={{ fontSize: '9px', background: '#EFF6FF', color: '#1D4ED8', padding: '1px 4px', borderRadius: '4px', border: '1px solid #DBEAFE' }} title="Presentation">📊 {s.phase1.criteria_scores.presentation ?? '-'}</span>
+                                        <span style={{ fontSize: '9px', background: '#F5F3FF', color: '#6D28D9', padding: '1px 4px', borderRadius: '4px', border: '1px solid #EDE9FE' }} title="Code">💻 {s.phase1.criteria_scores.code ?? '-'}</span>
+                                        <span style={{ fontSize: '9px', background: '#ECFDF5', color: '#047857', padding: '1px 4px', borderRadius: '4px', border: '1px solid #D1FAE5' }} title="Query Handling">💬 {s.phase1.criteria_scores.query_handling ?? '-'}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )
                               ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
-                                  <span style={{ fontWeight: 700, color: '#059669', fontSize: '12.5px' }}>{s.phase1.score} / {getPhaseMaxMarks(1)}</span>
-                                  {s.phase1.criteria_scores && (
-                                    <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                                      <span style={{ fontSize: '9px', background: '#EFF6FF', color: '#1D4ED8', padding: '1px 4px', borderRadius: '4px', border: '1px solid #DBEAFE' }} title="Presentation">📊 {s.phase1.criteria_scores.presentation ?? '-'}</span>
-                                      <span style={{ fontSize: '9px', background: '#F5F3FF', color: '#6D28D9', padding: '1px 4px', borderRadius: '4px', border: '1px solid #EDE9FE' }} title="Code">💻 {s.phase1.criteria_scores.code ?? '-'}</span>
-                                      <span style={{ fontSize: '9px', background: '#ECFDF5', color: '#047857', padding: '1px 4px', borderRadius: '4px', border: '1px solid #D1FAE5' }} title="Query Handling">💬 {s.phase1.criteria_scores.query_handling ?? '-'}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )
-                            ) : (
-                              <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
-                            )}
-                          </td>
-                          <td style={{ textAlign: 'center' }}>
-                            {s.phase2 ? (
-                              s.phase2.attendanceStatus === 'early_joining' || s.phase2.attendanceStatus === 'next_shift' ? (
-                                <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase2.remarks || 'Moved to Early Joining'}>
-                                  🕒 Early Joining
-                                </span>
-                              ) : s.phase2.isAbsent ? (
-                                <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase2.remarks || 'Marked Absent'}>
-                                  Absent
-                                </span>
+                                <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
+                              )}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              {s.phase2 ? (
+                                s.phase2.attendanceStatus === 'early_joining' || s.phase2.attendanceStatus === 'next_shift' ? (
+                                  <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase2.remarks || 'Moved to Early Joining'}>
+                                    🕒 Early Joining
+                                  </span>
+                                ) : s.phase2.isAbsent ? (
+                                  <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase2.remarks || 'Marked Absent'}>
+                                    Absent
+                                  </span>
+                                ) : (
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                    <span style={{ fontWeight: 700, color: '#2563EB', fontSize: '12.5px' }}>{s.phase2.score} / {getPhaseMaxMarks(2)}</span>
+                                    {s.phase2.criteria_scores && (
+                                      <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                        <span style={{ fontSize: '9px', background: '#EFF6FF', color: '#1D4ED8', padding: '1px 4px', borderRadius: '4px', border: '1px solid #DBEAFE' }} title="Presentation">📊 {s.phase2.criteria_scores.presentation ?? '-'}</span>
+                                        <span style={{ fontSize: '9px', background: '#F5F3FF', color: '#6D28D9', padding: '1px 4px', borderRadius: '4px', border: '1px solid #EDE9FE' }} title="Code">💻 {s.phase2.criteria_scores.code ?? '-'}</span>
+                                        <span style={{ fontSize: '9px', background: '#ECFDF5', color: '#047857', padding: '1px 4px', borderRadius: '4px', border: '1px solid #D1FAE5' }} title="Query Handling">💬 {s.phase2.criteria_scores.query_handling ?? '-'}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )
                               ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
-                                  <span style={{ fontWeight: 700, color: '#2563EB', fontSize: '12.5px' }}>{s.phase2.score} / {getPhaseMaxMarks(2)}</span>
-                                  {s.phase2.criteria_scores && (
-                                    <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                                      <span style={{ fontSize: '9px', background: '#EFF6FF', color: '#1D4ED8', padding: '1px 4px', borderRadius: '4px', border: '1px solid #DBEAFE' }} title="Presentation">📊 {s.phase2.criteria_scores.presentation ?? '-'}</span>
-                                      <span style={{ fontSize: '9px', background: '#F5F3FF', color: '#6D28D9', padding: '1px 4px', borderRadius: '4px', border: '1px solid #EDE9FE' }} title="Code">💻 {s.phase2.criteria_scores.code ?? '-'}</span>
-                                      <span style={{ fontSize: '9px', background: '#ECFDF5', color: '#047857', padding: '1px 4px', borderRadius: '4px', border: '1px solid #D1FAE5' }} title="Query Handling">💬 {s.phase2.criteria_scores.query_handling ?? '-'}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )
-                            ) : (
-                              <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
-                            )}
-                          </td>
-                          <td style={{ textAlign: 'center' }}>
-                            {s.phase3 ? (
-                              s.phase3.attendanceStatus === 'early_joining' || s.phase3.attendanceStatus === 'next_shift' ? (
-                                <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase3.remarks || 'Moved to Early Joining'}>
-                                  🕒 Early Joining
-                                </span>
-                              ) : s.phase3.isAbsent ? (
-                                <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase3.remarks || 'Marked Absent'}>
-                                  Absent
-                                </span>
+                                <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
+                              )}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              {s.phase3 ? (
+                                s.phase3.attendanceStatus === 'early_joining' || s.phase3.attendanceStatus === 'next_shift' ? (
+                                  <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase3.remarks || 'Moved to Early Joining'}>
+                                    🕒 Early Joining
+                                  </span>
+                                ) : s.phase3.isAbsent ? (
+                                  <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase3.remarks || 'Marked Absent'}>
+                                    Absent
+                                  </span>
+                                ) : (
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                    <span style={{ fontWeight: 700, color: '#7C3AED', fontSize: '12.5px' }}>{s.phase3.score} / {getPhaseMaxMarks(3)}</span>
+                                    {s.phase3.criteria_scores && (
+                                      <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                        <span style={{ fontSize: '9px', background: '#EFF6FF', color: '#1D4ED8', padding: '1px 4px', borderRadius: '4px', border: '1px solid #DBEAFE' }} title="Presentation">📊 {s.phase3.criteria_scores.presentation ?? '-'}</span>
+                                        <span style={{ fontSize: '9px', background: '#F5F3FF', color: '#6D28D9', padding: '1px 4px', borderRadius: '4px', border: '1px solid #EDE9FE' }} title="Code">💻 {s.phase3.criteria_scores.code ?? '-'}</span>
+                                        <span style={{ fontSize: '9px', background: '#ECFDF5', color: '#047857', padding: '1px 4px', borderRadius: '4px', border: '1px solid #D1FAE5' }} title="Query Handling">💬 {s.phase3.criteria_scores.query_handling ?? '-'}</span>
+                                        <span style={{ fontSize: '9px', background: '#FFFBEB', color: '#B45309', padding: '1px 4px', borderRadius: '4px', border: '1px solid #FDE68A' }} title="Report & Certificate">📑 {s.phase3.criteria_scores.report ?? '-'}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )
                               ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
-                                  <span style={{ fontWeight: 700, color: '#7C3AED', fontSize: '12.5px' }}>{s.phase3.score} / {getPhaseMaxMarks(3)}</span>
-                                  {s.phase3.criteria_scores && (
-                                    <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                                      <span style={{ fontSize: '9px', background: '#EFF6FF', color: '#1D4ED8', padding: '1px 4px', borderRadius: '4px', border: '1px solid #DBEAFE' }} title="Presentation">📊 {s.phase3.criteria_scores.presentation ?? '-'}</span>
-                                      <span style={{ fontSize: '9px', background: '#F5F3FF', color: '#6D28D9', padding: '1px 4px', borderRadius: '4px', border: '1px solid #EDE9FE' }} title="Code">💻 {s.phase3.criteria_scores.code ?? '-'}</span>
-                                      <span style={{ fontSize: '9px', background: '#ECFDF5', color: '#047857', padding: '1px 4px', borderRadius: '4px', border: '1px solid #D1FAE5' }} title="Query Handling">💬 {s.phase3.criteria_scores.query_handling ?? '-'}</span>
-                                      <span style={{ fontSize: '9px', background: '#FFFBEB', color: '#B45309', padding: '1px 4px', borderRadius: '4px', border: '1px solid #FDE68A' }} title="Report & Certificate">📑 {s.phase3.criteria_scores.report ?? '-'}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )
-                            ) : (
-                              <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                                <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
