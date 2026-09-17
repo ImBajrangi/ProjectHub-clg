@@ -111,6 +111,14 @@ export default function HomePage() {
       fallback: '/image/CodeShastra.png',
       initials: 'RL',
     },
+    {
+      name: 'Vrindopnishad',
+      role: 'Creative Partner',
+      link: 'https://www.instagram.com/vrindopnishad/',
+      image: '/image/vrindopnishad.webp',
+      fallback: '/image/vrindopnishad.png',
+      initials: 'VO',
+    },
   ];
 
   const dashboardHref = user
@@ -127,19 +135,43 @@ export default function HomePage() {
       {/* 1. TOP HEADER                                                             */}
       {/* ========================================================================= */}
       <header className="cohere-top-header">
-        <Link href="/" className="cohere-brand-link">
-          <span className="cohere-brand-name">
-            CodeShastra <span style={{ color: '#64748B', fontWeight: 500 }}>Hub</span>
-          </span>
-        </Link>
+        <div className="cohere-top-brand-cluster">
+          <Link href="/" className="cohere-brand-link" title="CodeShastra Hub × Vrindopnishad">
+            <span className="cohere-brand-name">
+              CodeShastra <span className="cohere-brand-sub">Hub</span>
+            </span>
+            <svg
+              className="cohere-brand-collab-cross"
+              viewBox="0 0 10 10"
+              width="10"
+              height="10"
+              aria-hidden="true"
+            >
+              <line x1="1.5" y1="1.5" x2="8.5" y2="8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <line x1="8.5" y1="1.5" x2="1.5" y2="8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            <span className="cohere-brand-collab-name">
+              <span className="cohere-brand-collab-badge">
+                <img
+                  src="/image/vrindopnishad.webp"
+                  alt="Vrindopnishad Logo"
+                  className="cohere-brand-collab-logo"
+                  width="18"
+                  height="18"
+                />
+              </span>
+              <span className="cohere-brand-collab-text">Vrindopnishad</span>
+            </span>
+          </Link>
+        </div>
 
         <div className="cohere-top-right">
           {user ? (
             <Link href={dashboardHref} className="cohere-top-dash-btn">
-              Go to Dashboard <ArrowRight size={13} />
+              Go to Dashboard <ArrowRight size={13} color="#ffffff" />
             </Link>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            <div className="cohere-top-auth-group">
               <Link href="/signup" className="cohere-top-link">
                 Sign Up
               </Link>
@@ -159,9 +191,26 @@ export default function HomePage() {
           <div className="cohere-hero-grid">
             {/* Left Content */}
             <div className="cohere-hero-content">
-              <div className="cohere-hero-pill">
+              <div className="cohere-hero-pill mono">
                 <span className="cohere-pill-dot" />
-                <span className="mono">ACADEMIC PROJECT PLATFORM • GLA UNIVERSITY</span>
+                <span>GLA UNIVERSITY</span>
+                <span className="cohere-hero-pill-sep">×</span>
+                <a
+                  href="https://www.instagram.com/vrindopnishad/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cohere-hero-pill-collab-link"
+                  title="Creative Direction • Vrindopnishad"
+                >
+                  <img
+                    src="/image/vrindopnishad.webp"
+                    alt="Vrindopnishad"
+                    className="cohere-hero-pill-collab-logo"
+                    width="14"
+                    height="14"
+                  />
+                  <span>VRINDOPNISHAD</span>
+                </a>
               </div>
 
               <h1 className="cohere-hero-title">
@@ -576,13 +625,17 @@ export default function HomePage() {
         </div>
       </section>
 
+
+
       {/* ========================================================================= */}
       {/* 8. COHERE BOTTOM BAR                                                      */}
       {/* ========================================================================= */}
       <footer className="cohere-bottom-bar">
         <div className="cohere-footer-left">
           <span className="cohere-footer-brand">CodeShastra Hub</span>
-          <span className="cohere-footer-subline mono">GLA UNIVERSITY • DEPT. OF COMPUTER APPLICATIONS</span>
+          <span className="cohere-footer-subline mono">
+            Engineered for Academic Excellence in Collaboration with <strong>Vrindopnishad</strong>
+          </span>
         </div>
 
         <div className="cohere-footer-devs">
@@ -596,7 +649,16 @@ export default function HomePage() {
 
         <div className="cohere-footer-right">
           <span className="cohere-curated-text">Partnership with</span>
-          <span className="cohere-curated-brand">Vrindopnishad</span>
+          <a
+            href="https://www.instagram.com/vrindopnishad/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cohere-curated-brand vrindo-link-glow"
+            title="Vrindopnishad Official Instagram"
+          >
+            <span>Vrindopnishad</span>
+            <span className="cohere-arrow-icon" aria-hidden="true">↗</span>
+          </a>
         </div>
       </footer>
 
@@ -629,12 +691,30 @@ export default function HomePage() {
           z-index: 10;
         }
 
+        .cohere-top-brand-cluster {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
         .cohere-brand-link {
           display: inline-flex;
           align-items: center;
           gap: 8px;
           text-decoration: none;
           color: #111827;
+          padding: 6px 14px;
+          margin-left: -14px;
+          border-radius: 999px;
+          background: transparent;
+          border: none;
+          box-shadow: none;
+          transition: background-color 0.2s ease;
+        }
+
+        .cohere-brand-link:hover {
+          background-color: #ffffff;
+          box-shadow: none;
         }
 
         .cohere-brand-name {
@@ -642,11 +722,141 @@ export default function HomePage() {
           font-weight: 600;
           letter-spacing: -0.03em;
           color: #1e293b;
+          white-space: nowrap;
+          display: inline-flex;
+          align-items: baseline;
+          gap: 4px;
+        }
+
+        .cohere-brand-sub {
+          color: #64748b;
+          font-weight: 500;
+        }
+
+        .cohere-brand-collab-cross {
+          width: 10px;
+          height: 10px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: #94a3b8;
+          user-select: none;
+          flex-shrink: 0;
+          transform-origin: 50% 50%;
+          transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.22s ease;
+        }
+
+        .cohere-brand-link:hover .cohere-brand-collab-cross {
+          transform: rotate(45deg);
+          color: #ea580c;
+        }
+
+        .cohere-brand-collab-name {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          font-size: 18px;
+          font-weight: 600;
+          letter-spacing: -0.025em;
+          color: #1e293b;
+          white-space: nowrap;
+        }
+
+        .cohere-brand-collab-badge {
+          width: 21px;
+          height: 21px;
+          border-radius: 50%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+
+        .cohere-brand-collab-logo {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 50%;
+          display: block;
+        }
+
+        .cohere-brand-collab-text {
+          color: #1e293b;
+          font-weight: 600;
+          letter-spacing: -0.025em;
+        }
+
+
+
+        .cohere-curated-text {
+          font-size: 12px;
+          color: #64748b;
+          font-weight: 450;
+        }
+
+        .cohere-curated-brand,
+        .vrindo-link-glow {
+          font-size: 12px;
+          font-weight: 700;
+          color: #d97706;
+          text-decoration: none;
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: 3.5px;
+          padding: 2px 0;
+          transition: color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .cohere-curated-brand::after,
+        .vrindo-link-glow::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          width: 100%;
+          height: 1.5px;
+          background: linear-gradient(90deg, #d97706, #ea580c);
+          transform: scaleX(0);
+          transform-origin: bottom right;
+          transition: transform 0.28s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        .cohere-curated-brand:hover,
+        .vrindo-link-glow:hover {
+          color: #ea580c;
+          text-decoration: none;
+        }
+
+        .cohere-curated-brand:hover::after,
+        .vrindo-link-glow:hover::after {
+          transform: scaleX(1);
+          transform-origin: bottom left;
+        }
+
+        .cohere-arrow-icon {
+          display: inline-block;
+          font-size: 11.5px;
+          opacity: 0.85;
+          transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .cohere-curated-brand:hover .cohere-arrow-icon,
+        .vrindo-link-glow:hover .cohere-arrow-icon {
+          transform: translate(2px, -2px);
+          opacity: 1;
         }
 
         .cohere-top-right {
           display: flex;
           align-items: center;
+        }
+
+        .cohere-top-auth-group {
+          display: flex;
+          align-items: center;
+          gap: 20px;
         }
 
         .cohere-top-link {
@@ -697,10 +907,8 @@ export default function HomePage() {
           color: #ffffff !important;
         }
 
-        .cohere-top-dash-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
+        .cohere-top-dash-btn,
+        .cohere-top-dash-btn:visited {
           font-size: 13px;
           font-weight: 600;
           color: #ffffff !important;
@@ -708,21 +916,27 @@ export default function HomePage() {
           padding: 7px 16px;
           border-radius: 999px;
           text-decoration: none;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
           transition: background-color 0.15s ease;
         }
-        .cohere-top-dash-btn:hover {
+        .cohere-top-dash-btn:hover,
+        .cohere-top-dash-btn:active {
           background-color: #263c32;
           color: #ffffff !important;
         }
 
         /* Hero Section */
         .cohere-hero-section {
-          padding: 40px 24px 60px;
+          padding: 40px 44px 80px;
+          display: flex;
+          justify-content: center;
         }
 
         .cohere-hero-container {
-          max-width: 1180px;
-          margin: 0 auto;
+          max-width: 1160px;
+          width: 100%;
         }
 
         .cohere-hero-grid {
@@ -745,6 +959,7 @@ export default function HomePage() {
           color: #344d41;
           margin-bottom: 20px;
           letter-spacing: 0.04em;
+          flex-wrap: wrap;
         }
 
         .cohere-pill-dot {
@@ -752,6 +967,36 @@ export default function HomePage() {
           height: 6px;
           border-radius: 50%;
           background-color: #344d41;
+          flex-shrink: 0;
+        }
+
+        .cohere-hero-pill-sep {
+          color: #94a3b8;
+          font-weight: 400;
+          margin: 0 1px;
+          user-select: none;
+        }
+
+        .cohere-hero-pill-collab-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: #344d41;
+          text-decoration: none;
+          transition: opacity 0.15s ease;
+        }
+
+        .cohere-hero-pill-collab-link:hover {
+          opacity: 0.8;
+        }
+
+        .cohere-hero-pill-collab-logo {
+          width: 13.5px;
+          height: 13.5px;
+          border-radius: 50%;
+          object-fit: cover;
+          display: inline-block;
+          vertical-align: middle;
         }
 
         .cohere-hero-title {
@@ -1382,22 +1627,148 @@ export default function HomePage() {
 
         @media (max-width: 640px) {
           .cohere-top-header {
-            padding: 16px 20px;
+            padding: 12px 14px;
+            gap: 8px;
           }
-          .cohere-hero-section {
-            padding: 24px 16px 40px;
+          .cohere-top-brand-cluster {
+            gap: 0;
+            min-width: 0;
+            flex-shrink: 1;
           }
-          .cohere-story-section {
-            padding: 40px 16px;
+          .cohere-brand-link {
+            gap: 5px;
+            min-width: 0;
+            white-space: nowrap;
+            padding: 3px 6px;
+            margin-left: -4px;
           }
-          .cohere-cta-card {
-            padding: 28px 20px;
+          .cohere-brand-name {
+            font-size: clamp(12px, 3.3vw, 14.5px);
+            letter-spacing: -0.02em;
+            white-space: nowrap;
           }
-          .cohere-bottom-bar {
-            padding: 20px 20px 32px;
+          .cohere-brand-sub {
+            font-size: 11.5px;
+          }
+          .cohere-brand-collab-cross {
+            width: 9px;
+            height: 9px;
+          }
+          .cohere-brand-collab-name {
+            font-size: clamp(11.5px, 3.2vw, 14px);
+            gap: 3.5px;
+            white-space: nowrap;
+          }
+          .cohere-brand-collab-badge {
+            width: 15px;
+            height: 15px;
+          }
+          .cohere-top-right {
+            flex-shrink: 0;
+          }
+          .cohere-top-auth-group {
+            gap: 6px;
+            flex-shrink: 0;
+          }
+          .cohere-top-link {
+            display: none !important;
+          }
+          .cohere-top-login-pill {
+            padding: 5px 12px;
+            font-size: 11.5px;
+            white-space: nowrap;
+          }
+          .cohere-top-dash-btn {
+            padding: 5px 12px;
+            font-size: 11.5px;
+            white-space: nowrap;
+          }
+          .cohere-hero-pill {
+            font-size: 10px;
+            padding: 5px 10px;
+            gap: 5px;
+            max-width: 100%;
+            line-height: 1.4;
+          }
+          .cohere-hero-pill-collab-logo {
+            width: 12px;
+            height: 12px;
+          }
+          .cohere-hero-title {
+            font-size: clamp(28px, 8vw, 38px);
+            margin-bottom: 14px;
+          }
+          .cohere-hero-desc {
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 24px;
+          }
+          .cohere-hero-actions {
             flex-direction: column;
             align-items: flex-start;
-            gap: 16px;
+            gap: 12px;
+          }
+          .cohere-slant-btn-root {
+            width: 176px !important;
+            height: 44px !important;
+            display: inline-flex !important;
+            flex-shrink: 0;
+          }
+          .cohere-secondary-btn {
+            width: 176px;
+            justify-content: center;
+          }
+
+          .cohere-hero-section {
+            padding: 20px 14px 36px;
+          }
+          .cohere-story-section {
+            padding: 36px 14px;
+          }
+          .cohere-cta-card {
+            padding: 24px 16px;
+          }
+          .cohere-bottom-bar {
+            padding: 18px 16px 28px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 14px;
+          }
+        }
+
+        @media (max-width: 380px) {
+          .cohere-top-header {
+            padding: 10px 10px;
+            gap: 6px;
+          }
+          .cohere-brand-link {
+            gap: 3.5px;
+            padding: 2px 4px;
+            margin-left: -2px;
+          }
+          .cohere-brand-name {
+            font-size: 11.5px;
+            letter-spacing: -0.025em;
+          }
+          .cohere-brand-sub {
+            font-size: 10px;
+          }
+          .cohere-brand-collab-name {
+            font-size: 11px;
+            letter-spacing: -0.025em;
+            gap: 3px;
+          }
+          .cohere-brand-collab-badge {
+            width: 14px;
+            height: 14px;
+          }
+          .cohere-top-login-pill {
+            padding: 4px 9px;
+            font-size: 11px;
+          }
+          .cohere-hero-pill {
+            font-size: 8.5px;
+            padding: 4px 8px;
           }
         }
       `}</style>

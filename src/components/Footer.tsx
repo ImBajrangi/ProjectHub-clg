@@ -37,6 +37,14 @@ export default function Footer() {
       initials: 'RL',
       type: 'instagram',
     },
+    {
+      name: 'Vrindopnishad',
+      role: 'Creative Partner',
+      link: 'https://www.instagram.com/vrindopnishad/',
+      image: '/image/vrindopnishad.webp',
+      initials: 'VO',
+      type: 'instagram',
+    },
   ];
 
   return (

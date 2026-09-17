@@ -60,6 +60,14 @@ const developers: DevProfile[] = [
     fallback: '/image/CodeShastra.png',
     initials: 'RL',
   },
+  {
+    name: 'Vrindopnishad',
+    role: 'Creative Partner',
+    link: 'https://www.instagram.com/vrindopnishad/',
+    image: '/image/vrindopnishad.webp',
+    fallback: '/image/vrindopnishad.png',
+    initials: 'VO',
+  },
 ];
 
 function FooterDevPill({ dev }: { dev: DevProfile }) {
@@ -107,140 +115,110 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [sessionConflict, setSessionConflict] = useState(false);
+  const [activeSessionUser, setActiveSessionUser] = useState<any>(null);
+  const [showOtherAccountForm, setShowOtherAccountForm] = useState(false);
 
-  // Forgot password modal state
+  // Forgot Password Modal State
   const [forgotModalOpen, setForgotModalOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
-  const [forgotSuccess, setForgotSuccess] = useState('');
   const [forgotError, setForgotError] = useState('');
+  const [forgotSuccess, setForgotSuccess] = useState('');
   const [generatedResetLink, setGeneratedResetLink] = useState('');
 
-  // Auto-fill activated leader email if redirected
   useEffect(() => {
-    const activatedEmail = searchParams.get('activatedEmail');
-    if (activatedEmail) {
-      setEmail(activatedEmail);
-    }
-  }, [searchParams]);
+    // 0ms instant display from local storage
+    try {
+      const cached = localStorage.getItem('codeshastra_active_user');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.id) setActiveSessionUser(parsed);
+      }
+    } catch (e) { }
 
-  const [showOtherAccountForm, setShowOtherAccountForm] = useState(false);
-  const [activeSessionUser, setActiveSessionUser] = useState<any>(null);
-
-  // Check if session exists (allow switching accounts without force-redirecting)
-  useEffect(() => {
-    // If explicitly logging out or switching, flush session immediately
-    if (searchParams.get('logout') === '1' || searchParams.get('switch') === '1') {
-      setActiveSessionUser(null);
-      setShowOtherAccountForm(true);
-      setEmail('');
-      setPassword('');
-      clientCache.clear();
-      localStorage.clear();
-      sessionStorage.clear();
-      document.cookie = 'codeshastra_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0;';
-      fetch('/api/auth/logout', { method: 'POST', cache: 'no-store' }).catch(() => { });
-      return;
-    }
-
-    async function checkSession() {
+    // Fetch verified active session
+    async function checkAuth() {
       try {
-        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        const res = await fetch('/api/auth/me');
         if (res.ok) {
           const data = await res.json();
-          if (data.authenticated && data.user) {
+          if (data.user) {
             setActiveSessionUser(data.user);
+            try {
+              localStorage.setItem('codeshastra_active_user', JSON.stringify(data.user));
+            } catch (e) { }
+          } else {
+            setActiveSessionUser(null);
+            try {
+              localStorage.removeItem('codeshastra_active_user');
+            } catch (e) { }
           }
+        } else {
+          setActiveSessionUser(null);
+          try {
+            localStorage.removeItem('codeshastra_active_user');
+          } catch (e) { }
         }
-      } catch (e) {
-        // Not logged in
+      } catch (err) {
+        // network issue
       }
     }
-    checkSession();
-  }, [searchParams]);
+    checkAuth();
+  }, []);
 
-  // Lock body scroll when modal open
-  useEffect(() => {
-    if (forgotModalOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [forgotModalOpen]);
+  const handleContinueAsActive = () => {
+    if (!activeSessionUser) return;
+    if (activeSessionUser.role === 'admin') router.push('/admin');
+    else if (activeSessionUser.role === 'supervisor') router.push('/dashboard/faculty');
+    else router.push('/dashboard/leader');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSessionConflict(false);
     setLoading(true);
+    setError('');
 
-    const attemptLogin = async (isRetry = false): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Invalid credentials');
+        setLoading(false);
+        return;
+      }
+
+      clientCache.clear();
       try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          if (res.status === 409) {
-            setSessionConflict(true);
-            setError(data.error || 'Account is already active on another device.');
-          } else {
-            setError(data.error || 'Invalid email or password');
-          }
-          setLoading(false);
-          return true;
-        }
-
-        // Clean stale session caches completely before setting new account state
-        clientCache.clear();
-        localStorage.clear();
-        sessionStorage.clear();
-
         if (data.token) {
           localStorage.setItem('codeshastra_token', data.token);
         }
         if (data.user) {
-          clientCache.set(clientCache.keys.USER_ME, data.user);
+          localStorage.setItem('codeshastra_active_user', JSON.stringify(data.user));
         }
+      } catch (e) { }
 
-        const role = data.user?.role;
-        if (role === 'admin') {
-          window.location.replace('/admin');
-        } else if (role === 'supervisor') {
-          window.location.replace('/dashboard/faculty');
-        } else {
-          window.location.replace('/dashboard/leader');
-        }
-        return true;
-      } catch (err: any) {
-        if (!isRetry) {
-          // Automatic 1-time retry on connection hiccup
-          await new Promise((r) => setTimeout(r, 400));
-          return await attemptLogin(true);
-        }
-        setError('Network connection lost or server unreachable. Please check your internet and try again.');
-        setLoading(false);
-        return false;
-      }
-    };
-
-    await attemptLogin();
+      const role = data.user?.role;
+      if (role === 'admin') router.push('/admin');
+      else if (role === 'supervisor') router.push('/dashboard/faculty');
+      else router.push('/dashboard/leader');
+    } catch (err) {
+      setError('Connection failed. Please check your network and try again.');
+      setLoading(false);
+    }
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    setForgotLoading(true);
     setForgotError('');
     setForgotSuccess('');
     setGeneratedResetLink('');
-    setForgotLoading(true);
 
     try {
       const res = await fetch('/api/auth/forgot-password', {
@@ -250,11 +228,8 @@ function LoginForm() {
       });
 
       const data = await res.json();
-
       if (!res.ok) {
-        setForgotError(data.error || 'Failed to process request');
-        setForgotLoading(false);
-        return;
+        throw new Error(data.error || 'Failed to request password reset');
       }
 
       setForgotSuccess(data.message);
@@ -272,9 +247,26 @@ function LoginForm() {
     <div className="cohere-page-wrapper">
       {/* Top Header */}
       <header className="cohere-top-header">
-        <Link href="/" className="cohere-brand-link">
-          <span className="cohere-brand-name">CodeShastra <span style={{ color: '#64748B', fontWeight: 500 }}>Hub</span></span>
-        </Link>
+        <div className="cohere-top-brand-cluster">
+          <Link href="/" className="cohere-brand-link" title="CodeShastra Hub × Vrindopnishad">
+            <span className="cohere-brand-name">
+              CodeShastra <span className="cohere-brand-sub">Hub</span>
+            </span>
+            <span className="cohere-brand-collab-cross" aria-hidden="true">×</span>
+            <span className="cohere-brand-collab-name">
+              <span className="cohere-brand-collab-badge">
+                <img
+                  src="/image/vrindopnishad.webp"
+                  alt="Vrindopnishad Logo"
+                  className="cohere-brand-collab-logo"
+                  width="18"
+                  height="18"
+                />
+              </span>
+              <span className="cohere-brand-collab-text">Vrindopnishad</span>
+            </span>
+          </Link>
+        </div>
 
         <div className="cohere-top-right">
           <Link href="/signup" className="cohere-top-signup-btn">
@@ -296,6 +288,7 @@ function LoginForm() {
 
         {/* Center Cohere Login Card */}
         <div className="cohere-login-card">
+
           {activeSessionUser && !showOtherAccountForm ? (
             <div className="cohere-active-session-view">
               <h1 className="cohere-login-title" style={{ marginBottom: '8px' }}>
@@ -623,18 +616,7 @@ function LoginForm() {
                   </button>
                 </div>
 
-                {/* Terms and Policies */}
-                <p className="cohere-terms-text">
-                  By signing up, you agree to the{' '}
-                  <a href="#" className="cohere-text-link" onClick={(e) => e.preventDefault()}>
-                    Terms of Use
-                  </a>{' '}
-                  and{' '}
-                  <a href="#" className="cohere-text-link" onClick={(e) => e.preventDefault()}>
-                    Privacy Policy
-                  </a>
-                  .
-                </p>
+
 
                 {/* Signup Navigation Link */}
                 <div className="cohere-signup-footer">
@@ -653,6 +635,9 @@ function LoginForm() {
       <footer className="cohere-bottom-bar">
         <div className="cohere-footer-left">
           <span className="cohere-footer-brand">CodeShastra Hub</span>
+          <span className="cohere-footer-subline mono">
+            Engineered for Academic Excellence in Collaboration with <strong>Vrindopnishad</strong>
+          </span>
         </div>
 
         <div className="cohere-footer-devs">
@@ -666,7 +651,16 @@ function LoginForm() {
 
         <div className="cohere-footer-right">
           <span className="cohere-curated-text">Partnership with</span>
-          <span className="cohere-curated-brand">Vrindopnishad</span>
+          <a
+            href="https://www.instagram.com/vrindopnishad/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cohere-curated-brand vrindo-link-glow"
+            title="Vrindopnishad Official Instagram"
+          >
+            <span>Vrindopnishad</span>
+            <span className="cohere-arrow-icon" aria-hidden="true">↗</span>
+          </a>
         </div>
       </footer>
 
@@ -681,39 +675,56 @@ function LoginForm() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="cohere-modal-header">
-              <h3 className="cohere-modal-title">Reset Password</h3>
+              <h2 className="cohere-modal-title">Reset Password</h2>
               <button
-                className="cohere-modal-close"
+                type="button"
+                className="cohere-modal-close-btn"
                 onClick={() => setForgotModalOpen(false)}
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
             <p className="cohere-modal-desc">
-              Enter your registered institutional email ID to receive a secure 15-minute reset link.
+              Enter your registered GLA University email address to generate an instant password reset link.
             </p>
 
             {forgotError && (
               <div className="cohere-alert-box" style={{ marginBottom: '14px' }}>
-                <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                <AlertCircle size={14} style={{ flexShrink: 0 }} />
                 <span>{forgotError}</span>
               </div>
             )}
 
             {forgotSuccess && (
-              <div className="cohere-success-box" style={{ marginBottom: '14px' }}>
-                <CheckCircle2 size={15} style={{ flexShrink: 0 }} />
-                <span>{forgotSuccess}</span>
+              <div
+                style={{
+                  backgroundColor: '#ecfdf5',
+                  border: '1px solid #a7f3d0',
+                  color: '#065f46',
+                  padding: '10px 14px',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  marginBottom: '14px',
+                }}
+              >
+                {forgotSuccess}
               </div>
             )}
 
             {generatedResetLink && (
               <div className="cohere-reset-link-box">
-                <strong>Reset Link:</strong>{' '}
-                <Link href={generatedResetLink} className="cohere-reset-url">
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
+                  RESET LINK (LOCAL / TESTING):
+                </div>
+                <a
+                  href={generatedResetLink}
+                  className="cohere-reset-url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   {generatedResetLink}
-                </Link>
+                </a>
               </div>
             )}
 
@@ -776,45 +787,179 @@ function LoginForm() {
           z-index: 10;
         }
 
+        .cohere-top-brand-cluster {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .vrindo-nav-glass-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: rgba(255, 255, 255, 0.75);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(226, 232, 240, 0.9);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+          padding: 4px 12px;
+          border-radius: 999px;
+          text-decoration: none;
+          font-size: 11.5px;
+          font-weight: 600;
+          color: #334155;
+          letter-spacing: -0.01em;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .vrindo-nav-glass-pill:hover {
+          background: rgba(255, 255, 255, 0.95);
+          border-color: #cbd5e1;
+          color: #0f172a;
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12), 0 2px 4px rgba(0, 0, 0, 0.04);
+        }
+
+        .vrindo-nav-sparkle {
+          color: #d97706;
+          font-size: 11px;
+          animation: vrindoPulse 2.4s infinite ease-in-out;
+        }
+
+        .vrindo-nav-logo-img {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          object-fit: cover;
+          flex-shrink: 0;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Collab Banner Inside Login Card */
+        .vrindo-collab-banner {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          background: rgba(255, 255, 255, 0.96);
+          border: 1.5px solid #fed7aa;
+          border-radius: 999px;
+          padding: 5px 14px 5px 6px;
+          margin-bottom: 20px;
+          font-size: 11.5px;
+          color: #475569;
+          line-height: 1.35;
+          box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .vrindo-collab-logo-img {
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          object-fit: cover;
+          flex-shrink: 0;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        }
+
+        .vrindo-banner-sparkle {
+          color: #d97706;
+          font-size: 12px;
+          flex-shrink: 0;
+          animation: vrindoPulse 2s infinite ease-in-out;
+        }
+
+        .vrindo-banner-text {
+          flex: 1;
+          color: #64748b;
+          font-weight: 400;
+        }
+
+        .vrindo-banner-text strong {
+          color: #0f172a;
+          font-weight: 700;
+        }
+
+        .vrindo-collab-cross {
+          font-size: 0.85em;
+          color: #94a3b8;
+          font-weight: 500;
+          margin: 0 2px;
+        }
+
+        .cohere-curated-text {
+          font-size: 12px;
+          color: #64748b;
+          font-weight: 450;
+        }
+
+        .cohere-curated-brand,
+        .vrindo-link-glow {
+          font-size: 12px;
+          font-weight: 700;
+          color: #d97706;
+          text-decoration: none;
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: 3.5px;
+          padding: 2px 0;
+          transition: color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .cohere-curated-brand::after,
+        .vrindo-link-glow::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          width: 100%;
+          height: 1.5px;
+          background: linear-gradient(90deg, #d97706, #ea580c);
+          transform: scaleX(0);
+          transform-origin: bottom right;
+          transition: transform 0.28s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        .cohere-curated-brand:hover,
+        .vrindo-link-glow:hover {
+          color: #ea580c;
+          text-decoration: none;
+        }
+
+        .cohere-curated-brand:hover::after,
+        .vrindo-link-glow:hover::after {
+          transform: scaleX(1);
+          transform-origin: bottom left;
+        }
+
+        .cohere-arrow-icon {
+          display: inline-block;
+          font-size: 11.5px;
+          opacity: 0.85;
+          transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .cohere-curated-brand:hover .cohere-arrow-icon,
+        .vrindo-link-glow:hover .cohere-arrow-icon {
+          transform: translate(2px, -2px);
+          opacity: 1;
+        }
+
+        @keyframes vrindoPulse {
+          0%, 100% { transform: scale(1); opacity: 0.85; }
+          50% { transform: scale(1.25); opacity: 1; filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.6)); }
+        }
+
         .cohere-brand-link {
           display: inline-flex;
           align-items: center;
           gap: 8px;
           text-decoration: none;
           color: #111827;
+          transition: opacity 0.15s ease;
         }
 
-        .cohere-logo-symbol {
-          display: flex;
-          align-items: center;
-          gap: 2.5px;
-        }
-
-        .cohere-logo-symbol.small {
-          gap: 2px;
-        }
-
-        .cohere-dot {
-          width: 6.5px;
-          height: 13px;
-          border-radius: 3.5px;
-          display: inline-block;
-        }
-
-        .cohere-logo-symbol.small .cohere-dot {
-          width: 5px;
-          height: 10px;
-          border-radius: 3px;
-        }
-
-        .cohere-dot.coral {
-          background: #e8705a;
-        }
-        .cohere-dot.green {
-          background: #39704e;
-        }
-        .cohere-dot.purple {
-          background: #8b5cf6;
+        .cohere-brand-link:hover {
+          opacity: 0.85;
         }
 
         .cohere-brand-name {
@@ -822,6 +967,59 @@ function LoginForm() {
           font-weight: 600;
           letter-spacing: -0.03em;
           color: #1e293b;
+          white-space: nowrap;
+          display: inline-flex;
+          align-items: baseline;
+          gap: 4px;
+        }
+
+        .cohere-brand-sub {
+          color: #64748b;
+          font-weight: 500;
+        }
+
+        .cohere-brand-collab-cross {
+          font-size: 14px;
+          font-weight: 400;
+          color: #94a3b8;
+          user-select: none;
+          margin: 0 1px;
+        }
+
+        .cohere-brand-collab-name {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          font-size: 18px;
+          font-weight: 600;
+          letter-spacing: -0.025em;
+          color: #1e293b;
+          white-space: nowrap;
+        }
+
+        .cohere-brand-collab-badge {
+          width: 21px;
+          height: 21px;
+          border-radius: 50%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+
+        .cohere-brand-collab-logo {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 50%;
+          display: block;
+        }
+
+        .cohere-brand-collab-text {
+          color: #1e293b;
+          font-weight: 600;
+          letter-spacing: -0.025em;
         }
 
         .cohere-top-right {
@@ -830,36 +1028,19 @@ function LoginForm() {
         }
 
         .cohere-top-signup-btn {
-          font-size: 13.5px;
-          font-weight: 500;
-          color: #1e293b;
+          font-size: 13px;
+          font-weight: 600;
+          color: #ffffff !important;
+          background-color: #344d41;
+          padding: 7px 18px;
+          border-radius: 999px;
           text-decoration: none;
-          position: relative;
-          display: inline-block;
-          padding: 2px 0;
-          transition: color 0.2s ease;
-        }
-
-        .cohere-top-signup-btn::after {
-          content: '';
-          position: absolute;
-          left: 0;
-          bottom: 0;
-          width: 100%;
-          height: 1.5px;
-          background-color: #1e293b;
-          transform: scaleX(0);
-          transform-origin: bottom right;
-          transition: transform 0.28s cubic-bezier(0.65, 0, 0.35, 1);
+          transition: background-color 0.15s ease;
         }
 
         .cohere-top-signup-btn:hover {
-          color: #0f172a;
-        }
-
-        .cohere-top-signup-btn:hover::after {
-          transform: scaleX(1);
-          transform-origin: bottom left;
+          background-color: #263c32;
+          color: #ffffff !important;
         }
 
         /* Main Container */
@@ -1472,23 +1653,74 @@ function LoginForm() {
         /* Responsiveness */
         @media (max-width: 640px) {
           .cohere-top-header {
-            padding: 16px 20px;
+            padding: 14px 16px;
+            gap: 8px;
+          }
+          .cohere-top-brand-cluster {
+            gap: 4px;
+            min-width: 0;
+            flex-shrink: 1;
+          }
+          .cohere-brand-link {
+            gap: 5px;
+            min-width: 0;
+          }
+          .cohere-brand-name {
+            font-size: 15px;
+            letter-spacing: -0.02em;
+          }
+          .cohere-brand-sub {
+            font-size: 14px;
+          }
+          .cohere-brand-collab-cross {
+            font-size: 11px;
+            margin: 0;
+          }
+          .cohere-brand-collab-name {
+            font-size: 14.5px;
+            gap: 4px;
+          }
+          .cohere-brand-collab-badge {
+            width: 17px;
+            height: 17px;
+          }
+          .cohere-top-right {
+            flex-shrink: 0;
+          }
+          .cohere-top-signup-btn {
+            padding: 5px 12px;
+            font-size: 12px;
           }
           .cohere-main-container {
-            padding: 20px 16px 40px;
+            padding: 20px 14px 40px;
           }
           .cohere-login-card {
-            padding: 32px 20px;
+            padding: 28px 18px;
             max-width: 100%;
+          }
+          .vrindo-collab-banner {
+            font-size: 10.5px;
+            padding: 4px 10px;
+            gap: 6px;
           }
           .cohere-sso-row {
             grid-template-columns: 1fr;
           }
           .cohere-bottom-bar {
-            padding: 14px 20px;
+            padding: 18px 16px 28px;
             flex-direction: column;
-            gap: 8px;
-            text-align: center;
+            align-items: flex-start;
+            gap: 14px;
+            text-align: left;
+          }
+        }
+
+        @media (max-width: 380px) {
+          .cohere-brand-name {
+            font-size: 13.5px;
+          }
+          .cohere-brand-collab-name {
+            font-size: 13px;
           }
         }
       `}</style>

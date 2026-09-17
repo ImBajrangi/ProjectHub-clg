@@ -335,11 +335,26 @@ function SignUpForm() {
     <div className="cohere-page-wrapper">
       {/* Top Header */}
       <header className="cohere-top-header">
-        <Link href="/" className="cohere-brand-link">
-          <span className="cohere-brand-name">
-            CodeShastra <span style={{ color: '#64748B', fontWeight: 500 }}>Hub</span>
-          </span>
-        </Link>
+        <div className="cohere-top-brand-cluster">
+          <Link href="/" className="cohere-brand-link" title="CodeShastra Hub × Vrindopnishad">
+            <span className="cohere-brand-name">
+              CodeShastra <span className="cohere-brand-sub">Hub</span>
+            </span>
+            <span className="cohere-brand-collab-cross" aria-hidden="true">×</span>
+            <span className="cohere-brand-collab-name">
+              <span className="cohere-brand-collab-badge">
+                <img
+                  src="/image/vrindopnishad.webp"
+                  alt="Vrindopnishad Logo"
+                  className="cohere-brand-collab-logo"
+                  width="18"
+                  height="18"
+                />
+              </span>
+              <span className="cohere-brand-collab-text">Vrindopnishad</span>
+            </span>
+          </Link>
+        </div>
 
         <div className="cohere-top-right">
           <Link href="/login" className="cohere-top-signup-btn">
@@ -1226,18 +1241,7 @@ function SignUpForm() {
                   </button>
                 </div>
 
-                {/* Terms and Policies */}
-                <p className="cohere-terms-text">
-                  By signing up, you agree to the{' '}
-                  <a href="#" className="cohere-text-link" onClick={(e) => e.preventDefault()}>
-                    Terms of Use
-                  </a>{' '}
-                  and{' '}
-                  <a href="#" className="cohere-text-link" onClick={(e) => e.preventDefault()}>
-                    Privacy Policy
-                  </a>
-                  .
-                </p>
+
 
                 {/* Login Navigation Link */}
                 <div className="cohere-signup-footer">
@@ -1269,7 +1273,16 @@ function SignUpForm() {
 
         <div className="cohere-footer-right">
           <span className="cohere-curated-text">Partnership with</span>
-          <span className="cohere-curated-brand">Vrindopnishad</span>
+          <a
+            href="https://www.instagram.com/vrindopnishad/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cohere-curated-brand vrindo-link-glow"
+            title="Vrindopnishad Official Instagram"
+          >
+            <span>Vrindopnishad</span>
+            <span className="cohere-arrow-icon" aria-hidden="true">↗</span>
+          </a>
         </div>
       </footer>
 
@@ -1296,12 +1309,23 @@ function SignUpForm() {
           z-index: 10;
         }
 
+        .cohere-top-brand-cluster {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
         .cohere-brand-link {
           display: inline-flex;
           align-items: center;
           gap: 8px;
           text-decoration: none;
           color: #111827;
+          transition: opacity 0.15s ease;
+        }
+
+        .cohere-brand-link:hover {
+          opacity: 0.85;
         }
 
         .cohere-brand-name {
@@ -1309,6 +1333,59 @@ function SignUpForm() {
           font-weight: 600;
           letter-spacing: -0.03em;
           color: #1e293b;
+          white-space: nowrap;
+          display: inline-flex;
+          align-items: baseline;
+          gap: 4px;
+        }
+
+        .cohere-brand-sub {
+          color: #64748b;
+          font-weight: 500;
+        }
+
+        .cohere-brand-collab-cross {
+          font-size: 14px;
+          font-weight: 400;
+          color: #94a3b8;
+          user-select: none;
+          margin: 0 1px;
+        }
+
+        .cohere-brand-collab-name {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          font-size: 18px;
+          font-weight: 600;
+          letter-spacing: -0.025em;
+          color: #1e293b;
+          white-space: nowrap;
+        }
+
+        .cohere-brand-collab-badge {
+          width: 21px;
+          height: 21px;
+          border-radius: 50%;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+
+        .cohere-brand-collab-logo {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 50%;
+          display: block;
+        }
+
+        .cohere-brand-collab-text {
+          color: #1e293b;
+          font-weight: 600;
+          letter-spacing: -0.025em;
         }
 
         .cohere-top-right {
@@ -2028,6 +2105,65 @@ function SignUpForm() {
           }
         }
 
+        .cohere-curated-text {
+          font-size: 12px;
+          color: #64748b;
+          font-weight: 450;
+        }
+
+        .cohere-curated-brand,
+        .vrindo-link-glow {
+          font-size: 12px;
+          font-weight: 700;
+          color: #d97706;
+          text-decoration: none;
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: 3.5px;
+          padding: 2px 0;
+          transition: color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .cohere-curated-brand::after,
+        .vrindo-link-glow::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          width: 100%;
+          height: 1.5px;
+          background: linear-gradient(90deg, #d97706, #ea580c);
+          transform: scaleX(0);
+          transform-origin: bottom right;
+          transition: transform 0.28s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        .cohere-curated-brand:hover,
+        .vrindo-link-glow:hover {
+          color: #ea580c;
+          text-decoration: none;
+        }
+
+        .cohere-curated-brand:hover::after,
+        .vrindo-link-glow:hover::after {
+          transform: scaleX(1);
+          transform-origin: bottom left;
+        }
+
+        .cohere-arrow-icon {
+          display: inline-block;
+          font-size: 11.5px;
+          opacity: 0.85;
+          transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .cohere-curated-brand:hover .cohere-arrow-icon,
+        .vrindo-link-glow:hover .cohere-arrow-icon {
+          transform: translate(2px, -2px);
+          opacity: 1;
+        }
+
         /* Alerts */
         .cohere-alert-box {
           display: flex;
@@ -2057,20 +2193,65 @@ function SignUpForm() {
         /* Responsiveness */
         @media (max-width: 640px) {
           .cohere-top-header {
-            padding: 16px 20px;
+            padding: 14px 16px;
+            gap: 8px;
+          }
+          .cohere-top-brand-cluster {
+            gap: 4px;
+            min-width: 0;
+            flex-shrink: 1;
+          }
+          .cohere-brand-link {
+            gap: 5px;
+            min-width: 0;
+          }
+          .cohere-brand-name {
+            font-size: 15px;
+            letter-spacing: -0.02em;
+          }
+          .cohere-brand-sub {
+            font-size: 14px;
+          }
+          .cohere-brand-collab-cross {
+            font-size: 11px;
+            margin: 0;
+          }
+          .cohere-brand-collab-name {
+            font-size: 14.5px;
+            gap: 4px;
+          }
+          .cohere-brand-collab-badge {
+            width: 17px;
+            height: 17px;
+          }
+          .cohere-top-right {
+            flex-shrink: 0;
+          }
+          .cohere-top-signup-btn {
+            font-size: 12px;
           }
           .cohere-main-container {
-            padding: 20px 16px 40px;
+            padding: 20px 14px 40px;
           }
           .cohere-login-card {
-            padding: 32px 20px;
+            padding: 28px 18px;
             max-width: 100%;
           }
           .cohere-bottom-bar {
-            padding: 14px 20px;
+            padding: 18px 16px 28px;
             flex-direction: column;
-            gap: 8px;
-            text-align: center;
+            align-items: flex-start;
+            gap: 14px;
+            text-align: left;
+          }
+        }
+
+        @media (max-width: 380px) {
+          .cohere-brand-name {
+            font-size: 13.5px;
+          }
+          .cohere-brand-collab-name {
+            font-size: 13px;
           }
         }
       `}</style>

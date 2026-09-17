@@ -25,6 +25,7 @@ export const metadata: Metadata = {
     { name: 'Rishabh Mishra', url: 'https://www.linkedin.com/in/rishabh-mishra-bab420309/' },
     { name: 'Harsh Sharma', url: 'https://www.linkedin.com/in/harshiitm/' },
     { name: 'Rishabh Labs', url: 'https://www.instagram.com/rishabhlabs/' },
+    { name: 'Vrindopnishad', url: 'https://www.instagram.com/vrindopnishad/' },
   ],
   keywords: [
     'CodeShastra Hub',
@@ -36,9 +37,10 @@ export const metadata: Metadata = {
     'Panel Defense Evaluation',
     'Capstone Project Management',
     'Vrindopnishad',
+    'Vrindopnishad Innovations',
   ],
-  creator: 'CodeShastra',
-  publisher: 'CodeShastra',
+  creator: 'CodeShastra & Vrindopnishad',
+  publisher: 'CodeShastra & Vrindopnishad',
   category: 'education',
   icons: {
     icon: [
