@@ -19,12 +19,38 @@ export async function GET(req: NextRequest) {
       .select('id, label, time_window, time_short, icon, color, color_bg, color_border, sort_order, created_at')
       .order('sort_order', { ascending: true });
 
-    let finalRooms: string[] = [];
-    let rawRooms: any[] = [];
+    const { data: panelRooms } = await db.supabase
+      .from('panels')
+      .select('room_number');
+
+    const roomMap = new Map<string, any>();
     if (!roomsError && Array.isArray(dbRooms)) {
-      rawRooms = dbRooms;
-      finalRooms = dbRooms.map((r: any) => r.name);
+      dbRooms.forEach((r: any) => {
+        const name = (typeof r === 'string' ? r : r?.name || '').trim();
+        if (name) roomMap.set(name, typeof r === 'string' ? { id: name, name, building: 'Academic Block AB10' } : r);
+      });
     }
+
+    // Merge any active room numbers from panels table
+    if (Array.isArray(panelRooms)) {
+      panelRooms.forEach((p: any) => {
+        const rName = (p.room_number || '').trim();
+        if (rName && !roomMap.has(rName)) {
+          roomMap.set(rName, { id: rName, name: rName, building: 'Academic Block AB10' });
+        }
+      });
+    }
+
+    const rawRooms = Array.from(roomMap.values());
+    const finalRooms = Array.from(roomMap.keys());
+
+    // Natural numeric sorting
+    finalRooms.sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
+      if (numA !== numB) return numA - numB;
+      return a.localeCompare(b);
+    });
 
     let finalShifts: any[] = [];
     if (!shiftsError && Array.isArray(dbShifts)) {

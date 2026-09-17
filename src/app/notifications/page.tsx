@@ -306,47 +306,6 @@ export default function NotificationsPage() {
           >
             <ArrowLeft size={14} /> Back to Dashboard
           </Link>
-
-          {/* System Notification Permission Bar */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            {permissionStatus === 'granted' ? (
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  color: '#065F46',
-                  backgroundColor: '#D1FAE5',
-                  padding: '5px 10px',
-                  borderRadius: '6px',
-                  border: '1px solid #A7F3D0',
-                }}
-              >
-                <ShieldCheck size={14} /> System Notifications Active
-              </span>
-            ) : (
-              <button
-                onClick={handleEnableSystemNotifications}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  color: '#92400E',
-                  backgroundColor: '#FEF3C7',
-                  border: '1px solid #FCD34D',
-                  padding: '5px 12px',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                }}
-              >
-                <BellRing size={14} /> Enable System Notifications
-              </button>
-            )}
-          </div>
         </div>
 
         {/* Header Banner */}

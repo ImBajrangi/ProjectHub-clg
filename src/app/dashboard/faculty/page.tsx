@@ -146,7 +146,7 @@ export default function FacultyDashboardPage() {
 
   // Supervisor Mode State
   const [facultyTeamSearch, setFacultyTeamSearch] = useState('');
-  const [supTab, setSupTab] = useState<'roster' | 'problem' | 'meetings'>('problem');
+  const [supTab, setSupTab] = useState<'roster' | 'problem' | 'meetings'>('roster');
   const [problemReviewText, setProblemReviewText] = useState('');
   const [reviewActionLoading, setReviewActionLoading] = useState(false);
   const [expandedMeetingIds, setExpandedMeetingIds] = useState<Set<string>>(new Set());
@@ -1433,6 +1433,7 @@ export default function FacultyDashboardPage() {
                     key={t.id}
                     onClick={() => {
                       setSelectedTeam(t);
+                      setSupTab('roster');
                       setMobileView('detail');
                     }}
                     style={{

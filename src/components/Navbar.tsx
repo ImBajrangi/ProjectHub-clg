@@ -665,28 +665,6 @@ export default function Navbar({
                           <span>Help & Feature Guide</span>
                         </button>
 
-                        {/* Desktop Notifications Toggle */}
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            setUserMenuOpen(false);
-                            const perm = await requestDeviceNotificationPermission();
-                            if (perm === 'granted') {
-                              triggerSystemNotification({
-                                id: 'system-test-' + Date.now(),
-                                subject: 'Desktop Alerts Active',
-                                body: 'System notifications are active and working on your device.',
-                              });
-                            } else {
-                              router.push('/notifications');
-                            }
-                          }}
-                          className="nav-dropdown-item"
-                        >
-                          <BellRing size={15} style={{ color: '#F59E0B', flexShrink: 0 }} />
-                          <span>Desktop & OS Alerts</span>
-                        </button>
-
                         <div className="nav-dropdown-divider" />
 
                         {/* Sign Out */}

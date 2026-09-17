@@ -1401,10 +1401,30 @@ export default function AdminDashboardPage() {
     return phasePanels.reduce((max: number, p: any) => Math.max(max, p.panel_number || 0), 0) + 1;
   }, [panels, panelFormPhase]);
 
-  // Dynamic AB10 Rooms List synchronized with Database
+  // Dynamic Presentation Rooms List synchronized with Database & Existing Panels
   const AB10_ROOMS = useMemo(() => {
-    return (dbRooms || []).map((r: any) => (typeof r === 'string' ? r : r?.name)).filter(Boolean);
-  }, [dbRooms]);
+    const roomSet = new Set<string>();
+
+    // 1. Add database rooms from dbRooms
+    (dbRooms || []).forEach((r: any) => {
+      const name = (typeof r === 'string' ? r : r?.name || '').trim();
+      if (name) roomSet.add(name);
+    });
+
+    // 2. Add active rooms from all existing panels
+    (panels || []).forEach((p: any) => {
+      const rName = (p.room_number || '').trim();
+      if (rName) roomSet.add(rName);
+    });
+
+    // Natural numeric sorting
+    return Array.from(roomSet).sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, ''), 10) || 0;
+      const numB = parseInt(b.replace(/\D/g, ''), 10) || 0;
+      if (numA !== numB) return numA - numB;
+      return a.localeCompare(b);
+    });
+  }, [dbRooms, panels]);
 
   // All Display Rooms (including custom room if editing existing panel)
   const ALL_DISPLAY_ROOMS = useMemo(() => {
@@ -5039,7 +5059,13 @@ Output ONLY the raw valid JSON array.`;
                       </div>
 
                       {/* Room Selector Grid */}
-                      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(Math.max(ALL_DISPLAY_ROOMS.length, 1), 4)}, 1fr)`, gap: '6px' }}>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(115px, 1fr))',
+                          gap: '6px',
+                        }}
+                      >
                         {ALL_DISPLAY_ROOMS.map((room) => {
                           const occ = roomOccupancyMap[room];
                           const isSelected = panelFormRoom === room;
@@ -5051,7 +5077,7 @@ Output ONLY the raw valid JSON array.`;
                               type="button"
                               onClick={() => setPanelFormRoom(room)}
                               style={{
-                                padding: '8px',
+                                padding: '8px 10px',
                                 borderRadius: '8px',
                                 border: `1.5px solid ${isSelected ? '#2563EB' : isVacant ? '#CBD5E1' : '#FECACA'}`,
                                 backgroundColor: isSelected ? '#EFF6FF' : isVacant ? '#FFFFFF' : '#FFF1F2',
@@ -5073,10 +5099,10 @@ Output ONLY the raw valid JSON array.`;
                                   </span>
                                 )}
                               </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                                <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: isVacant ? '#16A34A' : '#DC2626', display: 'inline-block' }} />
-                                <span style={{ fontSize: '9.5px', fontWeight: 700, color: isVacant ? '#15803D' : '#991B1B' }}>
-                                  {isVacant ? 'Available' : 'In Use'}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: isVacant ? '#16A34A' : '#DC2626', display: 'inline-block', flexShrink: 0 }} />
+                                <span style={{ fontSize: '9.5px', fontWeight: 700, color: isVacant ? '#15803D' : '#991B1B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {isVacant ? 'Available' : 'Busy'}
                                 </span>
                               </div>
                             </button>
