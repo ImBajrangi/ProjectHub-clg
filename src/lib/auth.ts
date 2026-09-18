@@ -56,38 +56,44 @@ export const auth = {
     }
 
     const cleanPass = passwordAttempt.trim();
-    let isMatch = bcrypt.compareSync(passwordAttempt, user.password_hash) || bcrypt.compareSync(cleanPass, user.password_hash);
+    let isMatch = false;
 
-    // Fallback checks for faculty supervisors
-    if (!isMatch && user.role === 'supervisor') {
-      const last4 = (user.phone || '0000').slice(-4);
-      const defaultPass = `CodeShastra@${last4}`;
-      if (
-        cleanPass === defaultPass ||
-        cleanPass === user.phone ||
-        cleanPass === last4 ||
-        cleanPass.toLowerCase() === defaultPass.toLowerCase()
-      ) {
-        isMatch = true;
-        // Re-hash and save for permanent sync
-        await db.updateUser(user.id, { password_hash: bcrypt.hashSync(cleanPass, 10) });
-      }
-    }
-
-    // Fallback checks for student team leaders
-    if (!isMatch && user.role === 'leader') {
-      if (user.phone && (cleanPass === user.phone.trim() || cleanPass === user.phone.slice(-4))) {
+    // 1. Standard bcrypt comparison against stored hash
+    if (user.password_hash && user.password_hash.startsWith('$2')) {
+      isMatch = bcrypt.compareSync(passwordAttempt, user.password_hash) || bcrypt.compareSync(cleanPass, user.password_hash);
+    } else if (user.password_hash) {
+      // 2. Direct comparison for initial unhashed password
+      if (user.password_hash === passwordAttempt || user.password_hash === cleanPass) {
         isMatch = true;
         await db.updateUser(user.id, { password_hash: bcrypt.hashSync(cleanPass, 10) });
       }
     }
 
-    // Fallback checks for admin
-    if (!isMatch && user.role === 'admin') {
-      const defaultAdminPass = process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@CodeShastra2026';
-      if (cleanPass === defaultAdminPass || passwordAttempt === defaultAdminPass) {
-        isMatch = true;
-        await db.updateUser(user.id, { password_hash: bcrypt.hashSync(cleanPass, 10) });
+    // 3. ONLY fallback to default initial passwords if user has NO bcrypt hash yet
+    if (!isMatch && (!user.password_hash || !user.password_hash.startsWith('$2'))) {
+      if (user.role === 'supervisor') {
+        const last4 = (user.phone || '0000').slice(-4);
+        const defaultPass = `CodeShastra@${last4}`;
+        if (
+          cleanPass === defaultPass ||
+          cleanPass === user.phone ||
+          cleanPass === last4 ||
+          cleanPass.toLowerCase() === defaultPass.toLowerCase()
+        ) {
+          isMatch = true;
+          await db.updateUser(user.id, { password_hash: bcrypt.hashSync(cleanPass, 10) });
+        }
+      } else if (user.role === 'leader') {
+        if (user.phone && (cleanPass === user.phone.trim() || cleanPass === user.phone.slice(-4))) {
+          isMatch = true;
+          await db.updateUser(user.id, { password_hash: bcrypt.hashSync(cleanPass, 10) });
+        }
+      } else if (user.role === 'admin') {
+        const defaultAdminPass = process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@CodeShastra2026';
+        if (cleanPass === defaultAdminPass || passwordAttempt === defaultAdminPass) {
+          isMatch = true;
+          await db.updateUser(user.id, { password_hash: bcrypt.hashSync(cleanPass, 10) });
+        }
       }
     }
 
@@ -191,24 +197,56 @@ export const auth = {
     const user = await db.getUserById(userId);
     if (!user) return { success: false, error: 'User not found' };
 
-    const isMatch = bcrypt.compareSync(currentPassword, user.password_hash);
+    const cleanCurrent = currentPassword.trim();
+    let isMatch = false;
+
+    if (user.password_hash && user.password_hash.startsWith('$2')) {
+      isMatch = bcrypt.compareSync(currentPassword, user.password_hash) || bcrypt.compareSync(cleanCurrent, user.password_hash);
+    } else if (user.password_hash) {
+      isMatch = user.password_hash === currentPassword || user.password_hash === cleanCurrent;
+    }
+
+    // Default password fallback for initial change
+    if (!isMatch) {
+      if (user.role === 'supervisor') {
+        const last4 = (user.phone || '0000').slice(-4);
+        const defaultPass = `CodeShastra@${last4}`;
+        if (cleanCurrent === defaultPass || cleanCurrent === user.phone || cleanCurrent === last4 || cleanCurrent.toLowerCase() === defaultPass.toLowerCase()) {
+          isMatch = true;
+        }
+      } else if (user.role === 'leader') {
+        if (user.phone && (cleanCurrent === user.phone.trim() || cleanCurrent === user.phone.slice(-4))) {
+          isMatch = true;
+        }
+      } else if (user.role === 'admin') {
+        const defaultAdminPass = process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@CodeShastra2026';
+        if (cleanCurrent === defaultAdminPass || currentPassword === defaultAdminPass) {
+          isMatch = true;
+        }
+      }
+    }
+
     if (!isMatch) {
       return { success: false, error: 'Incorrect current password' };
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.trim().length < 6) {
       return { success: false, error: 'New password must be at least 6 characters long' };
     }
 
-    const newHash = bcrypt.hashSync(newPassword, 10);
+    const newHash = bcrypt.hashSync(newPassword.trim(), 10);
 
     // MANDATORY SECURITY FLUSH: Terminate active session token and force-logout
-    await db.updateUser(userId, {
+    const updatedUser = await db.updateUser(userId, {
       password_hash: newHash,
       active_session_token: null,
       active_session_device: null,
       active_session_at: null,
     });
+
+    if (!updatedUser) {
+      return { success: false, error: 'Failed to update password in database. Please try again.' };
+    }
 
     return { success: true };
   },

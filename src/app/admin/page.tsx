@@ -6271,6 +6271,30 @@ Output ONLY the raw valid JSON array.`;
                                         </span>
                                       </div>
                                     )}
+                                    {s.phase1.remarks && s.phase1.remarks.trim() !== '' && !s.phase1.remarks.toLowerCase().includes('marked absent') && !s.phase1.remarks.toLowerCase().includes('early joining') && (
+                                      <span
+                                        title={`Panel Feedback: ${s.phase1.remarks}`}
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px',
+                                          fontSize: '10px',
+                                          color: '#15803D',
+                                          backgroundColor: '#F0FDF4',
+                                          padding: '2px 7px',
+                                          borderRadius: '5px',
+                                          border: '1px solid #BBF7D0',
+                                          maxWidth: '160px',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                          whiteSpace: 'nowrap',
+                                          fontWeight: 500,
+                                        }}
+                                      >
+                                        <MessageSquare size={10} color="#15803D" style={{ flexShrink: 0 }} />
+                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.phase1.remarks}</span>
+                                      </span>
+                                    )}
                                   </div>
                                 ) : (
                                   <span className="badge" style={{ backgroundColor: '#F1F5F9', color: '#475569', fontSize: '10px', border: '1px solid #E2E8F0' }}>
@@ -6309,6 +6333,30 @@ Output ONLY the raw valid JSON array.`;
                                           <span>{s.phase2.criteria_scores.query_handling ?? '-'}</span>
                                         </span>
                                       </div>
+                                    )}
+                                    {s.phase2.remarks && s.phase2.remarks.trim() !== '' && !s.phase2.remarks.toLowerCase().includes('marked absent') && !s.phase2.remarks.toLowerCase().includes('early joining') && (
+                                      <span
+                                        title={`Panel Feedback: ${s.phase2.remarks}`}
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px',
+                                          fontSize: '10px',
+                                          color: '#1D4ED8',
+                                          backgroundColor: '#EFF6FF',
+                                          padding: '2px 7px',
+                                          borderRadius: '5px',
+                                          border: '1px solid #BFDBFE',
+                                          maxWidth: '160px',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                          whiteSpace: 'nowrap',
+                                          fontWeight: 500,
+                                        }}
+                                      >
+                                        <MessageSquare size={10} color="#1D4ED8" style={{ flexShrink: 0 }} />
+                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.phase2.remarks}</span>
+                                      </span>
                                     )}
                                   </div>
                                 ) : (
@@ -6352,6 +6400,30 @@ Output ONLY the raw valid JSON array.`;
                                           <span>{s.phase3.criteria_scores.report ?? '-'}</span>
                                         </span>
                                       </div>
+                                    )}
+                                    {s.phase3.remarks && s.phase3.remarks.trim() !== '' && !s.phase3.remarks.toLowerCase().includes('marked absent') && !s.phase3.remarks.toLowerCase().includes('early joining') && (
+                                      <span
+                                        title={`Panel Feedback: ${s.phase3.remarks}`}
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px',
+                                          fontSize: '10px',
+                                          color: '#6D28D9',
+                                          backgroundColor: '#F5F3FF',
+                                          padding: '2px 7px',
+                                          borderRadius: '5px',
+                                          border: '1px solid #DDD6FE',
+                                          maxWidth: '160px',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                          whiteSpace: 'nowrap',
+                                          fontWeight: 500,
+                                        }}
+                                      >
+                                        <MessageSquare size={10} color="#6D28D9" style={{ flexShrink: 0 }} />
+                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.phase3.remarks}</span>
+                                      </span>
                                     )}
                                   </div>
                                 ) : (

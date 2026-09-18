@@ -148,7 +148,7 @@ export default function FacultyDashboardPage() {
 
   // Supervisor Mode State
   const [facultyTeamSearch, setFacultyTeamSearch] = useState('');
-  const [supTab, setSupTab] = useState<'roster' | 'problem' | 'meetings'>('roster');
+  const [supTab, setSupTab] = useState<'roster' | 'problem' | 'meetings' | 'evaluations'>('roster');
   const [problemReviewText, setProblemReviewText] = useState('');
   const [reviewActionLoading, setReviewActionLoading] = useState(false);
   const [expandedMeetingIds, setExpandedMeetingIds] = useState<Set<string>>(new Set());
@@ -1688,6 +1688,13 @@ export default function FacultyDashboardPage() {
                       >
                         Meetings ({selectedTeam.meetings?.length || 0})
                       </button>
+                      <button
+                        className={`segmented-pill ${supTab === 'evaluations' ? 'active' : ''}`}
+                        onClick={() => setSupTab('evaluations')}
+                        style={{ flexShrink: 0 }}
+                      >
+                        <Award size={13} /> Panel Feedback &amp; Evaluations
+                      </button>
                     </div>
 
                     {/* Selected Team Members Badges - visible only on non-roster tabs to avoid redundancy */}
@@ -2537,6 +2544,182 @@ export default function FacultyDashboardPage() {
                         </div>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {supTab === 'evaluations' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div className="card-soft" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#EFF6FF', color: '#1E40AF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Award size={20} />
+                        </div>
+                        <div>
+                          <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--color-ink)' }}>Panel Evaluation Scores &amp; Defense Feedback</h3>
+                          <p style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', margin: '2px 0 0' }}>
+                            Comprehensive panel review, viva marks, and jury feedback for {selectedTeam.team_name}.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {[1, 2, 3].map((phaseNum) => {
+                      const phaseKey = `phase${phaseNum}_approved` as 'phase1_approved' | 'phase2_approved' | 'phase3_approved';
+                      const isApproved = Boolean(selectedTeam[phaseKey]);
+                      const phaseName = phaseNum === 1 ? 'Phase 1: Synopsis & Architecture' : phaseNum === 2 ? 'Phase 2: Working Prototype & Code' : 'Phase 3: Final Project Defense';
+                      const phaseMax = phaseNum === 1 ? 20 : phaseNum === 2 ? 40 : 40;
+
+                      const phaseEvals = (selectedTeam.evaluations || []).filter((e: any) => Number(e.phase_number) === phaseNum);
+
+                      // Find overall team feedback / remarks from jury
+                      const panelRemarks = phaseEvals.find((e: any) => e.remarks && e.remarks.trim() !== '' && !e.remarks.toLowerCase().includes('marked absent') && !e.remarks.toLowerCase().includes('early joining'))?.remarks || phaseEvals[0]?.remarks;
+
+                      return (
+                        <div
+                          key={phaseNum}
+                          className="card"
+                          style={{
+                            padding: '20px',
+                            border: '1px solid var(--color-hairline)',
+                            borderRadius: '12px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '16px',
+                            backgroundColor: '#FFFFFF',
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid var(--color-hairline)', paddingBottom: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <span className="badge badge-brand" style={{ fontSize: '11px', fontWeight: 700, padding: '4px 10px' }}>
+                                Phase {phaseNum}
+                              </span>
+                              <h4 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--color-ink)' }}>{phaseName}</h4>
+                              <span style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}>({phaseMax} Max Marks)</span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {isApproved ? (
+                                <span className="badge" style={{ backgroundColor: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0', fontSize: '11px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <CheckCircle2 size={12} /> Milestone Approved
+                                </span>
+                              ) : (
+                                <span className="badge" style={{ backgroundColor: '#FFFBEB', color: '#B45309', border: '1px solid #FDE68A', fontSize: '11px', fontWeight: 600 }}>
+                                  Pending Review / In Progress
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Official Panel Judge Feedback Highlight Block */}
+                          {panelRemarks ? (
+                            <div
+                              style={{
+                                padding: '14px 18px',
+                                borderRadius: '10px',
+                                backgroundColor: '#F0FDF4',
+                                border: '1.5px solid #86EFAC',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '6px',
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                                <MessageSquare size={16} color="#15803D" />
+                                <strong style={{ fontSize: '13px', color: '#166534' }}>Official Evaluation Panel Feedback &amp; Jury Remarks:</strong>
+                              </div>
+                              <p style={{ margin: 0, fontSize: '13.5px', color: '#14532D', fontStyle: 'italic', lineHeight: 1.55 }}>
+                                &ldquo;{panelRemarks}&rdquo;
+                              </p>
+                            </div>
+                          ) : (
+                            <div style={{ padding: '10px 14px', borderRadius: '8px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', fontSize: '12px', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <MessageSquare size={14} color="#94A3B8" />
+                              <span>No written feedback remarks submitted yet by the evaluation jury for Phase {phaseNum}.</span>
+                            </div>
+                          )}
+
+                          {/* Student Marks Table */}
+                          <div className="table-container" style={{ overflowX: 'auto' }}>
+                            <table className="table" style={{ width: '100%', fontSize: '12.5px', borderCollapse: 'collapse' }}>
+                              <thead>
+                                <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid var(--color-hairline)' }}>
+                                  <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: 'var(--color-ink-soft)' }}>Student Details</th>
+                                  <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: 'var(--color-ink-soft)' }}>Roll Number</th>
+                                  <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: 'var(--color-ink-soft)' }}>Attendance</th>
+                                  <th style={{ padding: '10px 12px', textAlign: 'center', fontWeight: 700, color: 'var(--color-ink-soft)' }}>Score Breakdown</th>
+                                  <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: 'var(--color-ink-soft)' }}>Total Score</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(selectedTeam.members || []).map((student: any) => {
+                                  const ev = phaseEvals.find((e: any) => String(e.student_id) === String(student.id) || String(e.student_id) === String(student.user_id));
+                                  const isLeader = Boolean(selectedTeam.leader_id && (student.id === selectedTeam.leader_id || student.user_id === selectedTeam.leader_id || (selectedTeam.leader && student.full_name === selectedTeam.leader.fullName)));
+                                  const attStatus = ev?.attendance_status || (ev?.is_absent ? 'absent' : 'present');
+
+                                  return (
+                                    <tr key={student.id} style={{ borderBottom: '1px solid var(--color-hairline)' }}>
+                                      <td style={{ padding: '10px 12px' }}>
+                                        <div style={{ fontWeight: 600, color: 'var(--color-ink)' }}>{student.full_name}</div>
+                                        {isLeader && <span style={{ fontSize: '10.5px', color: '#059669', fontWeight: 700 }}>● Team Leader</span>}
+                                      </td>
+                                      <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: 'var(--color-text-muted)' }}>
+                                        {student.roll_no || student.university_roll_no || '—'}
+                                      </td>
+                                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                                        {attStatus === 'early_joining' ? (
+                                          <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }}>
+                                            <Clock size={11} /> Early Joining
+                                          </span>
+                                        ) : attStatus === 'absent' || ev?.is_absent ? (
+                                          <span className="badge badge-danger" style={{ fontSize: '10.5px' }}>Absent</span>
+                                        ) : (
+                                          <span className="badge" style={{ backgroundColor: '#ECFDF5', color: '#047857', border: '1px solid #D1FAE5', fontSize: '10.5px', fontWeight: 700 }}>
+                                            Present
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                                        {ev && ev.criteria_scores ? (
+                                          <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                            <span style={{ fontSize: '10px', fontWeight: 600, background: '#EFF6FF', color: '#1D4ED8', padding: '2px 6px', borderRadius: '4px', border: '1px solid #DBEAFE' }} title="Presentation">
+                                              Pres: {ev.criteria_scores.presentation ?? '-'}
+                                            </span>
+                                            <span style={{ fontSize: '10px', fontWeight: 600, background: '#F5F3FF', color: '#6D28D9', padding: '2px 6px', borderRadius: '4px', border: '1px solid #EDE9FE' }} title="Code &amp; Implementation">
+                                              Code: {ev.criteria_scores.code ?? '-'}
+                                            </span>
+                                            <span style={{ fontSize: '10px', fontWeight: 600, background: '#ECFDF5', color: '#047857', padding: '2px 6px', borderRadius: '4px', border: '1px solid #D1FAE5' }} title="Query Handling &amp; Viva">
+                                              Viva: {ev.criteria_scores.query_handling ?? '-'}
+                                            </span>
+                                            {phaseNum === 3 && (
+                                              <span style={{ fontSize: '10px', fontWeight: 600, background: '#FFFBEB', color: '#B45309', padding: '2px 6px', borderRadius: '4px', border: '1px solid #FDE68A' }} title="Report">
+                                                Report: {ev.criteria_scores.report ?? '-'}
+                                              </span>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <span style={{ color: 'var(--color-text-muted)', fontSize: '11px' }}>—</span>
+                                        )}
+                                      </td>
+                                      <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                                        {ev && ev.score !== null && ev.score !== undefined && !ev.is_absent ? (
+                                          <span style={{ fontSize: '14px', fontWeight: 800, color: '#1E40AF' }}>
+                                            {ev.score} <span style={{ fontSize: '11px', color: 'var(--color-text-muted)', fontWeight: 500 }}>/ {phaseMax}</span>
+                                          </span>
+                                        ) : (
+                                          <span style={{ color: 'var(--color-text-muted)', fontSize: '11px', fontStyle: 'italic' }}>
+                                            {ev?.is_absent ? '0 (Absent)' : 'Pending'}
+                                          </span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 

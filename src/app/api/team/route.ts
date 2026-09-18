@@ -197,6 +197,8 @@ export async function GET(req: NextRequest) {
             attendance: (store.meeting_attendance || []).filter((a) => a && String(a.meeting_id) === String(m.id)),
           }));
 
+        const evals = (store.evaluations || []).filter((e) => e && String(e.team_id) === String(team.id));
+
         return NextResponse.json(
           {
             team,
@@ -204,6 +206,7 @@ export async function GET(req: NextRequest) {
             members: students,
             problemStatement,
             meetings,
+            evaluations: evals,
           },
           {
             headers: {
@@ -227,6 +230,7 @@ export async function GET(req: NextRequest) {
             meeting_index: idx + 1,
             attendance: (store.meeting_attendance || []).filter((a) => a && String(a.meeting_id) === String(m.id)),
           }));
+        const evals = (store.evaluations || []).filter((e) => e && String(e.team_id) === String(t.id));
 
         return {
           ...t,
@@ -238,6 +242,7 @@ export async function GET(req: NextRequest) {
           meetings,
           pendingMeetings: meetings.filter((m) => m.status === 'requested').length,
           totalMeetings: meetings.length,
+          evaluations: evals,
         };
       });
 

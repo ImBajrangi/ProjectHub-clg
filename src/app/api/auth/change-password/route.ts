@@ -3,6 +3,9 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { NotificationTemplates } from '@/lib/notifications';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function POST(req: NextRequest) {
   try {
     const token = req.cookies.get('codeshastra_token')?.value || req.headers.get('authorization')?.replace('Bearer ', '');

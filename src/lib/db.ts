@@ -264,49 +264,69 @@ export const db = {
   // Users & Auth
   async getUserByEmail(email: string): Promise<User | null> {
     const cleanEmail = email.toLowerCase().trim();
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, email, password_hash, role, full_name, phone, is_leader, active_session_token, active_session_device, active_session_at, reset_token, reset_token_expires_at, created_at, updated_at')
+        .ilike('email', cleanEmail)
+        .maybeSingle();
+
+      if (!error && data) {
+        if (memoryStore) {
+          const idx = memoryStore.users.findIndex((u) => u.id === data.id);
+          if (idx !== -1) {
+            memoryStore.users[idx] = data as User;
+          } else {
+            memoryStore.users.push(data as User);
+          }
+        }
+        return data as User;
+      }
+      if (error) {
+        logSupabaseError('users (getUserByEmail)', error);
+      }
+    } catch (err) {
+      console.error('[Supabase getUserByEmail exception]:', err);
+    }
+
     if (memoryStore) {
       const found = memoryStore.users.find((u) => u.email.toLowerCase() === cleanEmail);
       if (found) return found;
     }
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('id, email, password_hash, role, full_name, phone, is_leader, active_session_token, active_session_device, active_session_at, reset_token, reset_token_expires_at, created_at, updated_at')
-      .ilike('email', cleanEmail)
-      .maybeSingle();
-
-    if (error) {
-      logSupabaseError('users (getUserByEmail)', error);
-      return null;
-    }
-    if (!data) return null;
-    if (memoryStore && !memoryStore.users.some((u) => u.id === data.id)) {
-      memoryStore.users.push(data as User);
-    }
-    return data as User;
+    return null;
   },
 
   async getUserById(id: string): Promise<User | null> {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, email, password_hash, role, full_name, phone, is_leader, active_session_token, active_session_device, active_session_at, reset_token, reset_token_expires_at, created_at, updated_at')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (!error && data) {
+        if (memoryStore) {
+          const idx = memoryStore.users.findIndex((u) => u.id === data.id);
+          if (idx !== -1) {
+            memoryStore.users[idx] = data as User;
+          } else {
+            memoryStore.users.push(data as User);
+          }
+        }
+        return data as User;
+      }
+      if (error) {
+        logSupabaseError('users (getUserById)', error);
+      }
+    } catch (err) {
+      console.error('[Supabase getUserById exception]:', err);
+    }
+
     if (memoryStore) {
       const found = memoryStore.users.find((u) => u.id === id);
       if (found) return found;
     }
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('id, email, password_hash, role, full_name, phone, is_leader, active_session_token, active_session_device, active_session_at, reset_token, reset_token_expires_at, created_at, updated_at')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (error) {
-      logSupabaseError('users (getUserById)', error);
-      return null;
-    }
-    if (!data) return null;
-    if (memoryStore && !memoryStore.users.some((u) => u.id === data.id)) {
-      memoryStore.users.push(data as User);
-    }
-    return data as User;
+    return null;
   },
 
   async updateUser(id: string, updates: Partial<User>): Promise<User | null> {
@@ -334,7 +354,15 @@ export const db = {
       logSupabaseError('users (updateUser)', error);
       return null;
     }
-    return data as User;
+
+    if (data && memoryStore) {
+      const idx = memoryStore.users.findIndex((u) => u.id === id);
+      if (idx !== -1) {
+        memoryStore.users[idx] = data as User;
+      }
+    }
+
+    return (data as User) || (memoryStore?.users.find((u) => u.id === id) as User) || null;
   },
 
   // Teams
