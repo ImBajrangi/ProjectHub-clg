@@ -48,6 +48,7 @@ import {
   FileCheck,
   HelpCircle,
   Layers,
+  Save,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -203,6 +204,7 @@ export default function FacultyDashboardPage() {
   const [teamFeedback, setTeamFeedback] = useState<string>('');
   const [scoringLoading, setScoringLoading] = useState(false);
   const [savingStudentId, setSavingStudentId] = useState<string | null>(null);
+  const [savingTeamFeedback, setSavingTeamFeedback] = useState<boolean>(false);
   const [evaluationPhases, setEvaluationPhases] = useState<any[]>([]);
   const [scoreMessage, setScoreMessage] = useState('');
   const [scorePrivacy, setScorePrivacy] = useState<boolean>(true); // Score Privacy Mode (Dots Only)
@@ -984,6 +986,66 @@ export default function FacultyDashboardPage() {
       setScoreMessage(`Error: ${e.message}`);
     } finally {
       setSavingStudentId(null);
+    }
+  };
+
+  const handleSaveTeamFeedback = async () => {
+    if (!selectedPanelTeam) return;
+    setSavingTeamFeedback(true);
+    setScoreMessage('');
+    try {
+      const scoresPayload = panelTeamMembers.map((m) => {
+        const current = studentScores[m.id] || {};
+        const parsedPres = current.presentation !== undefined && current.presentation !== '' ? parseFloat(current.presentation) : null;
+        const parsedCode = current.code !== undefined && current.code !== '' ? parseFloat(current.code) : null;
+        const parsedQuery = current.query_handling !== undefined && current.query_handling !== '' ? parseFloat(current.query_handling) : null;
+        const parsedReport = current.report !== undefined && current.report !== '' ? parseFloat(current.report) : null;
+
+        let computedScore = current.score !== '' && current.score !== undefined && current.score !== null ? parseFloat(current.score) : null;
+        if (computedScore === null && (parsedPres !== null || parsedCode !== null || parsedQuery !== null || parsedReport !== null)) {
+          computedScore = (parsedPres || 0) + (parsedCode || 0) + (parsedQuery || 0) + (parsedReport || 0);
+        }
+
+        return {
+          studentId: m.id,
+          score: current.isAbsent ? null : computedScore,
+          criteriaScores: current.isAbsent ? null : {
+            presentation: parsedPres,
+            code: parsedCode,
+            query_handling: parsedQuery,
+            ...(selectedPanelPhase === 3 ? { report: parsedReport } : {}),
+          },
+          isAbsent: current.isAbsent,
+          attendanceStatus: current.attendanceStatus || (current.isAbsent ? 'absent' : 'present'),
+          remarks: teamFeedback || current.remarks || '',
+        };
+      });
+
+      const res = await fetch('/api/evaluations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'submit_scores',
+          phaseNumber: selectedPanelPhase || 1,
+          teamId: selectedPanelTeam.id,
+          scores: scoresPayload,
+          ...(selectedPanelPhase === 1 ? { phase1Approved: teamMilestoneStatus.phase1_approved } : {}),
+          ...(selectedPanelPhase === 2 ? { phase2Approved: teamMilestoneStatus.phase2_approved } : {}),
+          ...(selectedPanelPhase === 3 ? { phase3ReportClearance: teamMilestoneStatus.phase3_report_clearance } : {}),
+        }),
+      });
+
+      if (res.ok) {
+        setScoreMessage('Team viva & defense feedback synchronized to database successfully.');
+        loadFacultyData();
+      } else {
+        const errData = await res.json();
+        setScoreMessage(`Feedback error: ${errData.error}`);
+      }
+    } catch (e: any) {
+      setScoreMessage(`Feedback error: ${e.message}`);
+    } finally {
+      setSavingTeamFeedback(false);
     }
   };
 
@@ -3475,35 +3537,36 @@ export default function FacultyDashboardPage() {
 
                                     {/* Action buttons & Privacy controls */}
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                      {/* Confirm Single Score Button */}
-                                      {!isMasked && isPhaseLive && (
+                                      {/* Prominent Direct Update Marks Button */}
+                                      {isPhaseLive && (
                                         <button
                                           type="button"
                                           disabled={!hasScore || savingStudentId === student.id}
                                           onClick={() => handleConfirmSingleScore(student.id)}
                                           style={{
                                             height: '38px',
-                                            padding: '0 14px',
+                                            padding: '0 16px',
                                             borderRadius: '8px',
                                             background: hasScore ? 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)' : '#F1F5F9',
                                             color: hasScore ? '#FFFFFF' : '#94A3B8',
                                             border: hasScore ? '1px solid #1E40AF' : '1px solid #CBD5E1',
-                                            fontSize: '12px',
-                                            fontWeight: 700,
+                                            fontSize: '12.5px',
+                                            fontWeight: 800,
                                             cursor: hasScore ? 'pointer' : 'not-allowed',
                                             display: 'inline-flex',
                                             alignItems: 'center',
-                                            gap: '5px',
+                                            gap: '6px',
                                             boxShadow: hasScore ? '0 2px 6px rgba(37, 99, 235, 0.22)' : 'none',
                                           }}
+                                          title="Save and update marks for this candidate directly in database"
                                         >
                                           {savingStudentId === student.id ? (
                                             <>
-                                              <RefreshCw size={13} className="animate-spin" /> Saving...
+                                              <RefreshCw size={13} className="animate-spin" /> Updating...
                                             </>
                                           ) : (
                                             <>
-                                              <Check size={14} /> Confirm
+                                              <Check size={14} /> Update Marks
                                             </>
                                           )}
                                         </button>
@@ -3570,7 +3633,7 @@ export default function FacultyDashboardPage() {
                                   </div>
                                 </div>
                             ) : isEarlyJoining ? (
-                              /* Moved to Early Joining Banner inside Card */
+                              /* Moved to Early Joining Banner inside Card (No Mark Present Button) */
                               <div
                                 style={{
                                   padding: '14px 18px',
@@ -3578,39 +3641,13 @@ export default function FacultyDashboardPage() {
                                   backgroundColor: '#FFFBEB',
                                   border: '1.5px dashed #FCD34D',
                                   display: 'flex',
-                                  flexDirection: 'column',
+                                  alignItems: 'center',
                                   gap: '10px',
                                 }}
                               >
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', color: '#92400E', fontWeight: 600 }}>
-                                    <Clock size={16} color="#D97706" />
-                                    <span>Candidate shifted to <strong>Early Joining / Rescheduled Viva</strong>. Score marked pending for early joining evaluation.</span>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    disabled={!isPhaseLive}
-                                    onClick={() => {
-                                      if (!isPhaseLive) return;
-                                      setStudentScores({
-                                        ...studentScores,
-                                        [student.id]: { ...current, isAbsent: false, attendanceStatus: 'present' },
-                                      });
-                                    }}
-                                    style={{
-                                      fontSize: '11.5px',
-                                      fontWeight: 700,
-                                      padding: '4px 12px',
-                                      borderRadius: '6px',
-                                      backgroundColor: '#FFFFFF',
-                                      color: '#D97706',
-                                      border: '1px solid #FCD34D',
-                                      cursor: isPhaseLive ? 'pointer' : 'not-allowed',
-                                      opacity: isPhaseLive ? 1 : 0.6,
-                                    }}
-                                  >
-                                    Mark Present
-                                  </button>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', color: '#92400E', fontWeight: 600 }}>
+                                  <Clock size={16} color="#D97706" />
+                                  <span>Candidate shifted to <strong>Early Joining / Rescheduled Viva</strong>. Score marked pending for early joining evaluation slot.</span>
                                 </div>
                               </div>
                             ) : (
@@ -3806,13 +3843,40 @@ export default function FacultyDashboardPage() {
                           display: 'flex',
                           justifyContent: 'space-between',
                           alignItems: 'center',
-                          marginTop: '6px',
+                          marginTop: '8px',
                           fontSize: '11.5px',
                           color: 'var(--color-text-muted)',
+                          flexWrap: 'wrap',
+                          gap: '8px',
                         }}
                       >
-                        <span>Team feedback is synchronized with all member grades upon submission.</span>
-                        <span>{teamFeedback.length} characters</span>
+                        <span>Team feedback is synchronized with all member grades upon submission or direct save.</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span>{teamFeedback.length} characters</span>
+                          <button
+                            type="button"
+                            onClick={handleSaveTeamFeedback}
+                            disabled={!isPhaseLive || savingTeamFeedback}
+                            style={{
+                              padding: '5px 12px',
+                              borderRadius: '7px',
+                              background: 'rgba(59, 130, 246, 0.12)',
+                              border: '1px solid rgba(59, 130, 246, 0.3)',
+                              color: 'var(--color-primary-light)',
+                              fontSize: '11.5px',
+                              fontWeight: 600,
+                              cursor: (!isPhaseLive || savingTeamFeedback) ? 'not-allowed' : 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              transition: 'all 0.15s ease',
+                              opacity: (!isPhaseLive || savingTeamFeedback) ? 0.6 : 1,
+                            }}
+                          >
+                            <Save size={12} />
+                            {savingTeamFeedback ? 'Saving...' : 'Save Feedback'}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

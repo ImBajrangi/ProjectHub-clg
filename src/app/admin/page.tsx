@@ -66,6 +66,7 @@ import {
   exportTeamsAndStudents,
   exportFacultyDirectory,
   exportAbsentAndShiftData,
+  exportAllCandidatesMaster,
   exportDefaultingTeams,
   exportMasterWorkbook,
 } from '@/lib/exportUtils';
@@ -3650,41 +3651,80 @@ Output ONLY the raw valid JSON array.`;
                   </p>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', gap: '4px' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* Absentees Export Group */}
+                  <div style={{ display: 'inline-flex', borderRadius: '8px', border: '1px solid #FECACA', backgroundColor: '#FEF2F2', padding: '2px' }}>
                     <button
                       type="button"
                       onClick={() => {
-                        exportAbsentAndShiftData(filteredAbsentAndShiftEntries, 'xlsx');
-                        setToastMessage({ type: 'success', text: 'Absent & Early Joining Excel roster downloaded.' });
+                        exportAbsentAndShiftData(absentAndShiftEntries, 'xlsx', 'absent');
+                        setToastMessage({ type: 'success', text: 'Absentees roster (.xlsx) downloaded successfully.' });
                       }}
-                      className="btn btn-outline"
-                      style={{ padding: '7px 12px', fontSize: '12px', gap: '5px', borderRadius: '7px' }}
-                      title="Export Absent & Early Joining Roster as Excel (.xlsx)"
+                      style={{ padding: '5px 10px', fontSize: '11.5px', fontWeight: 700, color: '#DC2626', background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      title="Export Only Absent Students as Excel"
                     >
-                      <Download size={13} /> Excel
+                      <UserX size={12} /> Absentees (Excel)
                     </button>
                     <button
                       type="button"
                       onClick={() => {
-                        exportAbsentAndShiftData(filteredAbsentAndShiftEntries, 'csv');
-                        setToastMessage({ type: 'success', text: 'Absent & Early Joining CSV downloaded.' });
+                        exportAbsentAndShiftData(absentAndShiftEntries, 'csv', 'absent');
+                        setToastMessage({ type: 'success', text: 'Absentees roster (.csv) downloaded successfully.' });
                       }}
-                      className="btn btn-outline"
-                      style={{ padding: '7px 12px', fontSize: '12px', gap: '5px', borderRadius: '7px' }}
-                      title="Export Absent & Early Joining Roster as CSV (.csv)"
+                      style={{ padding: '5px 8px', fontSize: '11.5px', fontWeight: 600, color: '#DC2626', background: 'transparent', borderLeft: '1px solid #FECACA', cursor: 'pointer' }}
+                      title="Export Only Absent Students as CSV"
                     >
                       CSV
                     </button>
                   </div>
 
+                  {/* Early Joining Export Group */}
+                  <div style={{ display: 'inline-flex', borderRadius: '8px', border: '1px solid #FDE68A', backgroundColor: '#FFFBEB', padding: '2px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportAbsentAndShiftData(absentAndShiftEntries, 'xlsx', 'early_joining');
+                        setToastMessage({ type: 'success', text: 'Early Joining roster (.xlsx) downloaded successfully.' });
+                      }}
+                      style={{ padding: '5px 10px', fontSize: '11.5px', fontWeight: 700, color: '#B45309', background: 'transparent', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      title="Export Only Early Joining Students as Excel"
+                    >
+                      <Clock size={12} /> Early Joining (Excel)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportAbsentAndShiftData(absentAndShiftEntries, 'csv', 'early_joining');
+                        setToastMessage({ type: 'success', text: 'Early Joining roster (.csv) downloaded successfully.' });
+                      }}
+                      style={{ padding: '5px 8px', fontSize: '11.5px', fontWeight: 600, color: '#B45309', background: 'transparent', borderLeft: '1px solid #FDE68A', cursor: 'pointer' }}
+                      title="Export Only Early Joining Students as CSV"
+                    >
+                      CSV
+                    </button>
+                  </div>
+
+                  {/* All Candidates Master Export */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      exportAllCandidatesMaster(teams, 'xlsx');
+                      setToastMessage({ type: 'success', text: 'All Candidates Master Gradebook (.xlsx) downloaded.' });
+                    }}
+                    className="btn btn-primary"
+                    style={{ padding: '6px 14px', fontSize: '12px', gap: '6px', borderRadius: '8px', fontWeight: 700 }}
+                    title="Export All Candidates Master Directory across all teams & phases"
+                  >
+                    <Download size={13} /> Master Candidates (All)
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => loadAdminData()}
                     className="btn btn-outline"
-                    style={{ padding: '7px 14px', fontSize: '12.5px', gap: '6px' }}
+                    style={{ padding: '6px 12px', fontSize: '12px', gap: '5px', borderRadius: '8px' }}
                   >
-                    <RefreshCw size={13} /> Refresh List
+                    <RefreshCw size={13} /> Refresh
                   </button>
                 </div>
               </div>

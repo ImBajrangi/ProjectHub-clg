@@ -215,48 +215,166 @@ export function exportFacultyDirectory(supervisors: any[], panels: any[], format
 }
 
 // 4. Export Absent & Early Joining Segregation Roster
-export function exportAbsentAndShiftData(entries: any[], format: 'xlsx' | 'csv' = 'xlsx') {
-  const rows = (entries || []).map((e, index) => {
+export function exportAbsentAndShiftData(
+  entries: any[],
+  format: 'xlsx' | 'csv' = 'xlsx',
+  filterType: 'all' | 'absent' | 'early_joining' = 'all'
+) {
+  let targetEntries = entries || [];
+  if (filterType === 'absent') {
+    targetEntries = targetEntries.filter((e) => e.attendanceStatus === 'absent' || e.status === 'absent');
+  } else if (filterType === 'early_joining') {
+    targetEntries = targetEntries.filter((e) => e.attendanceStatus === 'early_joining' || e.status === 'early_joining' || e.status === 'next_shift');
+  }
+
+  const rows = targetEntries.map((e, index) => {
+    const isEarly = e.attendanceStatus === 'early_joining' || e.status === 'early_joining' || e.status === 'next_shift';
     return {
       'S.No': index + 1,
       'Phase': `Phase ${e.phaseNumber || 1}`,
-      'Status': (e.status === 'early_joining' || e.status === 'next_shift') ? 'Early Joining (Shifted)' : 'Absent (Defaulter)',
-      'Team Code': e.teamCode || `Team #${e.teamNumber}`,
+      'Attendance Status': isEarly ? 'Early Joining (Shifted)' : 'Absent (Defaulter)',
+      'Team Code': e.teamCode || (e.teamNumber ? `Team #${e.teamNumber}` : '-'),
+      'Team Name': e.teamName || '-',
+      'Program': e.program || 'BCA',
       'Student Name': e.studentName || 'Student',
       'Roll Number': e.rollNo || '-',
-      'Student Mobile': e.studentPhone || e.studentMobile || '-',
-      'Assigned Shift Timing': e.shiftTime || 'Batch 1: Morning',
-      'Venue': e.venue || 'Academic Block AB10',
-      'Reason / Admin Remark': e.remark || 'Attendance flagged during evaluation',
-      'Date Logged': e.timestamp ? new Date(e.timestamp).toLocaleDateString() : 'Today',
+      'Student Email': e.email || '-',
+      'Faculty Guide': e.supervisor || 'Unassigned',
+      'Examination Panel': e.panelName || 'Unassigned Panel',
+      'Venue & Room': e.roomNumber ? `${e.roomNumber} (${e.academicBlock || 'AB10'})` : (e.venue || 'Academic Block AB10'),
+      'Shift / Time Window': e.timeWindow || e.shiftTime || 'Shift 1',
+      'Panel Evaluators': e.evaluators || 'Pending',
+      'Reason / Remarks': e.remarks || e.remark || (isEarly ? 'Moved to Early Joining' : 'Marked Absent'),
+      'Date Logged': e.submittedAt || e.timestamp ? new Date(e.submittedAt || e.timestamp).toLocaleDateString() : 'Today',
     };
   });
 
-  const ws = XLSX.utils.json_to_sheet(rows.length > 0 ? rows : [{ 'Status': 'No Absent or Early Joining Students Logged' }]);
+  const emptyText = filterType === 'absent'
+    ? 'No Absent Students Logged'
+    : filterType === 'early_joining'
+    ? 'No Early Joining Students Logged'
+    : 'No Absent or Early Joining Students Logged';
+
+  const ws = XLSX.utils.json_to_sheet(rows.length > 0 ? rows : [{ 'Status': emptyText }]);
   ws['!cols'] = [
     { wch: 6 },  // S.No
     { wch: 10 }, // Phase
     { wch: 24 }, // Status
     { wch: 14 }, // Team Code
+    { wch: 22 }, // Team Name
+    { wch: 10 }, // Program
     { wch: 26 }, // Student Name
-    { wch: 18 }, // Roll Number
-    { wch: 16 }, // Mobile
-    { wch: 32 }, // Shift
-    { wch: 26 }, // Venue
-    { wch: 40 }, // Remark
+    { wch: 16 }, // Roll Number
+    { wch: 26 }, // Email
+    { wch: 24 }, // Faculty Guide
+    { wch: 24 }, // Panel
+    { wch: 22 }, // Venue
+    { wch: 22 }, // Shift
+    { wch: 28 }, // Evaluators
+    { wch: 36 }, // Remarks
     { wch: 14 }, // Date
   ];
 
+  const sheetTitle = filterType === 'absent'
+    ? 'Absent Students'
+    : filterType === 'early_joining'
+    ? 'Early Joining Students'
+    : 'Absent & Early Joining';
+
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Absent & Early Joining');
+  XLSX.utils.book_append_sheet(wb, ws, sheetTitle);
+
+  const timestamp = new Date().toISOString().split('T')[0];
+  const filenamePrefix = filterType === 'absent'
+    ? 'CodeShastra_Absentees_Roster'
+    : filterType === 'early_joining'
+    ? 'CodeShastra_EarlyJoining_Roster'
+    : 'CodeShastra_Absent_EarlyJoining_Roster';
+
+  if (format === 'csv') {
+    const csvData = XLSX.utils.sheet_to_csv(ws);
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, `${filenamePrefix}_${timestamp}.csv`);
+  } else {
+    XLSX.writeFile(wb, `${filenamePrefix}_${timestamp}.xlsx`);
+  }
+}
+
+// 4B. Export All Candidates Master Gradebook & Attendance Roster
+export function exportAllCandidatesMaster(teams: any[], format: 'xlsx' | 'csv' = 'xlsx') {
+  const rows: any[] = [];
+  let sNo = 1;
+
+  (teams || []).forEach((t: any) => {
+    (t.students || []).forEach((st: any) => {
+      const p1 = st.phase1;
+      const p2 = st.phase2;
+      const p3 = st.phase3;
+
+      const p1Status = !p1 ? 'Pending' : (p1.attendanceStatus === 'early_joining' || p1.attendanceStatus === 'next_shift') ? 'Early Joining' : p1.isAbsent ? 'Absent' : p1.score !== null ? `${p1.score}/20` : 'Evaluated (Score Pending)';
+      const p2Status = !p2 ? 'Pending' : (p2.attendanceStatus === 'early_joining' || p2.attendanceStatus === 'next_shift') ? 'Early Joining' : p2.isAbsent ? 'Absent' : p2.score !== null ? `${p2.score}/40` : 'Evaluated (Score Pending)';
+      const p3Status = !p3 ? 'Pending' : (p3.attendanceStatus === 'early_joining' || p3.attendanceStatus === 'next_shift') ? 'Early Joining' : p3.isAbsent ? 'Absent' : p3.score !== null ? `${p3.score}/40` : 'Evaluated (Score Pending)';
+
+      const totalScoreNum = (p1?.score || 0) + (p2?.score || 0) + (p3?.score || 0);
+      const totalScoreStr = (p1?.score !== null && p1?.score !== undefined) || (p2?.score !== null && p2?.score !== undefined) || (p3?.score !== null && p3?.score !== undefined)
+        ? `${totalScoreNum}/100`
+        : '-';
+
+      rows.push({
+        'S.No': sNo++,
+        'Team Code': t.team_code || `Team #${t.team_number}`,
+        'Team Name': t.team_name || '-',
+        'Program': t.program || 'BCA',
+        'Student Name': st.full_name || 'Student',
+        'Roll Number': st.roll_no || '-',
+        'Email': st.email || '-',
+        'Role': st.isLeader ? 'Team Leader' : 'Member',
+        'Faculty Guide': t.supervisor?.name || 'Unassigned',
+        'Guide Email': t.supervisor?.email || '-',
+        'Phase 1 (20M)': p1Status,
+        'P1 Criteria (Pres / Code / Viva)': p1?.criteria_scores ? `${p1.criteria_scores.presentation ?? '-'}/${p1.criteria_scores.code ?? '-'}/${p1.criteria_scores.query_handling ?? '-'}` : '-',
+        'Phase 2 (40M)': p2Status,
+        'Phase 3 (40M)': p3Status,
+        'Total Score (100M)': totalScoreStr,
+        'P1 Permitted': t.phase1_approved ? 'Permitted' : 'Pending',
+        'P2 Synopsis': t.phase2_approved ? 'Approved' : 'Due',
+        'P3 Report': (t.phase3_report_clearance || t.phase3_approved) ? 'Cleared' : 'Due',
+      });
+    });
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows.length > 0 ? rows : [{ 'Status': 'No Candidates Found' }]);
+  ws['!cols'] = [
+    { wch: 6 },  // S.No
+    { wch: 14 }, // Team Code
+    { wch: 24 }, // Team Name
+    { wch: 10 }, // Program
+    { wch: 26 }, // Student Name
+    { wch: 16 }, // Roll Number
+    { wch: 26 }, // Email
+    { wch: 14 }, // Role
+    { wch: 24 }, // Guide
+    { wch: 26 }, // Guide Email
+    { wch: 18 }, // P1
+    { wch: 30 }, // P1 Criteria
+    { wch: 18 }, // P2
+    { wch: 18 }, // P3
+    { wch: 20 }, // Total Score
+    { wch: 14 }, // P1 Permitted
+    { wch: 14 }, // P2 Synopsis
+    { wch: 14 }, // P3 Report
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'All Candidates Master');
 
   const timestamp = new Date().toISOString().split('T')[0];
   if (format === 'csv') {
     const csvData = XLSX.utils.sheet_to_csv(ws);
     const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-    downloadBlob(blob, `CodeShastra_Absent_EarlyJoining_Roster_${timestamp}.csv`);
+    downloadBlob(blob, `CodeShastra_All_Candidates_Master_Roster_${timestamp}.csv`);
   } else {
-    XLSX.writeFile(wb, `CodeShastra_Absent_EarlyJoining_Roster_${timestamp}.xlsx`);
+    XLSX.writeFile(wb, `CodeShastra_All_Candidates_Master_Roster_${timestamp}.xlsx`);
   }
 }
 
