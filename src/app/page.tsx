@@ -195,13 +195,7 @@ export default function HomePage() {
                 <span className="cohere-pill-dot" />
                 <span>GLA UNIVERSITY</span>
                 <span className="cohere-hero-pill-sep">×</span>
-                <a
-                  href="https://www.instagram.com/vrindopnishad/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="cohere-hero-pill-collab-link"
-                  title="Creative Direction • Vrindopnishad"
-                >
+                <span className="cohere-hero-pill-collab-text">
                   <img
                     src="/image/vrindopnishad.webp"
                     alt="Vrindopnishad"
@@ -210,7 +204,7 @@ export default function HomePage() {
                     height="14"
                   />
                   <span>VRINDOPNISHAD</span>
-                </a>
+                </span>
               </div>
 
               <h1 className="cohere-hero-title">
@@ -977,13 +971,13 @@ export default function HomePage() {
           user-select: none;
         }
 
-        .cohere-hero-pill-collab-link {
+        .cohere-hero-pill-collab-link,
+        .cohere-hero-pill-collab-text {
           display: inline-flex;
           align-items: center;
           gap: 5px;
           color: #344d41;
           text-decoration: none;
-          transition: opacity 0.15s ease;
         }
 
         .cohere-hero-pill-collab-link:hover {
