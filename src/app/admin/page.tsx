@@ -1102,8 +1102,9 @@ export default function AdminDashboardPage() {
       (t.students || []).forEach((st: any) => {
         [1, 2, 3].forEach((phaseNum) => {
           const phaseEval = phaseNum === 1 ? st.phase1 : phaseNum === 2 ? st.phase2 : st.phase3;
-          if (phaseEval && phaseEval.isAbsent) {
-            const status: 'early_joining' | 'absent' = (phaseEval.attendanceStatus === 'early_joining' || phaseEval.attendanceStatus === 'next_shift') ? 'early_joining' : 'absent';
+          if (phaseEval && (phaseEval.isAbsent || phaseEval.attendanceStatus === 'early_joining' || phaseEval.attendanceStatus === 'next_shift' || phaseEval.attendanceStatus === 'absent')) {
+            const isEarly = phaseEval.attendanceStatus === 'early_joining' || phaseEval.attendanceStatus === 'next_shift' || (phaseEval.remarks && (phaseEval.remarks.toLowerCase().includes('early joining') || phaseEval.remarks.toLowerCase().includes('next shift')));
+            const status: 'early_joining' | 'absent' = isEarly ? 'early_joining' : 'absent';
             const panel = (panels || []).find((p: any) => p.phase_number === phaseNum && (p.assigned_team_ids || []).includes(t.id));
             entries.push({
               studentId: st.id,
@@ -6200,7 +6201,7 @@ Output ONLY the raw valid JSON array.`;
                                   <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase1.remarks || 'Marked Absent'}>
                                     Absent
                                   </span>
-                                ) : (
+                                ) : s.phase1.score !== null && s.phase1.score !== undefined ? (
                                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
                                     <span style={{ fontWeight: 700, color: '#059669', fontSize: '12.5px' }}>{s.phase1.score} / {getPhaseMaxMarks(1)}</span>
                                     {s.phase1.criteria_scores && (
@@ -6211,6 +6212,10 @@ Output ONLY the raw valid JSON array.`;
                                       </div>
                                     )}
                                   </div>
+                                ) : (
+                                  <span className="badge" style={{ backgroundColor: '#F1F5F9', color: '#475569', fontSize: '10px', border: '1px solid #E2E8F0' }}>
+                                    Score Pending
+                                  </span>
                                 )
                               ) : (
                                 <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
@@ -6226,7 +6231,7 @@ Output ONLY the raw valid JSON array.`;
                                   <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase2.remarks || 'Marked Absent'}>
                                     Absent
                                   </span>
-                                ) : (
+                                ) : s.phase2.score !== null && s.phase2.score !== undefined ? (
                                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
                                     <span style={{ fontWeight: 700, color: '#2563EB', fontSize: '12.5px' }}>{s.phase2.score} / {getPhaseMaxMarks(2)}</span>
                                     {s.phase2.criteria_scores && (
@@ -6237,6 +6242,10 @@ Output ONLY the raw valid JSON array.`;
                                       </div>
                                     )}
                                   </div>
+                                ) : (
+                                  <span className="badge" style={{ backgroundColor: '#F1F5F9', color: '#475569', fontSize: '10px', border: '1px solid #E2E8F0' }}>
+                                    Score Pending
+                                  </span>
                                 )
                               ) : (
                                 <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>
@@ -6252,7 +6261,7 @@ Output ONLY the raw valid JSON array.`;
                                   <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase3.remarks || 'Marked Absent'}>
                                     Absent
                                   </span>
-                                ) : (
+                                ) : s.phase3.score !== null && s.phase3.score !== undefined ? (
                                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
                                     <span style={{ fontWeight: 700, color: '#7C3AED', fontSize: '12.5px' }}>{s.phase3.score} / {getPhaseMaxMarks(3)}</span>
                                     {s.phase3.criteria_scores && (
@@ -6264,6 +6273,10 @@ Output ONLY the raw valid JSON array.`;
                                       </div>
                                     )}
                                   </div>
+                                ) : (
+                                  <span className="badge" style={{ backgroundColor: '#F1F5F9', color: '#475569', fontSize: '10px', border: '1px solid #E2E8F0' }}>
+                                    Score Pending
+                                  </span>
                                 )
                               ) : (
                                 <span style={{ color: 'var(--color-text-faint)', fontSize: '11px' }}>—</span>

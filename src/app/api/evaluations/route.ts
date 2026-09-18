@@ -69,8 +69,8 @@ export async function POST(req: NextRequest) {
       const savedEvaluations = [];
       for (const item of scores) {
         const rawAttendance = item.attendanceStatus as ('present' | 'absent' | 'early_joining' | 'next_shift' | undefined);
-        const attendanceStatus = rawAttendance === 'next_shift' ? 'early_joining' : rawAttendance;
-        const isAbsent = Boolean(item.isAbsent) || attendanceStatus === 'absent' || attendanceStatus === 'early_joining';
+        const attendanceStatus = rawAttendance === 'next_shift' ? 'early_joining' : (rawAttendance || (item.isAbsent ? 'absent' : 'present'));
+        const isAbsent = attendanceStatus === 'absent' || attendanceStatus === 'early_joining' || Boolean(item.isAbsent);
         const parsedScore = !isAbsent && item.score !== undefined && item.score !== null && item.score !== '' && !isNaN(Number(item.score))
           ? Number(item.score)
           : null;
@@ -182,12 +182,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Institutional Admin privilege required.' }, { status: 403 });
       }
 
-      const { phaseNumber, teamId, studentId, score, isAbsent, attendanceStatus, remarks } = body;
+      const { phaseNumber, teamId, studentId, score, isAbsent, attendanceStatus: rawStatus, criteriaScores, remarks } = body;
       if (!phaseNumber || !teamId || !studentId) {
         return NextResponse.json({ error: 'Missing phaseNumber, teamId, or studentId.' }, { status: 400 });
       }
 
-      const isAbsentBool = Boolean(isAbsent);
+      const attendanceStatus = rawStatus === 'next_shift' ? 'early_joining' : (rawStatus || (isAbsent ? 'absent' : 'present'));
+      const isAbsentBool = attendanceStatus === 'absent' || attendanceStatus === 'early_joining' || Boolean(isAbsent);
       const parsedScore = !isAbsentBool && score !== undefined && score !== null && score !== '' && !isNaN(Number(score))
         ? Number(score)
         : null;
@@ -200,7 +201,8 @@ export async function POST(req: NextRequest) {
         parsedScore,
         isAbsentBool,
         remarks || 'Admin Updated',
-        attendanceStatus
+        attendanceStatus,
+        criteriaScores
       );
 
       return NextResponse.json({

@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
 
       // Attach evaluations to each student
       const studentsWithEvals = teamStudents.map((st) => {
-        const studentEvals = teamEvals.filter((ev) => ev.student_id === st.id);
+        const studentEvals = teamEvals.filter((ev) => ev.student_id === st.id || (st.user_id && ev.student_id === st.user_id));
         const p1Eval = studentEvals.find((ev) => ev.phase_number === 1);
         const p2Eval = studentEvals.find((ev) => ev.phase_number === 2);
         const p3Eval = studentEvals.find((ev) => ev.phase_number === 3);
@@ -93,10 +93,11 @@ export async function GET(req: NextRequest) {
           if (!ev) return null;
           const rawStatus = ev.attendance_status || (ev.is_absent ? (ev.remarks?.toLowerCase().includes('early joining') || ev.remarks?.toLowerCase().includes('next shift') ? 'early_joining' : 'absent') : 'present');
           const status = rawStatus === 'next_shift' ? 'early_joining' : rawStatus;
+          const isAbsent = status === 'absent' || status === 'early_joining' || Boolean(ev.is_absent);
           return {
-            score: ev.score,
+            score: ev.score !== undefined && ev.score !== null && String(ev.score) !== '' ? Number(ev.score) : null,
             criteria_scores: ev.criteria_scores || null,
-            isAbsent: ev.is_absent,
+            isAbsent,
             attendanceStatus: status,
             remarks: ev.remarks,
             submittedAt: ev.submitted_at,

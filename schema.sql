@@ -166,14 +166,16 @@ CREATE TABLE IF NOT EXISTS public.panel_members (
 );
 
 -- 12. EVALUATIONS TABLE
--- Individual member scores out of 10 or absent status
+-- Individual member scores, criteria breakdowns, attendance status and remarks
 CREATE TABLE IF NOT EXISTS public.evaluations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     phase_number INT NOT NULL CHECK (phase_number IN (1, 2, 3)),
     team_id UUID NOT NULL REFERENCES public.teams(id) ON DELETE CASCADE,
     student_id UUID NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
     panel_member_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
-    score NUMERIC(4, 2) CHECK (score >= 0 AND score <= 10),
+    score NUMERIC(5, 2) CHECK (score >= 0 AND score <= 100),
+    criteria_scores JSONB DEFAULT NULL,
+    attendance_status TEXT DEFAULT 'present' CHECK (attendance_status IN ('present', 'absent', 'early_joining', 'next_shift')),
     is_absent BOOLEAN DEFAULT FALSE,
     remarks TEXT,
     submitted_at TIMESTAMPTZ DEFAULT NOW(),

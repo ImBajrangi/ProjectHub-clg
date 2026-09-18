@@ -1372,6 +1372,8 @@ export const db = {
       student_id: payload.student_id,
       panel_member_id: payload.panel_member_id,
       score: payload.score,
+      criteria_scores: payload.criteria_scores,
+      attendance_status: payload.attendance_status,
       is_absent: payload.is_absent,
       remarks: payload.remarks,
       submitted_at: payload.submitted_at,
