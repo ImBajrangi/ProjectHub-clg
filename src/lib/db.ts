@@ -1325,8 +1325,8 @@ export const db = {
     teamId: string,
     studentId: string,
     panelMemberId: string,
-    score: number | null,
-    isAbsent: boolean,
+    score?: number | null,
+    isAbsent: boolean = false,
     remarks?: string,
     attendanceStatus?: 'present' | 'absent' | 'early_joining' | 'next_shift',
     criteriaScores?: EvaluationCriteriaScores | null
@@ -1351,11 +1351,11 @@ export const db = {
       team_id: teamId,
       student_id: studentId,
       panel_member_id: panelMemberId,
-      score: finalIsAbsent ? null : score,
+      score: finalIsAbsent ? null : (score !== undefined ? score : (existingIdx !== -1 ? store.evaluations[existingIdx].score : null)),
       criteria_scores: finalIsAbsent ? null : (criteriaScores !== undefined ? criteriaScores : (existingIdx !== -1 ? store.evaluations[existingIdx].criteria_scores : null)),
       is_absent: finalIsAbsent,
       attendance_status: resolvedStatus,
-      remarks: remarks || null,
+      remarks: remarks !== undefined ? (remarks || null) : (existingIdx !== -1 ? store.evaluations[existingIdx].remarks : null),
       submitted_at: now,
     };
 

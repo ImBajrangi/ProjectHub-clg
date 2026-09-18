@@ -556,7 +556,18 @@ export default function Navbar({
 
                         <div className="nav-dropdown-divider" />
 
-
+                        {/* Reset / Change Password */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUserMenuOpen(false);
+                            setPasswordModalOpen(true);
+                          }}
+                          className="nav-dropdown-item"
+                        >
+                          <KeyRound size={15} style={{ color: '#059669', flexShrink: 0 }} />
+                          <span>Reset / Change Password</span>
+                        </button>
 
                         {/* Help & Guide */}
                         <button

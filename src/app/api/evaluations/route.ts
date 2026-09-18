@@ -141,6 +141,53 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // 2.5. Direct Member Attendance Update (Immediate Sync for Panel Judges & Faculty)
+    if (action === 'update_attendance') {
+      const { phaseNumber, teamId, studentId, attendanceStatus: rawStatus, remarks } = body;
+      if (!phaseNumber || !teamId || !studentId || !rawStatus) {
+        return NextResponse.json({ error: 'Missing phaseNumber, teamId, studentId, or attendanceStatus.' }, { status: 400 });
+      }
+
+      const phaseNum = Number(phaseNumber) as 1 | 2 | 3;
+      const phases = await db.getPhases();
+      const targetPhaseConfig = phases.find((p: any) => p.phase_number === phaseNum);
+      if (targetPhaseConfig && !targetPhaseConfig.is_live && sessionUser.role !== 'admin') {
+        return NextResponse.json(
+          { error: `Phase ${phaseNum} evaluation has been stopped and locked.` },
+          { status: 403 }
+        );
+      }
+
+      const team = await db.getTeamById(teamId);
+      if (team && team.supervisor_id === sessionUser.id && sessionUser.role !== 'admin') {
+        return NextResponse.json(
+          { error: 'Strict Conflict Safeguard: You cannot evaluate a team you supervise.' },
+          { status: 403 }
+        );
+      }
+
+      const attendanceStatus: 'present' | 'absent' | 'early_joining' = rawStatus === 'next_shift' ? 'early_joining' : rawStatus;
+      const isAbsent = attendanceStatus !== 'present';
+
+      const ev = await db.saveEvaluation(
+        phaseNum,
+        teamId,
+        studentId,
+        sessionUser.id,
+        isAbsent ? null : (body.score !== undefined ? Number(body.score) : null),
+        isAbsent,
+        remarks !== undefined ? remarks : (attendanceStatus === 'early_joining' ? 'Scheduled for early joining' : attendanceStatus === 'absent' ? 'Marked absent' : ''),
+        attendanceStatus,
+        isAbsent ? null : (body.criteriaScores || null)
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: `Attendance updated to ${attendanceStatus === 'early_joining' ? 'Early Joining' : attendanceStatus}.`,
+        evaluation: ev,
+      });
+    }
+
     // 3. Admin Direct Attendance Segregation (Shift to Early Joining / Mark Absent)
     if (action === 'segregate_attendance') {
       if (sessionUser.role !== 'admin') {

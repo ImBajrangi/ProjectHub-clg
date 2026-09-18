@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Lock, ShieldAlert, User } from 'lucide-react';
+import { X, Lock, ShieldAlert, Eye, EyeOff, KeyRound, CheckCircle2 } from 'lucide-react';
 
 interface PasswordChangeModalProps {
   isOpen: boolean;
@@ -14,6 +14,9 @@ export default function PasswordChangeModal({ isOpen, onClose, onSuccess, userNa
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,6 +62,11 @@ export default function PasswordChangeModal({ isOpen, onClose, onSuccess, userNa
       return;
     }
 
+    if (currentPassword === newPassword) {
+      setError('New password cannot be identical to your current password.');
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch('/api/auth/change-password', {
@@ -74,7 +82,7 @@ export default function PasswordChangeModal({ isOpen, onClose, onSuccess, userNa
         return;
       }
 
-      setSuccessMessage('Password updated. As per security policy, all active sessions have been terminated. Redirecting to login...');
+      setSuccessMessage('Password updated successfully! Redirecting to login...');
       setTimeout(() => {
         onSuccess();
       }, 1200);
@@ -94,9 +102,9 @@ export default function PasswordChangeModal({ isOpen, onClose, onSuccess, userNa
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(15, 23, 42, 0.45)',
-        backdropFilter: 'blur(3px)',
-        WebkitBackdropFilter: 'blur(3px)',
+        backgroundColor: 'rgba(15, 23, 42, 0.55)',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
         padding: '20px',
       }}
       onClick={onClose}
@@ -117,85 +125,157 @@ export default function PasswordChangeModal({ isOpen, onClose, onSuccess, userNa
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Lock size={18} />
-              <h3 style={{ fontSize: '18px', fontWeight: 700 }}>Security Settings</h3>
+              <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#ECFDF5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <KeyRound size={18} strokeWidth={2.2} />
+              </div>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Reset Password</h3>
             </div>
             {userName && (
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-ink)', marginTop: '4px' }}>
-                Account: {userName}
+              <div style={{ fontSize: '12.5px', color: 'var(--color-text-muted)', marginTop: '4px', marginLeft: '40px' }}>
+                Account: <strong>{userName}</strong>
               </div>
             )}
           </div>
           <button
             onClick={onClose}
-            style={{ background: 'transparent', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}
+            style={{ background: 'transparent', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: '4px', borderRadius: '6px' }}
           >
             <X size={18} />
           </button>
         </div>
 
-        <div className="alert-banner alert-warning" style={{ fontSize: '12px', marginBottom: '16px' }}>
+        <div className="alert-banner alert-warning" style={{ fontSize: '12px', marginBottom: '16px', borderRadius: '10px' }}>
           <ShieldAlert size={16} style={{ flexShrink: 0 }} />
           <div>
-            <strong>Mandatory Security Flush:</strong> Saving a new password will terminate active sessions across any connected devices.
+            <strong>Security Notice:</strong> Updating your password will flush active sessions. You will be redirected to sign in with your new password.
           </div>
         </div>
 
         {error && (
-          <div className="alert-banner alert-danger" style={{ fontSize: '13px', marginBottom: '14px' }}>
+          <div className="alert-banner alert-danger" style={{ fontSize: '13px', marginBottom: '14px', borderRadius: '10px' }}>
             {error}
           </div>
         )}
 
         {successMessage && (
-          <div className="alert-banner alert-success" style={{ fontSize: '13px', marginBottom: '14px' }}>
-            {successMessage}
+          <div className="alert-banner alert-success" style={{ fontSize: '13px', marginBottom: '14px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CheckCircle2 size={16} color="#059669" />
+            <span>{successMessage}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div className="input-group">
-            <label className="input-label">Current Password</label>
-            <input
-              type="password"
-              className="input-field"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="Enter current password"
-              required
-            />
+            <label className="input-label" style={{ fontSize: '12.5px', fontWeight: 600 }}>Current Password</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showCurrent ? 'text' : 'password'}
+                className="input-field"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Enter current password"
+                required
+                style={{ paddingRight: '40px', fontSize: '13.5px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrent(!showCurrent)}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: '#64748B',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                tabIndex={-1}
+              >
+                {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
           <div className="input-group">
-            <label className="input-label">New Password</label>
-            <input
-              type="password"
-              className="input-field"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Min 6 characters"
-              required
-            />
+            <label className="input-label" style={{ fontSize: '12.5px', fontWeight: 600 }}>New Password</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showNew ? 'text' : 'password'}
+                className="input-field"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Minimum 6 characters"
+                required
+                style={{ paddingRight: '40px', fontSize: '13.5px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowNew(!showNew)}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: '#64748B',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                tabIndex={-1}
+              >
+                {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
           <div className="input-group">
-            <label className="input-label">Confirm New Password</label>
-            <input
-              type="password"
-              className="input-field"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Re-enter new password"
-              required
-            />
+            <label className="input-label" style={{ fontSize: '12.5px', fontWeight: 600 }}>Confirm New Password</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showConfirm ? 'text' : 'password'}
+                className="input-field"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-enter new password"
+                required
+                style={{ paddingRight: '40px', fontSize: '13.5px' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: '#64748B',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                tabIndex={-1}
+              >
+                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
             <button
               type="button"
               className="btn btn-outline"
               onClick={onClose}
-              style={{ flex: 1 }}
+              style={{ flex: 1, padding: '10px' }}
               disabled={loading}
             >
               Cancel
@@ -203,10 +283,10 @@ export default function PasswordChangeModal({ isOpen, onClose, onSuccess, userNa
             <button
               type="submit"
               className="btn btn-primary"
-              style={{ flex: 1.5 }}
+              style={{ flex: 1.5, padding: '10px', backgroundColor: '#059669', borderColor: '#059669' }}
               disabled={loading}
             >
-              {loading ? 'Saving...' : 'Update & Log Out'}
+              {loading ? 'Updating Password...' : 'Save & Re-login'}
             </button>
           </div>
         </form>

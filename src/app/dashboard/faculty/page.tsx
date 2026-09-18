@@ -49,6 +49,7 @@ import {
   HelpCircle,
   Layers,
   Save,
+  BarChart2,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -211,6 +212,8 @@ export default function FacultyDashboardPage() {
   const [revealedStudentIds, setRevealedStudentIds] = useState<Set<string>>(new Set());
   const [submittedStudentIds, setSubmittedStudentIds] = useState<Set<string>>(new Set());
   const [editingStudentIds, setEditingStudentIds] = useState<Set<string>>(new Set());
+  const [syncingAttendanceStudentId, setSyncingAttendanceStudentId] = useState<string | null>(null);
+  const feedbackTextareaRef = React.useRef<HTMLTextAreaElement>(null);
 
   const getPresetsForMaxMarks = (max: number) => {
     if (max === 10) return ['7.0', '8.0', '8.5', '9.0', '9.5', '10.0'];
@@ -986,6 +989,93 @@ export default function FacultyDashboardPage() {
       setScoreMessage(`Error: ${e.message}`);
     } finally {
       setSavingStudentId(null);
+    }
+  };
+
+  const handleDirectAttendanceToggle = async (studentId: string, targetStatus: 'present' | 'early_joining' | 'absent') => {
+    if (!selectedPanelTeam) return;
+
+    const targetPhaseConfig = evaluationPhases.find((p: any) => p.phase_number === (selectedPanelPhase || 1));
+    if (targetPhaseConfig && !targetPhaseConfig.is_live) {
+      setScoreMessage(`Phase ${selectedPanelPhase || 1} evaluation is stopped by administrator. Attendance modification is locked.`);
+      return;
+    }
+
+    const current = studentScores[studentId] || {
+      score: '',
+      presentation: '',
+      code: '',
+      query_handling: '',
+      report: '',
+      isAbsent: false,
+      attendanceStatus: 'present',
+      remarks: '',
+    };
+
+    const isEarly = targetStatus === 'early_joining';
+    const isAbs = targetStatus === 'absent';
+
+    const updatedStudent = {
+      ...current,
+      isAbsent: isEarly || isAbs,
+      attendanceStatus: targetStatus,
+      ...(isEarly ? {
+        score: '',
+        presentation: '',
+        code: '',
+        query_handling: '',
+        report: '',
+        remarks: current.remarks || 'Scheduled for early joining',
+      } : isAbs ? {
+        score: '',
+        presentation: '',
+        code: '',
+        query_handling: '',
+        report: '',
+        remarks: current.remarks || 'Marked absent',
+      } : {}),
+    };
+
+    // 1. Instant Optimistic UI update
+    setStudentScores((prev) => ({
+      ...prev,
+      [studentId]: updatedStudent,
+    }));
+    setSubmittedStudentIds((prev) => {
+      const next = new Set(prev);
+      if (isEarly || isAbs) next.add(studentId);
+      return next;
+    });
+
+    // 2. Direct Background Database Sync
+    setSyncingAttendanceStudentId(studentId);
+    try {
+      const res = await fetch('/api/evaluations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_attendance',
+          phaseNumber: selectedPanelPhase || 1,
+          teamId: selectedPanelTeam.id,
+          studentId,
+          attendanceStatus: targetStatus,
+          remarks: updatedStudent.remarks,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setScoreMessage(`Attendance sync error: ${data.error || 'Failed to update'}`);
+      } else {
+        const label = targetStatus === 'early_joining' ? 'Early Joining' : targetStatus === 'absent' ? 'Absent' : 'Present';
+        setScoreMessage(`✓ Saved to database: Marked ${label}`);
+        loadFacultyData();
+      }
+    } catch (err: any) {
+      console.error('Attendance direct sync exception:', err);
+      setScoreMessage(`Attendance sync error: ${err.message}`);
+    } finally {
+      setSyncingAttendanceStudentId(null);
     }
   };
 
@@ -3234,17 +3324,10 @@ export default function FacultyDashboardPage() {
                                   >
                                     <button
                                       type="button"
-                                      disabled={!isPhaseLive}
+                                      disabled={!isPhaseLive || syncingAttendanceStudentId === student.id}
                                       onClick={() => {
                                         if (!isPhaseLive) return;
-                                        setStudentScores({
-                                          ...studentScores,
-                                          [student.id]: {
-                                            ...current,
-                                            isAbsent: false,
-                                            attendanceStatus: 'present',
-                                          },
-                                        });
+                                        handleDirectAttendanceToggle(student.id, 'present');
                                       }}
                                       style={{
                                         display: 'inline-flex',
@@ -3261,30 +3344,17 @@ export default function FacultyDashboardPage() {
                                         transition: 'all 0.15s ease',
                                         opacity: isPhaseLive ? 1 : 0.7,
                                       }}
-                                      title={isPhaseLive ? "Student is present and participating" : "Phase stopped by administrator"}
+                                      title={isPhaseLive ? "Student is present and participating (synced directly)" : "Phase stopped by administrator"}
                                     >
                                       <CheckCircle2 size={12} /> Present
                                     </button>
 
                                     <button
                                       type="button"
-                                      disabled={!isPhaseLive}
+                                      disabled={!isPhaseLive || syncingAttendanceStudentId === student.id}
                                       onClick={() => {
                                         if (!isPhaseLive) return;
-                                        setStudentScores({
-                                          ...studentScores,
-                                          [student.id]: {
-                                            ...current,
-                                            isAbsent: true,
-                                            attendanceStatus: 'early_joining',
-                                            score: '',
-                                            presentation: '',
-                                            code: '',
-                                            query_handling: '',
-                                            report: '',
-                                            remarks: current.remarks || 'Scheduled for early joining',
-                                          },
-                                        });
+                                        handleDirectAttendanceToggle(student.id, 'early_joining');
                                       }}
                                       style={{
                                         display: 'inline-flex',
@@ -3301,29 +3371,17 @@ export default function FacultyDashboardPage() {
                                         transition: 'all 0.15s ease',
                                         opacity: isPhaseLive ? 1 : 0.7,
                                       }}
-                                      title={isPhaseLive ? "Unable to attend current shift; shift to early joining" : "Phase stopped by administrator"}
+                                      title={isPhaseLive ? "Unable to attend current shift; save directly as early joining" : "Phase stopped by administrator"}
                                     >
                                       <Clock size={12} /> Early Joining
                                     </button>
 
                                     <button
                                       type="button"
-                                      disabled={!isPhaseLive}
+                                      disabled={!isPhaseLive || syncingAttendanceStudentId === student.id}
                                       onClick={() => {
                                         if (!isPhaseLive) return;
-                                        setStudentScores({
-                                          ...studentScores,
-                                          [student.id]: {
-                                            ...current,
-                                            isAbsent: true,
-                                            attendanceStatus: 'absent',
-                                            score: '',
-                                            presentation: '',
-                                            code: '',
-                                            query_handling: '',
-                                            report: '',
-                                          },
-                                        });
+                                        handleDirectAttendanceToggle(student.id, 'absent');
                                       }}
                                       style={{
                                         display: 'inline-flex',
@@ -3340,7 +3398,7 @@ export default function FacultyDashboardPage() {
                                         transition: 'all 0.15s ease',
                                         opacity: isPhaseLive ? 1 : 0.7,
                                       }}
-                                      title={isPhaseLive ? "Mark student absent" : "Phase stopped by administrator"}
+                                      title={isPhaseLive ? "Mark student absent (saves directly to database)" : "Phase stopped by administrator"}
                                     >
                                       <UserX size={12} /> Absent
                                     </button>
@@ -3389,8 +3447,17 @@ export default function FacultyDashboardPage() {
                                           >
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                               <div>
-                                                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                  {cat.icon === 'presentation' ? '📊' : cat.icon === 'code' ? '💻' : cat.icon === 'query' ? '💬' : '📑'} {cat.shortLabel}
+                                                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                  {cat.icon === 'presentation' ? (
+                                                    <BarChart2 size={13} color="#2563EB" strokeWidth={2.2} />
+                                                  ) : cat.icon === 'code' ? (
+                                                    <Code2 size={13} color="#7C3AED" strokeWidth={2.2} />
+                                                  ) : cat.icon === 'query' ? (
+                                                    <MessageSquare size={13} color="#059669" strokeWidth={2.2} />
+                                                  ) : (
+                                                    <FileText size={13} color="#D97706" strokeWidth={2.2} />
+                                                  )}
+                                                  <span>{cat.shortLabel}</span>
                                                 </div>
                                                 <div style={{ fontSize: '10px', color: 'var(--color-text-muted)' }}>{cat.desc}</div>
                                               </div>
@@ -3787,13 +3854,16 @@ export default function FacultyDashboardPage() {
                                 type="button"
                                 onClick={() => {
                                   setTeamFeedback(preset);
+                                  setTimeout(() => {
+                                    feedbackTextareaRef.current?.focus();
+                                  }, 50);
                                 }}
                                 style={{
                                   padding: '5px 11px',
                                   fontSize: '11px',
                                   fontWeight: isApplied ? 700 : 500,
                                   borderRadius: '8px',
-                                  border: isApplied ? '1px solid #818CF8' : '1px solid #E2E8F0',
+                                  border: isApplied ? '1.5px solid #6366F1' : '1px solid #E2E8F0',
                                   backgroundColor: isApplied ? '#EEF2FF' : '#FFFFFF',
                                   color: isApplied ? '#4338CA' : '#334155',
                                   cursor: 'pointer',
@@ -3811,6 +3881,7 @@ export default function FacultyDashboardPage() {
                     {/* Textarea Input */}
                     <div style={{ position: 'relative' }}>
                       <textarea
+                        ref={feedbackTextareaRef}
                         className="input-field"
                         rows={3}
                         disabled={!isPhaseLive}
@@ -3858,23 +3929,31 @@ export default function FacultyDashboardPage() {
                             onClick={handleSaveTeamFeedback}
                             disabled={!isPhaseLive || savingTeamFeedback}
                             style={{
-                              padding: '5px 12px',
-                              borderRadius: '7px',
-                              background: 'rgba(59, 130, 246, 0.12)',
-                              border: '1px solid rgba(59, 130, 246, 0.3)',
-                              color: 'var(--color-primary-light)',
-                              fontSize: '11.5px',
-                              fontWeight: 600,
+                              padding: '7px 16px',
+                              borderRadius: '8px',
+                              backgroundColor: (!isPhaseLive || savingTeamFeedback) ? '#94A3B8' : '#2563EB',
+                              color: '#FFFFFF',
+                              fontSize: '12px',
+                              fontWeight: 700,
                               cursor: (!isPhaseLive || savingTeamFeedback) ? 'not-allowed' : 'pointer',
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '5px',
+                              gap: '6px',
+                              border: 'none',
+                              boxShadow: isPhaseLive && !savingTeamFeedback ? '0 2px 6px rgba(37, 99, 235, 0.3)' : 'none',
                               transition: 'all 0.15s ease',
-                              opacity: (!isPhaseLive || savingTeamFeedback) ? 0.6 : 1,
+                              opacity: (!isPhaseLive || savingTeamFeedback) ? 0.7 : 1,
                             }}
+                            onMouseEnter={(e) => {
+                              if (isPhaseLive && !savingTeamFeedback) e.currentTarget.style.backgroundColor = '#1D4ED8';
+                            }}
+                            onMouseLeave={(e) => {
+                              if (isPhaseLive && !savingTeamFeedback) e.currentTarget.style.backgroundColor = '#2563EB';
+                            }}
+                            title={isPhaseLive ? "Save feedback directly to database" : "Phase stopped by administrator"}
                           >
-                            <Save size={12} />
-                            {savingTeamFeedback ? 'Saving...' : 'Save Feedback'}
+                            <Send size={13} strokeWidth={2.2} />
+                            <span>{savingTeamFeedback ? 'Saving...' : 'Save Feedback'}</span>
                           </button>
                         </div>
                       </div>
@@ -3903,54 +3982,41 @@ export default function FacultyDashboardPage() {
                       <ArrowLeft size={15} /> Back to Assigned Teams
                     </button>
 
-                    {isPhaseLive ? (
-                      <button
-                        type="button"
-                        onClick={() => handleSubmitScores(selectedPanelPhase || 1)}
-                        className="btn btn-primary"
-                        disabled={scoringLoading || panelTeamMembers.length === 0}
-                        style={{
-                          padding: '11px 26px',
-                          fontSize: '14px',
-                          fontWeight: 700,
-                          gap: '8px',
-                          borderRadius: '10px',
-                          background: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)',
-                          boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
-                        }}
-                      >
-                        {scoringLoading ? (
-                          <>
-                            <RefreshCw size={16} className="animate-spin" /> Synchronizing Scores with Database...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle2 size={17} /> Save &amp; Submit Scores for Phase {selectedPanelPhase}
-                          </>
-                        )}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled
-                        className="btn btn-outline"
-                        style={{
-                          padding: '11px 26px',
-                          fontSize: '13.5px',
-                          fontWeight: 700,
-                          gap: '8px',
-                          borderRadius: '10px',
-                          backgroundColor: '#FEF2F2',
-                          color: '#991B1B',
-                          border: '1.5px solid #FCA5A5',
-                          cursor: 'not-allowed',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <Lock size={16} color="#DC2626" /> Phase {selectedPanelPhase} Stopped &amp; Locked by Admin
-                      </button>
-                    )}
+                    {(() => {
+                      const currentPanel = panelData.find((p: any) => p.phase_number === selectedPanelPhase) || panelData[0];
+                      const allPanelTeams = currentPanel?.teams || [];
+                      const currentTeamIdx = allPanelTeams.findIndex((t: any) => t.id === selectedPanelTeam?.id);
+                      const nextTeam = currentTeamIdx !== -1 && currentTeamIdx + 1 < allPanelTeams.length ? allPanelTeams[currentTeamIdx + 1] : null;
+
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (nextTeam) {
+                              handleOpenPanelTeamScoring(nextTeam, selectedPanelPhase || 1);
+                            } else {
+                              setSelectedPanelTeam(null);
+                              setScoreMessage('✓ All assigned panel teams have been evaluated.');
+                            }
+                          }}
+                          className="btn btn-primary"
+                          style={{
+                            padding: '11px 24px',
+                            fontSize: '13.5px',
+                            fontWeight: 700,
+                            gap: '8px',
+                            borderRadius: '10px',
+                            background: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)',
+                            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <span>{nextTeam ? `Move to Next Team (${nextTeam.team_code})` : 'Finish & Back to Teams'}</span>
+                          <ArrowRight size={16} strokeWidth={2.5} />
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

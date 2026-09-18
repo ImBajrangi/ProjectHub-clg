@@ -55,6 +55,9 @@ import {
   Edit2,
   RotateCcw,
   Pencil,
+  BarChart2,
+  Code2,
+  MessageSquare,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -1106,7 +1109,13 @@ export default function AdminDashboardPage() {
           if (phaseEval && (phaseEval.isAbsent || phaseEval.attendanceStatus === 'early_joining' || phaseEval.attendanceStatus === 'next_shift' || phaseEval.attendanceStatus === 'absent')) {
             const isEarly = phaseEval.attendanceStatus === 'early_joining' || phaseEval.attendanceStatus === 'next_shift' || (phaseEval.remarks && (phaseEval.remarks.toLowerCase().includes('early joining') || phaseEval.remarks.toLowerCase().includes('next shift')));
             const status: 'early_joining' | 'absent' = isEarly ? 'early_joining' : 'absent';
-            const panel = (panels || []).find((p: any) => p.phase_number === phaseNum && (p.assigned_team_ids || []).includes(t.id));
+            const panel = (panels || []).find((p: any) =>
+              Number(p.phase_number) === phaseNum && (
+                (p.teams || []).some((pt: any) => pt.id === t.id || pt.team_code === t.team_code) ||
+                (p.assigned_team_ids || []).includes(t.id) ||
+                (t.team_number !== undefined && t.team_number !== null && t.team_number >= (p.team_range_start || 0) && t.team_number <= (p.team_range_end || 999))
+              )
+            );
             entries.push({
               studentId: st.id,
               studentName: st.full_name,
@@ -1123,10 +1132,10 @@ export default function AdminDashboardPage() {
               attendanceStatus: status,
               remarks: phaseEval.remarks || '',
               submittedAt: phaseEval.submittedAt,
-              panelName: panel?.name || 'Unassigned Panel',
+              panelName: panel?.panel_name || panel?.name || 'Unassigned Panel',
               roomNumber: panel?.room_number || 'TBD',
               timeWindow: panel?.time_window || 'Shift 1',
-              evaluators: (panel?.members || []).map((m: any) => m.name).join(', ') || 'Pending',
+              evaluators: (panel?.judges || panel?.members || []).map((m: any) => m.full_name || m.name).filter(Boolean).join(', ') || 'Pending',
             });
           }
         });
@@ -3981,11 +3990,13 @@ Output ONLY the raw valid JSON array.`;
 
                             {/* Scheduled Slot & Room */}
                             <td>
-                              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-ink)' }}>
-                                📍 {item.roomNumber} • {item.panelName}
+                              <div style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--color-ink)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <MapPin size={13} color="#DC2626" style={{ flexShrink: 0 }} />
+                                <span>{item.roomNumber} • {item.panelName}</span>
                               </div>
-                              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '2px' }}>
-                                🕒 {item.timeWindow}
+                              <div style={{ fontSize: '11px', color: 'var(--color-text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Clock size={11} color="#64748B" style={{ flexShrink: 0 }} />
+                                <span>{item.timeWindow}</span>
                               </div>
                             </td>
 
@@ -6234,21 +6245,30 @@ Output ONLY the raw valid JSON array.`;
                             <td style={{ textAlign: 'center' }}>
                               {s.phase1 ? (
                                 s.phase1.attendanceStatus === 'early_joining' || s.phase1.attendanceStatus === 'next_shift' ? (
-                                  <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase1.remarks || 'Moved to Early Joining'}>
-                                    🕒 Early Joining
+                                  <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }} title={s.phase1.remarks || 'Moved to Early Joining'}>
+                                    <Clock size={11} strokeWidth={2.2} style={{ flexShrink: 0 }} /> Early Joining
                                   </span>
                                 ) : s.phase1.isAbsent ? (
                                   <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase1.remarks || 'Marked Absent'}>
                                     Absent
                                   </span>
                                 ) : s.phase1.score !== null && s.phase1.score !== undefined ? (
-                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                                     <span style={{ fontWeight: 700, color: '#059669', fontSize: '12.5px' }}>{s.phase1.score} / {getPhaseMaxMarks(1)}</span>
                                     {s.phase1.criteria_scores && (
-                                      <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                                        <span style={{ fontSize: '9px', background: '#EFF6FF', color: '#1D4ED8', padding: '1px 4px', borderRadius: '4px', border: '1px solid #DBEAFE' }} title="Presentation">📊 {s.phase1.criteria_scores.presentation ?? '-'}</span>
-                                        <span style={{ fontSize: '9px', background: '#F5F3FF', color: '#6D28D9', padding: '1px 4px', borderRadius: '4px', border: '1px solid #EDE9FE' }} title="Code">💻 {s.phase1.criteria_scores.code ?? '-'}</span>
-                                        <span style={{ fontSize: '9px', background: '#ECFDF5', color: '#047857', padding: '1px 4px', borderRadius: '4px', border: '1px solid #D1FAE5' }} title="Query Handling">💬 {s.phase1.criteria_scores.query_handling ?? '-'}</span>
+                                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '9.5px', fontWeight: 600, background: '#EFF6FF', color: '#1D4ED8', padding: '1px 5px', borderRadius: '4px', border: '1px solid #DBEAFE', lineHeight: 1.2 }} title="Presentation">
+                                          <BarChart2 size={10} strokeWidth={2.2} style={{ flexShrink: 0 }} />
+                                          <span>{s.phase1.criteria_scores.presentation ?? '-'}</span>
+                                        </span>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '9.5px', fontWeight: 600, background: '#F5F3FF', color: '#6D28D9', padding: '1px 5px', borderRadius: '4px', border: '1px solid #EDE9FE', lineHeight: 1.2 }} title="Code / Implementation">
+                                          <Code2 size={10} strokeWidth={2.2} style={{ flexShrink: 0 }} />
+                                          <span>{s.phase1.criteria_scores.code ?? '-'}</span>
+                                        </span>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '9.5px', fontWeight: 600, background: '#ECFDF5', color: '#047857', padding: '1px 5px', borderRadius: '4px', border: '1px solid #D1FAE5', lineHeight: 1.2 }} title="Query Handling / Viva">
+                                          <MessageSquare size={10} strokeWidth={2.2} style={{ flexShrink: 0 }} />
+                                          <span>{s.phase1.criteria_scores.query_handling ?? '-'}</span>
+                                        </span>
                                       </div>
                                     )}
                                   </div>
@@ -6264,21 +6284,30 @@ Output ONLY the raw valid JSON array.`;
                             <td style={{ textAlign: 'center' }}>
                               {s.phase2 ? (
                                 s.phase2.attendanceStatus === 'early_joining' || s.phase2.attendanceStatus === 'next_shift' ? (
-                                  <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase2.remarks || 'Moved to Early Joining'}>
-                                    🕒 Early Joining
+                                  <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }} title={s.phase2.remarks || 'Moved to Early Joining'}>
+                                    <Clock size={11} strokeWidth={2.2} style={{ flexShrink: 0 }} /> Early Joining
                                   </span>
                                 ) : s.phase2.isAbsent ? (
                                   <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase2.remarks || 'Marked Absent'}>
                                     Absent
                                   </span>
                                 ) : s.phase2.score !== null && s.phase2.score !== undefined ? (
-                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                                     <span style={{ fontWeight: 700, color: '#2563EB', fontSize: '12.5px' }}>{s.phase2.score} / {getPhaseMaxMarks(2)}</span>
                                     {s.phase2.criteria_scores && (
-                                      <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                                        <span style={{ fontSize: '9px', background: '#EFF6FF', color: '#1D4ED8', padding: '1px 4px', borderRadius: '4px', border: '1px solid #DBEAFE' }} title="Presentation">📊 {s.phase2.criteria_scores.presentation ?? '-'}</span>
-                                        <span style={{ fontSize: '9px', background: '#F5F3FF', color: '#6D28D9', padding: '1px 4px', borderRadius: '4px', border: '1px solid #EDE9FE' }} title="Code">💻 {s.phase2.criteria_scores.code ?? '-'}</span>
-                                        <span style={{ fontSize: '9px', background: '#ECFDF5', color: '#047857', padding: '1px 4px', borderRadius: '4px', border: '1px solid #D1FAE5' }} title="Query Handling">💬 {s.phase2.criteria_scores.query_handling ?? '-'}</span>
+                                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '9.5px', fontWeight: 600, background: '#EFF6FF', color: '#1D4ED8', padding: '1px 5px', borderRadius: '4px', border: '1px solid #DBEAFE', lineHeight: 1.2 }} title="Presentation">
+                                          <BarChart2 size={10} strokeWidth={2.2} style={{ flexShrink: 0 }} />
+                                          <span>{s.phase2.criteria_scores.presentation ?? '-'}</span>
+                                        </span>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '9.5px', fontWeight: 600, background: '#F5F3FF', color: '#6D28D9', padding: '1px 5px', borderRadius: '4px', border: '1px solid #EDE9FE', lineHeight: 1.2 }} title="Code / Implementation">
+                                          <Code2 size={10} strokeWidth={2.2} style={{ flexShrink: 0 }} />
+                                          <span>{s.phase2.criteria_scores.code ?? '-'}</span>
+                                        </span>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '9.5px', fontWeight: 600, background: '#ECFDF5', color: '#047857', padding: '1px 5px', borderRadius: '4px', border: '1px solid #D1FAE5', lineHeight: 1.2 }} title="Query Handling / Viva">
+                                          <MessageSquare size={10} strokeWidth={2.2} style={{ flexShrink: 0 }} />
+                                          <span>{s.phase2.criteria_scores.query_handling ?? '-'}</span>
+                                        </span>
                                       </div>
                                     )}
                                   </div>
@@ -6294,22 +6323,34 @@ Output ONLY the raw valid JSON array.`;
                             <td style={{ textAlign: 'center' }}>
                               {s.phase3 ? (
                                 s.phase3.attendanceStatus === 'early_joining' || s.phase3.attendanceStatus === 'next_shift' ? (
-                                  <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700 }} title={s.phase3.remarks || 'Moved to Early Joining'}>
-                                    🕒 Early Joining
+                                  <span className="badge" style={{ backgroundColor: '#FEF3C7', color: '#B45309', border: '1px solid #FCD34D', fontSize: '10.5px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }} title={s.phase3.remarks || 'Moved to Early Joining'}>
+                                    <Clock size={11} strokeWidth={2.2} style={{ flexShrink: 0 }} /> Early Joining
                                   </span>
                                 ) : s.phase3.isAbsent ? (
                                   <span className="badge badge-danger" style={{ fontSize: '10px' }} title={s.phase3.remarks || 'Marked Absent'}>
                                     Absent
                                   </span>
                                 ) : s.phase3.score !== null && s.phase3.score !== undefined ? (
-                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                                     <span style={{ fontWeight: 700, color: '#7C3AED', fontSize: '12.5px' }}>{s.phase3.score} / {getPhaseMaxMarks(3)}</span>
                                     {s.phase3.criteria_scores && (
-                                      <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                                        <span style={{ fontSize: '9px', background: '#EFF6FF', color: '#1D4ED8', padding: '1px 4px', borderRadius: '4px', border: '1px solid #DBEAFE' }} title="Presentation">📊 {s.phase3.criteria_scores.presentation ?? '-'}</span>
-                                        <span style={{ fontSize: '9px', background: '#F5F3FF', color: '#6D28D9', padding: '1px 4px', borderRadius: '4px', border: '1px solid #EDE9FE' }} title="Code">💻 {s.phase3.criteria_scores.code ?? '-'}</span>
-                                        <span style={{ fontSize: '9px', background: '#ECFDF5', color: '#047857', padding: '1px 4px', borderRadius: '4px', border: '1px solid #D1FAE5' }} title="Query Handling">💬 {s.phase3.criteria_scores.query_handling ?? '-'}</span>
-                                        <span style={{ fontSize: '9px', background: '#FFFBEB', color: '#B45309', padding: '1px 4px', borderRadius: '4px', border: '1px solid #FDE68A' }} title="Report & Certificate">📑 {s.phase3.criteria_scores.report ?? '-'}</span>
+                                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '9.5px', fontWeight: 600, background: '#EFF6FF', color: '#1D4ED8', padding: '1px 5px', borderRadius: '4px', border: '1px solid #DBEAFE', lineHeight: 1.2 }} title="Presentation">
+                                          <BarChart2 size={10} strokeWidth={2.2} style={{ flexShrink: 0 }} />
+                                          <span>{s.phase3.criteria_scores.presentation ?? '-'}</span>
+                                        </span>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '9.5px', fontWeight: 600, background: '#F5F3FF', color: '#6D28D9', padding: '1px 5px', borderRadius: '4px', border: '1px solid #EDE9FE', lineHeight: 1.2 }} title="Code / Implementation">
+                                          <Code2 size={10} strokeWidth={2.2} style={{ flexShrink: 0 }} />
+                                          <span>{s.phase3.criteria_scores.code ?? '-'}</span>
+                                        </span>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '9.5px', fontWeight: 600, background: '#ECFDF5', color: '#047857', padding: '1px 5px', borderRadius: '4px', border: '1px solid #D1FAE5', lineHeight: 1.2 }} title="Query Handling / Viva">
+                                          <MessageSquare size={10} strokeWidth={2.2} style={{ flexShrink: 0 }} />
+                                          <span>{s.phase3.criteria_scores.query_handling ?? '-'}</span>
+                                        </span>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '9.5px', fontWeight: 600, background: '#FFFBEB', color: '#B45309', padding: '1px 5px', borderRadius: '4px', border: '1px solid #FDE68A', lineHeight: 1.2 }} title="Report & Certificate">
+                                          <FileText size={10} strokeWidth={2.2} style={{ flexShrink: 0 }} />
+                                          <span>{s.phase3.criteria_scores.report ?? '-'}</span>
+                                        </span>
                                       </div>
                                     )}
                                   </div>
